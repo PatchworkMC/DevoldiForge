@@ -19,9 +19,9 @@
 
 package net.minecraftforge.fml;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.world.storage.SaveHandler;
-import net.minecraft.world.storage.WorldInfo;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.WorldSaveHandler;
+import net.minecraft.world.level.LevelProperties;
 import net.minecraftforge.fml.common.thread.EffectiveSide;
 
 import java.util.ArrayList;
@@ -35,12 +35,12 @@ public class WorldPersistenceHooks
         worldPersistenceHooks.add(hook);
     }
 
-    public static void handleWorldDataSave(final SaveHandler handler, final WorldInfo worldInfo, final CompoundNBT tagCompound)
+    public static void handleWorldDataSave(final WorldSaveHandler handler, final LevelProperties worldInfo, final CompoundTag tagCompound)
     {
         worldPersistenceHooks.forEach(wac->tagCompound.put(wac.getModId(), wac.getDataForWriting(handler, worldInfo)));
     }
 
-    public static void handleWorldDataLoad(SaveHandler handler, WorldInfo worldInfo, CompoundNBT tagCompound)
+    public static void handleWorldDataLoad(WorldSaveHandler handler, LevelProperties worldInfo, CompoundTag tagCompound)
     {
         if (EffectiveSide.get() == LogicalSide.SERVER)
         {
@@ -48,7 +48,7 @@ public class WorldPersistenceHooks
         }
     }
 
-    public static void confirmBackupLevelDatUse(SaveHandler handler)
+    public static void confirmBackupLevelDatUse(WorldSaveHandler handler)
     {
 /*
         if (handlerToCheck == null || handlerToCheck.get() != handler) {
@@ -70,7 +70,7 @@ public class WorldPersistenceHooks
     public interface WorldPersistenceHook
     {
         String getModId();
-        CompoundNBT getDataForWriting(SaveHandler handler, WorldInfo info);
-        void readData(SaveHandler handler, WorldInfo info, CompoundNBT tag);
+        CompoundTag getDataForWriting(WorldSaveHandler handler, LevelProperties info);
+        void readData(WorldSaveHandler handler, LevelProperties info, CompoundTag tag);
     }
 }

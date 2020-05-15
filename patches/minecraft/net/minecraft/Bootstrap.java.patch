@@ -1,0 +1,10 @@
+--- a/net/minecraft/Bootstrap.java
++++ b/net/minecraft/Bootstrap.java
+@@ -43,6 +43,7 @@
+                EntitySelectorOptions.register();
+                DispenserBehavior.registerDefaults();
+                ArgumentTypes.register();
++               if (false) // skip redirectOutputToLog, Forge already redirects stdout and stderr output to log so that they print with more context
+                setOutputStreams();
+             }
+          }

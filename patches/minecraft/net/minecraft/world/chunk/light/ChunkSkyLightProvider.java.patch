@@ -1,0 +1,14 @@
+--- a/net/minecraft/world/chunk/light/ChunkSkyLightProvider.java
++++ b/net/minecraft/world/chunk/light/ChunkSkyLightProvider.java
+@@ -231,4 +231,11 @@
+    public String method_22875(long sectionPosIn) {
+       return super.method_22875(sectionPosIn) + (this.lightStorage.isAboveTopmostLightArray(sectionPosIn) ? "*" : "");
+    }
++
++   // FORGE START
++
++   @Override
++   public int queuedUpdateSize() {
++      return 0;
++   }
+ }

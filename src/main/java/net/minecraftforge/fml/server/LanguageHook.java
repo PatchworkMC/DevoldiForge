@@ -22,10 +22,10 @@ package net.minecraftforge.fml.server;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import net.minecraft.resources.IResource;
+import net.minecraft.resource.Resource;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.JSONUtils;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.JsonHelper;
 import net.minecraftforge.fml.ForgeI18n;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -57,18 +57,18 @@ public class LanguageHook
     }
 
     // The below is based on client side net.minecraft.client.resources.Locale code
-    private static void loadLocaleData(final List<IResource> allResources) {
-        allResources.stream().map(IResource::getInputStream).forEach(LanguageHook::loadLocaleData);
+    private static void loadLocaleData(final List<Resource> allResources) {
+        allResources.stream().map(Resource::getInputStream).forEach(LanguageHook::loadLocaleData);
     }
 
     private static void loadLocaleData(final InputStream inputstream) {
         try
         {
             JsonElement jsonelement = GSON.fromJson(new InputStreamReader(inputstream, StandardCharsets.UTF_8), JsonElement.class);
-            JsonObject jsonobject = JSONUtils.getJsonObject(jsonelement, "strings");
+            JsonObject jsonobject = JsonHelper.asObject(jsonelement, "strings");
 
             jsonobject.entrySet().forEach(entry -> {
-                String s = PATTERN.matcher(JSONUtils.getString(entry.getValue(), entry.getKey())).replaceAll("%$1s");
+                String s = PATTERN.matcher(JsonHelper.asString(entry.getValue(), entry.getKey())).replaceAll("%$1s");
                 modTable.put(entry.getKey(), s);
             });
         }
@@ -80,10 +80,10 @@ public class LanguageHook
 
     private static void loadLanguage(String langName, MinecraftServer server) {
         String langFile = String.format("lang/%s.json", langName);
-        server.getResourceManager().getResourceNamespaces().forEach(namespace -> {
+        server.getDataManager().getAllNamespaces().forEach(namespace -> {
             try {
-                ResourceLocation langResource = new ResourceLocation(namespace, langFile);
-                loadLocaleData(server.getResourceManager().getAllResources(langResource));
+                Identifier langResource = new Identifier(namespace, langFile);
+                loadLocaleData(server.getDataManager().getAllResources(langResource));
             } catch (FileNotFoundException fnfe) {
             } catch (Exception exception) {
                 LOGGER.warn("Skipped language file: {}:{}", namespace, langFile, exception);

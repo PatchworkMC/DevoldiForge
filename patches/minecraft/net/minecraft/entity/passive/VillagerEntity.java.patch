@@ -1,0 +1,21 @@
+--- a/net/minecraft/entity/passive/VillagerEntity.java
++++ b/net/minecraft/entity/passive/VillagerEntity.java
+@@ -231,7 +231,7 @@
+       if (flag) {
+          itemstack.useOnEntity(player, this, hand);
+          return true;
+-      } else if (itemstack.getItem() != Items.VILLAGER_SPAWN_EGG && this.isAlive() && !this.hasCustomer() && !this.isSleeping()) {
++      } else if (itemstack.getItem() != Items.VILLAGER_SPAWN_EGG && this.isAlive() && !this.hasCustomer() && !this.isSleeping() && !player.shouldCancelInteraction()) {
+          if (this.isBaby()) {
+             this.sayNo();
+             return super.interactMob(player, hand);
+@@ -610,7 +610,8 @@
+    }
+ 
+    protected Text getDefaultName() {
+-      return new TranslatableText(this.getType().getTranslationKey() + '.' + Registry.VILLAGER_PROFESSION.getId(this.getVillagerData().getProfession()).getPath());
++      net.minecraft.util.Identifier profName = this.getVillagerData().getProfession().getRegistryName();
++      return new TranslatableText(this.getType().getTranslationKey() + '.' + (!"minecraft".equals(profName.getNamespace()) ? profName.getNamespace() + '.' : "") + profName.getPath());
+    }
+ 
+    @Environment(EnvType.CLIENT)

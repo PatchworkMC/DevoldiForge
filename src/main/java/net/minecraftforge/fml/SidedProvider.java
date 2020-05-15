@@ -19,8 +19,8 @@
 
 package net.minecraftforge.fml;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.server.dedicated.DedicatedServer;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.server.dedicated.MinecraftDedicatedServer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.fml.client.ClientHooks;
@@ -39,11 +39,11 @@ public enum SidedProvider
             s->s.get().getDataFixer(),
             ()-> { throw new UnsupportedOperationException(); }),
     SIDED_SETUP_EVENT(
-            (Function<Supplier<Minecraft>, Function<ModContainer, Event>>)c-> mc->new FMLClientSetupEvent(c, mc),
+            (Function<Supplier<MinecraftClient>, Function<ModContainer, Event>>)c-> mc->new FMLClientSetupEvent(c, mc),
             s-> mc->new FMLDedicatedServerSetupEvent(s, mc),
             ()-> { throw new UnsupportedOperationException(); }),
     STRIPCHARS(
-            (Function<Supplier<Minecraft>, Function<String, String>>)c-> ClientHooks::stripSpecialChars,
+            (Function<Supplier<MinecraftClient>, Function<String, String>>)c-> ClientHooks::stripSpecialChars,
             s-> str->str,
             ()-> str->str),
     @SuppressWarnings("Convert2MethodRef") // need to not be methodrefs to avoid classloading all of StartupQuery's data (supplier is coming from StartupQuery)
@@ -52,23 +52,23 @@ public enum SidedProvider
             s->StartupQuery.QueryWrapperServer.dedicatedServerQuery(s),
             ()-> { throw new UnsupportedOperationException(); });
 
-    private static Supplier<Minecraft> client;
-    private static Supplier<DedicatedServer> server;
+    private static Supplier<MinecraftClient> client;
+    private static Supplier<MinecraftDedicatedServer> server;
 
-    public static void setClient(Supplier<Minecraft> client)
+    public static void setClient(Supplier<MinecraftClient> client)
     {
         SidedProvider.client = client;
     }
-    public static void setServer(Supplier<DedicatedServer> server)
+    public static void setServer(Supplier<MinecraftDedicatedServer> server)
     {
         SidedProvider.server = server;
     }
 
-    private final Function<Supplier<Minecraft>, ?> clientSide;
-    private final Function<Supplier<DedicatedServer>, ?> serverSide;
+    private final Function<Supplier<MinecraftClient>, ?> clientSide;
+    private final Function<Supplier<MinecraftDedicatedServer>, ?> serverSide;
     private final Supplier<?> testSide;
 
-    <T> SidedProvider(Function<Supplier<Minecraft>, T> clientSide, Function<Supplier<DedicatedServer>, T> serverSide, Supplier<T> testSide)
+    <T> SidedProvider(Function<Supplier<MinecraftClient>, T> clientSide, Function<Supplier<MinecraftDedicatedServer>, T> serverSide, Supplier<T> testSide)
     {
         this.clientSide = clientSide;
         this.serverSide = serverSide;

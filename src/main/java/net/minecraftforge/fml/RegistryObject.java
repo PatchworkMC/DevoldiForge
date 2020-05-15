@@ -19,7 +19,7 @@
 
 package net.minecraftforge.fml;
 
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Identifier;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 import net.minecraftforge.registries.ObjectHolderRegistry;
@@ -38,15 +38,15 @@ import java.util.stream.Stream;
 
 public final class RegistryObject<T extends IForgeRegistryEntry<? super T>> implements Supplier<T>
 {
-    private final ResourceLocation name;
+    private final Identifier name;
     @Nullable
     private T value;
 
-    public static <T extends IForgeRegistryEntry<T>, U extends T> RegistryObject<U> of(final ResourceLocation name, Supplier<Class<? super T>> registryType) {
+    public static <T extends IForgeRegistryEntry<T>, U extends T> RegistryObject<U> of(final Identifier name, Supplier<Class<? super T>> registryType) {
         return new RegistryObject<>(name, registryType);
     }
 
-    public static <T extends IForgeRegistryEntry<T>, U extends T> RegistryObject<U> of(final ResourceLocation name, IForgeRegistry<T> registry) {
+    public static <T extends IForgeRegistryEntry<T>, U extends T> RegistryObject<U> of(final Identifier name, IForgeRegistry<T> registry) {
         return new RegistryObject<>(name, registry);
     }
 
@@ -62,13 +62,13 @@ public final class RegistryObject<T extends IForgeRegistryEntry<? super T>> impl
         this.name = null;
     }
 
-    private <V extends IForgeRegistryEntry<V>> RegistryObject(ResourceLocation name, Supplier<Class<? super V>> registryType)
+    private <V extends IForgeRegistryEntry<V>> RegistryObject(Identifier name, Supplier<Class<? super V>> registryType)
     {
         this(name, RegistryManager.ACTIVE.<V>getRegistry(registryType.get()));
     }
 
     @SuppressWarnings("unchecked")
-    private <V extends IForgeRegistryEntry<V>> RegistryObject(ResourceLocation name, IForgeRegistry<V> registry)
+    private <V extends IForgeRegistryEntry<V>> RegistryObject(Identifier name, IForgeRegistry<V> registry)
     {
         if (registry == null)
             throw new IllegalArgumentException("Invalid registry argument, must not be null");
@@ -98,7 +98,7 @@ public final class RegistryObject<T extends IForgeRegistryEntry<? super T>> impl
         this.value = registry.getValue(getId());
     }
 
-    public ResourceLocation getId()
+    public Identifier getId()
     {
         return this.name;
     }

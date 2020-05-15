@@ -1,0 +1,11 @@
+--- a/net/minecraft/client/gui/screen/SleepingChatScreen.java
++++ b/net/minecraft/client/gui/screen/SleepingChatScreen.java
+@@ -32,7 +32,7 @@
+       } else if (p_keyPressed_1_ == 257 || p_keyPressed_1_ == 335) {
+          String s = this.chatField.getText().trim();
+          if (!s.isEmpty()) {
+-            this.minecraft.player.sendChatMessage(s);
++            this.sendMessage(s); // Forge: fix vanilla not adding messages to the sent list while sleeping
+          }
+ 
+          this.chatField.setText("");

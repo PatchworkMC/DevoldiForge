@@ -1,0 +1,10 @@
+--- a/net/minecraft/entity/vehicle/FurnaceMinecartEntity.java
++++ b/net/minecraft/entity/vehicle/FurnaceMinecartEntity.java
+@@ -110,6 +110,7 @@
+    }
+ 
+    public boolean interact(PlayerEntity player, Hand hand) {
++      if (super.interact(player, hand)) return true;
+       ItemStack itemstack = player.getStackInHand(hand);
+       if (ACCEPTABLE_FUEL.test(itemstack) && this.fuel + 3600 <= 32000) {
+          if (!player.abilities.creativeMode) {

@@ -1,0 +1,38 @@
+--- a/net/minecraft/entity/thrown/ThrownEnderpearlEntity.java
++++ b/net/minecraft/entity/thrown/ThrownEnderpearlEntity.java
+@@ -86,6 +86,8 @@
+          if (livingentity instanceof ServerPlayerEntity) {
+             ServerPlayerEntity serverplayerentity = (ServerPlayerEntity)livingentity;
+             if (serverplayerentity.networkHandler.getConnection().isOpen() && serverplayerentity.world == this.world && !serverplayerentity.isSleeping()) {
++               net.minecraftforge.event.entity.living.EnderTeleportEvent event = new net.minecraftforge.event.entity.living.EnderTeleportEvent(serverplayerentity, this.getX(), this.getY(), this.getZ(), 5.0F);
++               if (!net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(event)) { // Don't indent to lower patch size
+                if (this.random.nextFloat() < 0.05F && this.world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING)) {
+                   EndermiteEntity endermiteentity = EntityType.ENDERMITE.create(this.world);
+                   endermiteentity.setPlayerSpawned(true);
+@@ -97,9 +99,10 @@
+                   livingentity.stopRiding();
+                }
+ 
+-               livingentity.requestTeleport(this.getX(), this.getY(), this.getZ());
++               livingentity.requestTeleport(event.getTargetX(), event.getTargetY(), event.getTargetZ());
+                livingentity.fallDistance = 0.0F;
+-               livingentity.damage(DamageSource.FALL, 5.0F);
++               livingentity.damage(DamageSource.FALL, event.getAttackDamage());
++               } //Forge: End
+             }
+          } else if (livingentity != null) {
+             livingentity.requestTeleport(this.getX(), this.getY(), this.getZ());
+@@ -122,11 +125,11 @@
+    }
+ 
+    @Nullable
+-   public Entity changeDimension(DimensionType destination) {
++   public Entity changeDimension(DimensionType destination, net.minecraftforge.common.util.ITeleporter teleporter) {
+       if (this.owner.dimension != destination) {
+          this.owner = null;
+       }
+ 
+-      return super.changeDimension(destination);
++      return super.changeDimension(destination, teleporter);
+    }
+ }

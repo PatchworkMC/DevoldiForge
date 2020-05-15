@@ -20,8 +20,8 @@
 package net.minecraftforge.fml;
 
 import cpw.mods.modlauncher.log.TransformingThrowablePatternConverter;
-import net.minecraft.crash.CrashReport;
-import net.minecraft.crash.CrashReportCategory;
+import net.minecraft.util.crash.CrashReport;
+import net.minecraft.util.crash.CrashReportSection;
 import net.minecraftforge.fml.common.ICrashCallable;
 
 import java.util.ArrayList;
@@ -33,11 +33,11 @@ public class CrashReportExtender
 {
     private static List<ICrashCallable> crashCallables = Collections.synchronizedList(new ArrayList<>());
 
-    public static void enhanceCrashReport(final CrashReport crashReport, final CrashReportCategory category)
+    public static void enhanceCrashReport(final CrashReport crashReport, final CrashReportSection category)
     {
         for (final ICrashCallable call: crashCallables)
         {
-            category.addDetail(call.getLabel(), call);
+            category.add(call.getLabel(), call);
         }
     }
 

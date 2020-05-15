@@ -1,0 +1,11 @@
+--- a/net/minecraft/client/gui/screen/options/LanguageOptionsScreen.java
++++ b/net/minecraft/client/gui/screen/options/LanguageOptionsScreen.java
+@@ -44,7 +44,7 @@
+          if (languagescreen$list$languageentry != null && !languagescreen$list$languageentry.languageDefinition.getCode().equals(this.languageManager.getLanguage().getCode())) {
+             this.languageManager.setLanguage(languagescreen$list$languageentry.languageDefinition);
+             this.gameOptions.language = languagescreen$list$languageentry.languageDefinition.getCode();
+-            this.minecraft.reloadResources();
++            net.minecraftforge.client.ForgeHooksClient.refreshResources(this.minecraft, net.minecraftforge.resource.VanillaResourceType.LANGUAGES);
+             this.font.setRightToLeft(this.languageManager.isRightToLeft());
+             this.doneButton.setMessage(I18n.translate("gui.done"));
+             this.forceUnicodeButton.setMessage(Option.FORCE_UNICODE_FONT.getDisplayString(this.gameOptions));

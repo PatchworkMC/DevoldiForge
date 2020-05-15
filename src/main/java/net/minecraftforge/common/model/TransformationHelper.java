@@ -23,22 +23,28 @@ import java.lang.reflect.Type;
 import java.util.Map;
 
 import com.google.gson.*;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.render.model.json.Transformation;
 import net.minecraft.client.renderer.*;
+import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.client.util.math.Rotation3;
+import net.minecraft.client.util.math.Vector3f;
+import net.minecraft.client.util.math.Vector4f;
 import net.minecraft.util.math.MathHelper;
-
-import net.minecraft.client.renderer.model.ItemTransformVec3f;
+import net.minecraft.util.math.Quaternion;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 public final class TransformationHelper
 {
     @Deprecated
-    @OnlyIn(Dist.CLIENT)
-    public static TransformationMatrix toTransformation(ItemTransformVec3f transform)
+    @Environment(EnvType.CLIENT)
+    public static Rotation3 toTransformation(Transformation transform)
     {
-        if (transform.equals(ItemTransformVec3f.DEFAULT)) return TransformationMatrix.identity();
+        if (transform.equals(Transformation.IDENTITY)) return Rotation3.identity();
 
-        return new TransformationMatrix(transform.translation, quatFromXYZ(transform.rotation, true), transform.scale, null);
+        return new Rotation3(transform.translation, quatFromXYZ(transform.rotation, true), transform.scale, null);
     }
 
     public static Quaternion quatFromXYZ(Vector3f xyz, boolean degrees)
@@ -74,19 +80,19 @@ public final class TransformationHelper
         // the shorter path. Note that v1 and -v1 are equivalent when
         // the negation is applied to all four components. Fix by
         // reversing one quaternion.
-        float dot = v0.getX() * v1.getX() + v0.getY() * v1.getY() + v0.getZ() * v1.getZ() + v0.getW() * v1.getW();
+        float dot = v0.getB() * v1.getB() + v0.getC() * v1.getC() + v0.getD() * v1.getD() + v0.getA() * v1.getA();
         if (dot < 0.0f) {
-            v1 = new Quaternion(-v1.getX(), -v1.getY(), -v1.getZ(), -v1.getW());
+            v1 = new Quaternion(-v1.getB(), -v1.getC(), -v1.getD(), -v1.getA());
             dot = -dot;
         }
 
         // If the inputs are too close for comfort, linearly interpolate
         // and normalize the result.
         if (dot > THRESHOLD) {
-            float x = MathHelper.lerp(t, v0.getX(), v1.getX());
-            float y = MathHelper.lerp(t, v0.getY(), v1.getY());
-            float z = MathHelper.lerp(t, v0.getZ(), v1.getZ());
-            float w = MathHelper.lerp(t, v0.getW(), v1.getW());
+            float x = MathHelper.lerp(t, v0.getB(), v1.getB());
+            float y = MathHelper.lerp(t, v0.getC(), v1.getC());
+            float z = MathHelper.lerp(t, v0.getD(), v1.getD());
+            float w = MathHelper.lerp(t, v0.getA(), v1.getA());
             return new Quaternion(x,y,z,w);
         }
 
@@ -101,18 +107,18 @@ public final class TransformationHelper
         float s0 = sin1t / sin01;
 
         return new Quaternion(
-                s0 * v0.getX() + s1 * v1.getX(),
-                s0 * v0.getY() + s1 * v1.getY(),
-                s0 * v0.getZ() + s1 * v1.getZ(),
-                s0 * v0.getW() + s1 * v1.getW()
+                s0 * v0.getB() + s1 * v1.getB(),
+                s0 * v0.getC() + s1 * v1.getC(),
+                s0 * v0.getD() + s1 * v1.getD(),
+                s0 * v0.getA() + s1 * v1.getA()
         );
     }
 
-    public static TransformationMatrix slerp(TransformationMatrix one, TransformationMatrix that, float progress)
+    public static Rotation3 slerp(Rotation3 one, Rotation3 that, float progress)
     {
-        return new TransformationMatrix(
+        return new Rotation3(
             lerp(one.getTranslation(), that.getTranslation(), progress),
-            slerp(one.getRotationLeft(), that.getRotationLeft(), progress),
+            slerp(one.getRotation2(), that.getRotation2(), progress),
             lerp(one.getScale(), that.getScale(), progress),
             slerp(one.getRightRot(), that.getRightRot(), progress)
         );
@@ -126,21 +132,21 @@ public final class TransformationHelper
                MathHelper.abs(v1.getW()-v2.getW()) < epsilon;
     }
 
-    public static class Deserializer implements JsonDeserializer<TransformationMatrix>
+    public static class Deserializer implements JsonDeserializer<Rotation3>
     {
         private static final Vector3f ORIGIN_CORNER = new Vector3f();
         private static final Vector3f ORIGIN_OPPOSING_CORNER = new Vector3f(1f, 1f, 1f);
         private static final Vector3f ORIGIN_CENTER = new Vector3f(.5f, .5f, .5f);
 
         @Override
-        public TransformationMatrix deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
+        public Rotation3 deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException
         {
             if (json.isJsonPrimitive() && json.getAsJsonPrimitive().isString())
             {
                 String transform = json.getAsString();
                 if(transform.equals("identity"))
                 {
-                    return TransformationMatrix.identity();
+                    return Rotation3.identity();
                 }
                 else
                 {
@@ -150,15 +156,15 @@ public final class TransformationHelper
             if (json.isJsonArray())
             {
                 // direct matrix array
-                return new TransformationMatrix(parseMatrix(json));
+                return new Rotation3(parseMatrix(json));
             }
             if (!json.isJsonObject()) throw new JsonParseException("TRSR: expected array or object, got: " + json);
             JsonObject obj = json.getAsJsonObject();
-            TransformationMatrix ret;
+            Rotation3 ret;
             if (obj.has("matrix"))
             {
                 // matrix as a sole key
-                ret = new TransformationMatrix(parseMatrix(obj.get("matrix")));
+                ret = new Rotation3(parseMatrix(obj.get("matrix")));
                 obj.remove("matrix");
                 if (obj.entrySet().size() != 0)
                 {
@@ -214,13 +220,13 @@ public final class TransformationHelper
                 obj.remove("origin");
             }
             if (!obj.entrySet().isEmpty()) throw new JsonParseException("TRSR: can either have single 'matrix' key, or a combination of 'translation', 'rotation', 'scale', 'post-rotation', 'origin'");
-            TransformationMatrix matrix = new TransformationMatrix(translation, leftRot, scale, rightRot);
+            Rotation3 matrix = new Rotation3(translation, leftRot, scale, rightRot);
 
             // Use a different origin if needed.
             if (!ORIGIN_CENTER.equals(origin))
             {
                 Vector3f originFromCenter = origin.copy();
-                originFromCenter.sub(ORIGIN_CENTER);
+                originFromCenter.subtract(ORIGIN_CENTER);
                 matrix = matrix.applyOrigin(originFromCenter);
             }
             return matrix;
@@ -320,15 +326,15 @@ public final class TransformationHelper
             {
                 if (entry.getKey().equals("x"))
                 {
-                    ret = Vector3f.XP.rotationDegrees(entry.getValue().getAsNumber().floatValue());
+                    ret = Vector3f.POSITIVE_X.getDegreesQuaternion(entry.getValue().getAsNumber().floatValue());
                 }
                 else if (entry.getKey().equals("y"))
                 {
-                    ret = Vector3f.YP.rotationDegrees(entry.getValue().getAsNumber().floatValue());
+                    ret = Vector3f.POSITIVE_Y.getDegreesQuaternion(entry.getValue().getAsNumber().floatValue());
                 }
                 else if (entry.getKey().equals("z"))
                 {
-                    ret = Vector3f.ZP.rotationDegrees(entry.getValue().getAsNumber().floatValue());
+                    ret = Vector3f.POSITIVE_Z.getDegreesQuaternion(entry.getValue().getAsNumber().floatValue());
                 }
                 else throw new JsonParseException("Axis rotation: expected single axis key, got: " + entry.getKey());
             }
@@ -345,10 +351,10 @@ public final class TransformationHelper
             {
                 if (e.getAsJsonArray().get(0).isJsonObject())
                 {
-                    Quaternion ret = Quaternion.ONE.copy();
+                    Quaternion ret = Quaternion.IDENTITY.copy();
                     for (JsonElement a : e.getAsJsonArray())
                     {
-                        ret.multiply(parseAxisRotation(a));
+                        ret.hamiltonProduct(parseAxisRotation(a));
                     }
                     return ret;
                 }

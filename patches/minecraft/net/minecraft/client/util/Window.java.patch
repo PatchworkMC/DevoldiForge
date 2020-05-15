@@ -1,0 +1,11 @@
+--- a/net/minecraft/client/util/Window.java
++++ b/net/minecraft/client/util/Window.java
+@@ -84,7 +84,7 @@
+       GLFW.glfwWindowHint(139266, 2);
+       GLFW.glfwWindowHint(139267, 0);
+       GLFW.glfwWindowHint(139272, 0);
+-      this.handle = GLFW.glfwCreateWindow(this.width, this.height, titleIn, this.fullscreen && monitor != null ? monitor.getHandle() : 0L, 0L);
++      this.handle = net.minecraftforge.fml.loading.progress.EarlyProgressVisualization.INSTANCE.handOffWindow(()->this.width, ()->this.height, ()->titleIn, ()->this.fullscreen && monitor != null ? monitor.getHandle() : 0L);
+       if (monitor != null) {
+          VideoMode videomode = monitor.findClosestVideoMode(this.fullscreen ? this.videoMode : Optional.empty());
+          this.windowedX = this.x = monitor.getViewportX() + videomode.getWidth() / 2 - this.width / 2;

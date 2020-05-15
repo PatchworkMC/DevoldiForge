@@ -1,0 +1,12 @@
+--- a/net/minecraft/client/render/entity/feature/ArmorBipedFeatureRenderer.java
++++ b/net/minecraft/client/render/entity/feature/ArmorBipedFeatureRenderer.java
+@@ -41,4 +41,9 @@
+    protected void setInvisible(A model) {
+       model.setVisible(false);
+    }
++   
++   @Override
++   protected A getArmorModelHook(T entity, net.minecraft.item.ItemStack itemStack, EquipmentSlot slot, A model) {
++      return net.minecraftforge.client.ForgeHooksClient.getArmorModel(entity, itemStack, slot, model);
++   }
+ }

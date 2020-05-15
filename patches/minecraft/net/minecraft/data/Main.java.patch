@@ -1,6 +1,6 @@
 --- a/net/minecraft/data/Main.java
 +++ b/net/minecraft/data/Main.java
-@@ -21,8 +21,11 @@
+@@ -33,8 +33,11 @@
        OptionSpec<Void> optionspec6 = optionparser.accepts("all", "Include all generators");
        OptionSpec<String> optionspec7 = optionparser.accepts("output", "Output folder").withRequiredArg().defaultsTo("generated");
        OptionSpec<String> optionspec8 = optionparser.accepts("input", "Input folder").withRequiredArg();
@@ -13,20 +13,20 @@
           Path path = Paths.get(optionspec7.value(optionset));
           boolean flag = optionset.has(optionspec6);
           boolean flag1 = flag || optionset.has(optionspec2);
-@@ -30,10 +33,12 @@
+@@ -42,10 +45,12 @@
           boolean flag3 = flag || optionset.has(optionspec3);
           boolean flag4 = flag || optionset.has(optionspec4);
           boolean flag5 = flag || optionset.has(optionspec5);
--         DataGenerator datagenerator = func_200264_a(path, optionset.valuesOf(optionspec8).stream().map((p_200263_0_) -> {
+-         DataGenerator datagenerator = create(path, optionset.valuesOf(optionspec8).stream().map((p_200263_0_) -> {
 -            return Paths.get(p_200263_0_);
 -         }).collect(Collectors.toList()), flag1, flag2, flag3, flag4, flag5);
--         datagenerator.func_200392_c();
+-         datagenerator.run();
 +         Collection<Path> inputs = optionset.valuesOf(optionspec8).stream().map(Paths::get).collect(Collectors.toList());
 +         Collection<Path> existingPacks = optionset.valuesOf(existing).stream().map(Paths::get).collect(Collectors.toList());
 +         java.util.Set<String> mods = new java.util.HashSet<>(optionset.valuesOf(mod));
 +         net.minecraftforge.fml.ModLoader.get().runDataGenerator(mods, path, inputs, existingPacks, flag2, flag1, flag3, flag4, flag5);
 +         if (mods.contains("minecraft") || mods.isEmpty())
-+            func_200264_a(mods.isEmpty() ? path : path.resolve("minecraft"), inputs, flag1, flag2, flag3, flag4, flag5).func_200392_c();
++            create(mods.isEmpty() ? path : path.resolve("minecraft"), inputs, flag1, flag2, flag3, flag4, flag5).run();
        } else {
           optionparser.printHelpOn(System.out);
        }

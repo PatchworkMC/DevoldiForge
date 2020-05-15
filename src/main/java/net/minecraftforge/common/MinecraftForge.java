@@ -19,9 +19,9 @@
 
 package net.minecraftforge.common;
 
+import net.minecraft.util.crash.CrashReport;
 import net.minecraftforge.eventbus.api.BusBuilder;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraft.crash.CrashReport;
 import net.minecraftforge.versions.forge.ForgeVersion;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

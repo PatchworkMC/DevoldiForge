@@ -22,21 +22,21 @@ package net.minecraftforge.client.model.pipeline;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.WorldRenderer;
-import net.minecraft.client.renderer.color.BlockColors;
-import net.minecraft.util.Direction;
+import net.minecraft.client.color.block.BlockColors;
+import net.minecraft.client.render.LightmapTextureManager;
+import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.shapes.VoxelShapes;
-import net.minecraft.world.ILightReader;
+import net.minecraft.util.shape.VoxelShapes;
+import net.minecraft.world.BlockRenderView;
 
 public class BlockInfo
 {
     private static final Direction[] SIDES = Direction.values();
 
     private final BlockColors colors;
-    private ILightReader world;
+    private BlockRenderView world;
     private BlockState state;
     private BlockPos blockPos;
 
@@ -71,13 +71,13 @@ public class BlockInfo
 
     public void updateShift()
     {
-        Vec3d offset = state.getOffset(world, blockPos);
+        Vec3d offset = state.getOffsetPos(world, blockPos);
         shx = (float) offset.x;
         shy = (float) offset.y;
         shz = (float) offset.z;
     }
 
-    public void setWorld(ILightReader world)
+    public void setWorld(BlockRenderView world)
     {
         this.world = world;
         cachedTint = -1;
@@ -129,10 +129,10 @@ public class BlockInfo
                     BlockPos pos = blockPos.add(x - 1, y - 1, z - 1);
                     BlockState state = world.getBlockState(pos);
                     t[x][y][z] = state.getOpacity(world, pos) < 15;
-                    int brightness = WorldRenderer.getCombinedLight(world, pos);
-                    s[x][y][z] = LightTexture.getLightSky(brightness);
-                    b[x][y][z] = LightTexture.getLightBlock(brightness);
-                    ao[x][y][z] = state.getAmbientOcclusionLightValue(world, pos);
+                    int brightness = WorldRenderer.getLightmapCoordinates(world, pos);
+                    s[x][y][z] = LightmapTextureManager.getSkyLightCoordinates(brightness);
+                    b[x][y][z] = LightmapTextureManager.getBlockLightCoordinates(brightness);
+                    ao[x][y][z] = state.getAmbientOcclusionLightLevel(world, pos);
                 }
             }
         }
@@ -141,14 +141,14 @@ public class BlockInfo
             BlockPos pos = blockPos.offset(side);
             BlockState state = world.getBlockState(pos);
 
-            BlockState thisStateShape = this.state.isSolid() && this.state.isTransparent() ? this.state : Blocks.AIR.getDefaultState();
-            BlockState otherStateShape = state.isSolid() && state.isTransparent() ? state : Blocks.AIR.getDefaultState();
+            BlockState thisStateShape = this.state.isOpaque() && this.state.hasSidedTransparency() ? this.state : Blocks.AIR.getDefaultState();
+            BlockState otherStateShape = state.isOpaque() && state.hasSidedTransparency() ? state : Blocks.AIR.getDefaultState();
 
-            if(state.getOpacity(world, pos) == 15 || VoxelShapes.faceShapeCovers(thisStateShape.getFaceOcclusionShape(world, blockPos, side), otherStateShape.getFaceOcclusionShape(world, pos, side.getOpposite())))
+            if(state.getOpacity(world, pos) == 15 || VoxelShapes.unionCoversFullCube(thisStateShape.getCullingFace(world, blockPos, side), otherStateShape.getCullingFace(world, pos, side.getOpposite())))
             {
-                int x = side.getXOffset() + 1;
-                int y = side.getYOffset() + 1;
-                int z = side.getZOffset() + 1;
+                int x = side.getOffsetX() + 1;
+                int y = side.getOffsetY() + 1;
+                int z = side.getOffsetZ() + 1;
                 s[x][y][z] = Math.max(s[1][1][1] - 1, s[x][y][z]);
                 b[x][y][z] = Math.max(b[1][1][1] - 1, b[x][y][z]);
             }
@@ -196,17 +196,17 @@ public class BlockInfo
 
     public void updateFlatLighting()
     {
-        full = Block.isOpaque(state.getCollisionShape(world, blockPos));
-        packed[0] = WorldRenderer.getCombinedLight(world, blockPos);
+        full = Block.isShapeFullCube(state.getCollisionShape(world, blockPos));
+        packed[0] = WorldRenderer.getLightmapCoordinates(world, blockPos);
 
         for (Direction side : SIDES)
         {
             int i = side.ordinal() + 1;
-            packed[i] = WorldRenderer.getCombinedLight(world, blockPos.offset(side));
+            packed[i] = WorldRenderer.getLightmapCoordinates(world, blockPos.offset(side));
         }
     }
 
-    public ILightReader getWorld()
+    public BlockRenderView getWorld()
     {
         return world;
     }

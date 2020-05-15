@@ -1,0 +1,11 @@
+--- a/net/minecraft/client/block/ChestAnimationProgress.java
++++ b/net/minecraft/client/block/ChestAnimationProgress.java
+@@ -5,7 +5,7 @@
+ import net.minecraftforge.api.distmarker.Dist;
+ import net.minecraftforge.api.distmarker.OnlyIn;
+ 
+-@Environment(EnvType.CLIENT)
+ public interface ChestAnimationProgress {
++   @Environment(EnvType.CLIENT)
+    float getAnimationProgress(float partialTicks);
+ }

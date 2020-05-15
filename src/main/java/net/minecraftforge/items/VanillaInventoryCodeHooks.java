@@ -22,13 +22,13 @@ package net.minecraftforge.items;
 import net.minecraft.block.Block;
 import net.minecraft.block.DropperBlock;
 import net.minecraft.block.HopperBlock;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.DispenserBlockEntity;
+import net.minecraft.block.entity.Hopper;
+import net.minecraft.block.entity.HopperBlockEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.tileentity.IHopper;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.tileentity.DispenserTileEntity;
-import net.minecraft.tileentity.HopperTileEntity;
-import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.LazyOptional;
@@ -46,7 +46,7 @@ public class VanillaInventoryCodeHooks
      * @return Null if we did nothing {no IItemHandler}, True if we moved an item, False if we moved no items
      */
     @Nullable
-    public static Boolean extractHook(IHopper dest)
+    public static Boolean extractHook(Hopper dest)
     {
         return getItemHandler(dest, Direction.UP)
                 .map(itemHandlerResult -> {
@@ -57,18 +57,18 @@ public class VanillaInventoryCodeHooks
                         ItemStack extractItem = handler.extractItem(i, 1, true);
                         if (!extractItem.isEmpty())
                         {
-                            for (int j = 0; j < dest.getSizeInventory(); j++)
+                            for (int j = 0; j < dest.getInvSize(); j++)
                             {
-                                ItemStack destStack = dest.getStackInSlot(j);
-                                if (dest.isItemValidForSlot(j, extractItem) && (destStack.isEmpty() || destStack.getCount() < destStack.getMaxStackSize() && destStack.getCount() < dest.getInventoryStackLimit() && ItemHandlerHelper.canItemStacksStack(extractItem, destStack)))
+                                ItemStack destStack = dest.getInvStack(j);
+                                if (dest.isValidInvStack(j, extractItem) && (destStack.isEmpty() || destStack.getCount() < destStack.getMaxCount() && destStack.getCount() < dest.getInvMaxStackAmount() && ItemHandlerHelper.canItemStacksStack(extractItem, destStack)))
                                 {
                                     extractItem = handler.extractItem(i, 1, false);
                                     if (destStack.isEmpty())
-                                        dest.setInventorySlotContents(j, extractItem);
+                                        dest.setInvStack(j, extractItem);
                                     else
                                     {
-                                        destStack.grow(1);
-                                        dest.setInventorySlotContents(j, destStack);
+                                        destStack.increment(1);
+                                        dest.setInvStack(j, destStack);
                                     }
                                     dest.markDirty();
                                     return true;
@@ -85,7 +85,7 @@ public class VanillaInventoryCodeHooks
     /**
      * Copied from BlockDropper#dispense and added capability support
      */
-    public static boolean dropperInsertHook(World world, BlockPos pos, DispenserTileEntity dropper, int slot, @Nonnull ItemStack stack)
+    public static boolean dropperInsertHook(World world, BlockPos pos, DispenserBlockEntity dropper, int slot, @Nonnull ItemStack stack)
     {
         Direction enumfacing = world.getBlockState(pos).get(DropperBlock.FACING);
         BlockPos blockpos = pos.offset(enumfacing);
@@ -99,14 +99,14 @@ public class VanillaInventoryCodeHooks
                     if (remainder.isEmpty())
                     {
                         remainder = stack.copy();
-                        remainder.shrink(1);
+                        remainder.decrement(1);
                     }
                     else
                     {
                         remainder = stack.copy();
                     }
 
-                    dropper.setInventorySlotContents(slot, remainder);
+                    dropper.setInvStack(slot, remainder);
                     return false;
                 })
                 .orElse(true);
@@ -115,9 +115,9 @@ public class VanillaInventoryCodeHooks
     /**
      * Copied from TileEntityHopper#transferItemsOut and added capability support
      */
-    public static boolean insertHook(HopperTileEntity hopper)
+    public static boolean insertHook(HopperBlockEntity hopper)
     {
-        Direction hopperFacing = hopper.getBlockState().get(HopperBlock.FACING);
+        Direction hopperFacing = hopper.getCachedState().get(HopperBlock.FACING);
         return getItemHandler(hopper, hopperFacing)
                 .map(destinationResult -> {
                     IItemHandler itemHandler = destinationResult.getKey();
@@ -128,12 +128,12 @@ public class VanillaInventoryCodeHooks
                     }
                     else
                     {
-                        for (int i = 0; i < hopper.getSizeInventory(); ++i)
+                        for (int i = 0; i < hopper.getInvSize(); ++i)
                         {
-                            if (!hopper.getStackInSlot(i).isEmpty())
+                            if (!hopper.getInvStack(i).isEmpty())
                             {
-                                ItemStack originalSlotContents = hopper.getStackInSlot(i).copy();
-                                ItemStack insertStack = hopper.decrStackSize(i, 1);
+                                ItemStack originalSlotContents = hopper.getInvStack(i).copy();
+                                ItemStack insertStack = hopper.takeInvStack(i, 1);
                                 ItemStack remainder = putStackInInventoryAllSlots(hopper, destination, itemHandler, insertStack);
 
                                 if (remainder.isEmpty())
@@ -141,7 +141,7 @@ public class VanillaInventoryCodeHooks
                                     return true;
                                 }
 
-                                hopper.setInventorySlotContents(i, originalSlotContents);
+                                hopper.setInvStack(i, originalSlotContents);
                             }
                         }
 
@@ -151,7 +151,7 @@ public class VanillaInventoryCodeHooks
                 .orElse(false);
     }
 
-    private static ItemStack putStackInInventoryAllSlots(TileEntity source, Object destination, IItemHandler destInventory, ItemStack stack)
+    private static ItemStack putStackInInventoryAllSlots(BlockEntity source, Object destination, IItemHandler destInventory, ItemStack stack)
     {
         for (int slot = 0; slot < destInventory.getSlots() && !stack.isEmpty(); slot++)
         {
@@ -163,7 +163,7 @@ public class VanillaInventoryCodeHooks
     /**
      * Copied from TileEntityHopper#insertStack and added capability support
      */
-    private static ItemStack insertStack(TileEntity source, Object destination, IItemHandler destInventory, ItemStack stack, int slot)
+    private static ItemStack insertStack(BlockEntity source, Object destination, IItemHandler destInventory, ItemStack stack, int slot)
     {
         ItemStack itemstack = destInventory.getStackInSlot(slot);
 
@@ -187,21 +187,21 @@ public class VanillaInventoryCodeHooks
 
             if (insertedItem)
             {
-                if (inventoryWasEmpty && destination instanceof HopperTileEntity)
+                if (inventoryWasEmpty && destination instanceof HopperBlockEntity)
                 {
-                    HopperTileEntity destinationHopper = (HopperTileEntity)destination;
+                    HopperBlockEntity destinationHopper = (HopperBlockEntity)destination;
 
-                    if (!destinationHopper.mayTransfer())
+                    if (!destinationHopper.isDisabled())
                     {
                         int k = 0;
-                        if (source instanceof HopperTileEntity)
+                        if (source instanceof HopperBlockEntity)
                         {
-                            if (destinationHopper.getLastUpdateTime() >= ((HopperTileEntity) source).getLastUpdateTime())
+                            if (destinationHopper.getLastUpdateTime() >= ((HopperBlockEntity) source).getLastUpdateTime())
                             {
                                 k = 1;
                             }
                         }
-                        destinationHopper.setTransferCooldown(8 - k);
+                        destinationHopper.setCooldown(8 - k);
                     }
                 }
             }
@@ -210,11 +210,11 @@ public class VanillaInventoryCodeHooks
         return stack;
     }
 
-    private static LazyOptional<Pair<IItemHandler, Object>> getItemHandler(IHopper hopper, Direction hopperFacing)
+    private static LazyOptional<Pair<IItemHandler, Object>> getItemHandler(Hopper hopper, Direction hopperFacing)
     {
-        double x = hopper.getXPos() + (double) hopperFacing.getXOffset();
-        double y = hopper.getYPos() + (double) hopperFacing.getYOffset();
-        double z = hopper.getZPos() + (double) hopperFacing.getZOffset();
+        double x = hopper.getHopperX() + (double) hopperFacing.getOffsetX();
+        double y = hopper.getHopperY() + (double) hopperFacing.getOffsetY();
+        double z = hopper.getHopperZ() + (double) hopperFacing.getOffsetZ();
         return getItemHandler(hopper.getWorld(), x, y, z, hopperFacing.getOpposite());
     }
 
@@ -254,7 +254,7 @@ public class VanillaInventoryCodeHooks
 
         if (state.hasTileEntity())
         {
-            TileEntity tileentity = worldIn.getTileEntity(blockpos);
+            BlockEntity tileentity = worldIn.getBlockEntity(blockpos);
             if (tileentity != null)
             {
                 return tileentity.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, side)

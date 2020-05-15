@@ -19,12 +19,11 @@
 
 package net.minecraftforge.event.world;
 
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.chunk.IChunk;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.Cancelable;
 import net.minecraftforge.eventbus.api.Event;
@@ -40,21 +39,21 @@ import net.minecraftforge.eventbus.api.Event;
  **/
 public class ChunkDataEvent extends ChunkEvent
 {
-    private final CompoundNBT data;
+    private final CompoundTag data;
 
-    public ChunkDataEvent(IChunk chunk, CompoundNBT data)
+    public ChunkDataEvent(Chunk chunk, CompoundTag data)
     {
         super(chunk);
         this.data = data;
     }
 
-    public ChunkDataEvent(IChunk chunk, IWorld world, CompoundNBT data)
+    public ChunkDataEvent(Chunk chunk, IWorld world, CompoundTag data)
     {
         super(chunk, world);
         this.data = data;
     }
 
-    public CompoundNBT getData()
+    public CompoundTag getData()
     {
         return data;
     }
@@ -72,15 +71,15 @@ public class ChunkDataEvent extends ChunkEvent
      **/
     public static class Load extends ChunkDataEvent
     {
-        private ChunkStatus.Type status;
+        private ChunkStatus.ChunkType status;
 
-        public Load(IChunk chunk, CompoundNBT data, ChunkStatus.Type status)
+        public Load(Chunk chunk, CompoundTag data, ChunkStatus.ChunkType status)
         {
             super(chunk, data);
             this.status = status;
         }
 
-        public ChunkStatus.Type getStatus()
+        public ChunkStatus.ChunkType getStatus()
         {
             return this.status;
         }
@@ -100,12 +99,12 @@ public class ChunkDataEvent extends ChunkEvent
     public static class Save extends ChunkDataEvent
     {
         @Deprecated // remove in 1.16
-        public Save(IChunk chunk, CompoundNBT data)
+        public Save(Chunk chunk, CompoundTag data)
         {
             super(chunk, data);
         }
 
-        public Save(IChunk chunk, IWorld world, CompoundNBT data)
+        public Save(Chunk chunk, IWorld world, CompoundTag data)
         {
             super(chunk, world, data);
         }

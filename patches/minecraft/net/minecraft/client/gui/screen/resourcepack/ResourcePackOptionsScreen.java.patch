@@ -1,0 +1,17 @@
+--- a/net/minecraft/client/gui/screen/resourcepack/ResourcePackOptionsScreen.java
++++ b/net/minecraft/client/gui/screen/resourcepack/ResourcePackOptionsScreen.java
+@@ -87,11 +87,14 @@
+          resourcepacklist.scanPacks();
+          List<ClientResourcePackProfile> list = Lists.newArrayList(resourcepacklist.getProfiles());
+          list.removeAll(resourcepacklist.getEnabledProfiles());
++         list.removeIf(net.minecraft.resource.ResourcePackProfile::isHidden); // Forge: Hide some resource packs from the UI entirely
+ 
+          for(ClientResourcePackProfile clientresourcepackinfo : list) {
+             this.availablePacks.add(new ResourcePackListWidget.ResourcePackEntry(this.availablePacks, this, clientresourcepackinfo));
+          }
+ 
++         java.util.Collection<ClientResourcePackProfile> enabledList = resourcepacklist.getEnabledProfiles();
++         enabledList.removeIf(net.minecraft.resource.ResourcePackProfile::isHidden); // Forge: Hide some resource packs from the UI entirely
+          for(ClientResourcePackProfile clientresourcepackinfo1 : Lists.reverse(Lists.newArrayList(resourcepacklist.getEnabledProfiles()))) {
+             this.enabledPacks.add(new ResourcePackListWidget.ResourcePackEntry(this.enabledPacks, this, clientresourcepackinfo1));
+          }

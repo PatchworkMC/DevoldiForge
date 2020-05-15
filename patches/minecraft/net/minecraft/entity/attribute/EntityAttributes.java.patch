@@ -1,0 +1,11 @@
+--- a/net/minecraft/entity/attribute/EntityAttributes.java
++++ b/net/minecraft/entity/attribute/EntityAttributes.java
+@@ -10,7 +10,7 @@
+ 
+ public class EntityAttributes {
+    private static final Logger LOGGER = LogManager.getLogger();
+-   public static final EntityAttribute MAX_HEALTH = (new ClampedEntityAttribute((EntityAttribute)null, "generic.maxHealth", 20.0D, 0.0D, 1024.0D)).setName("Max Health").setTracked(true);
++   public static final EntityAttribute MAX_HEALTH = (new ClampedEntityAttribute((EntityAttribute)null, "generic.maxHealth", 20.0D, Float.MIN_VALUE, 1024.0D)).setName("Max Health").setTracked(true);  // Forge: set smallest max-health value to fix MC-119183. This gets rounded to float so we use the smallest positive float value.
+    public static final EntityAttribute FOLLOW_RANGE = (new ClampedEntityAttribute((EntityAttribute)null, "generic.followRange", 32.0D, 0.0D, 2048.0D)).setName("Follow Range");
+    public static final EntityAttribute KNOCKBACK_RESISTANCE = (new ClampedEntityAttribute((EntityAttribute)null, "generic.knockbackResistance", 0.0D, 0.0D, 1.0D)).setName("Knockback Resistance");
+    public static final EntityAttribute MOVEMENT_SPEED = (new ClampedEntityAttribute((EntityAttribute)null, "generic.movementSpeed", (double)0.7F, 0.0D, 1024.0D)).setName("Movement Speed").setTracked(true);

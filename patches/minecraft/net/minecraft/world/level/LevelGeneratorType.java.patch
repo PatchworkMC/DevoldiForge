@@ -1,0 +1,47 @@
+--- a/net/minecraft/world/level/LevelGeneratorType.java
++++ b/net/minecraft/world/level/LevelGeneratorType.java
+@@ -6,7 +6,7 @@
+ import net.minecraftforge.api.distmarker.Dist;
+ import net.minecraftforge.api.distmarker.OnlyIn;
+ 
+-public class LevelGeneratorType {
++public class LevelGeneratorType implements net.minecraftforge.common.extensions.IForgeWorldType {
+    public static LevelGeneratorType[] TYPES = new LevelGeneratorType[16];
+    public static final LevelGeneratorType DEFAULT = (new LevelGeneratorType(0, "default", 1)).setVersioned();
+    public static final LevelGeneratorType FLAT = (new LevelGeneratorType(1, "flat")).setCustomizable(true);
+@@ -25,6 +25,10 @@
+    private boolean info;
+    private boolean customizable;
+ 
++   public LevelGeneratorType(String name) {
++      this(getNextID(), name);
++   }
++
+    private LevelGeneratorType(int id, String name) {
+       this(id, name, name, 0);
+    }
+@@ -34,6 +38,7 @@
+    }
+ 
+    private LevelGeneratorType(int idIn, String nameIn, String serialization, int versionIn) {
++      if (nameIn.length() > 16 && DEBUG_ALL_BLOCK_STATES != null) throw new IllegalArgumentException("World type names must not be longer then 16: " + nameIn);
+       this.name = nameIn;
+       this.storedName = serialization;
+       this.version = versionIn;
+@@ -42,6 +47,16 @@
+       TYPES[idIn] = this;
+    }
+ 
++   private static int getNextID() {
++      for (int x = 0; x < TYPES.length; x++) {
++         if (TYPES[x] == null)
++            return x;
++      }
++      int old = TYPES.length;
++      TYPES = java.util.Arrays.copyOf(TYPES, old + 16);
++      return old;
++   }
++
+    public String getName() {
+       return this.name;
+    }

@@ -20,7 +20,6 @@
 package net.minecraftforge.common;
 
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IWorldReader;
 
 // TODO 1.16: This should not be an enum. Change it to something that functions similarly to ToolType
 public enum PlantType implements IExtensibleEnum

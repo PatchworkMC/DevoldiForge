@@ -24,16 +24,16 @@ import javax.annotation.Nullable;
 import com.mojang.authlib.GameProfile;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.play.client.CClientSettingsPacket;
+import net.minecraft.network.packet.c2s.play.ClientSettingsC2SPacket;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.management.PlayerInteractionManager;
-import net.minecraft.stats.Stat;
-import net.minecraft.util.DamageSource;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.network.ServerPlayerInteractionManager;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.stat.Stat;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.fml.server.ServerLifecycleHooks;
 
@@ -42,18 +42,18 @@ public class FakePlayer extends ServerPlayerEntity
 {
     public FakePlayer(ServerWorld world, GameProfile name)
     {
-        super(world.getServer(), world, name, new PlayerInteractionManager(world));
+        super(world.getServer(), world, name, new ServerPlayerInteractionManager(world));
     }
 
-    @Override public Vec3d getPositionVector(){ return new Vec3d(0, 0, 0); }
-    @Override public void sendStatusMessage(ITextComponent chatComponent, boolean actionBar){}
-    @Override public void sendMessage(ITextComponent component) {}
-    @Override public void addStat(Stat par1StatBase, int par2){}
+    @Override public Vec3d getPosVector(){ return new Vec3d(0, 0, 0); }
+    @Override public void addChatMessage(Text chatComponent, boolean actionBar){}
+    @Override public void sendMessage(Text component) {}
+    @Override public void increaseStat(Stat par1StatBase, int par2){}
     //@Override public void openGui(Object mod, int modGuiId, World world, int x, int y, int z){}
     @Override public boolean isInvulnerableTo(DamageSource source){ return true; }
-    @Override public boolean canAttackPlayer(PlayerEntity player){ return false; }
+    @Override public boolean shouldDamagePlayer(PlayerEntity player){ return false; }
     @Override public void onDeath(DamageSource source){ return; }
     @Override public void tick(){ return; }
-    @Override public void handleClientSettings(CClientSettingsPacket pkt){ return; }
+    @Override public void setClientSettings(ClientSettingsC2SPacket pkt){ return; }
     @Override @Nullable public MinecraftServer getServer() { return ServerLifecycleHooks.getCurrentServer(); }
 }

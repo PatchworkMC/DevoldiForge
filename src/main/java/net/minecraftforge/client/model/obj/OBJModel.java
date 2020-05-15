@@ -24,14 +24,19 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import joptsimple.internal.Strings;
-import net.minecraft.client.renderer.TransformationMatrix;
-import net.minecraft.client.renderer.Vector3f;
-import net.minecraft.client.renderer.Vector4f;
+import net.minecraft.client.render.VertexFormatElement;
+import net.minecraft.client.render.model.BakedQuad;
+import net.minecraft.client.render.model.ModelBakeSettings;
+import net.minecraft.client.render.model.ModelLoader;
+import net.minecraft.client.render.model.UnbakedModel;
 import net.minecraft.client.renderer.model.*;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.renderer.vertex.VertexFormatElement;
-import net.minecraft.util.Direction;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.util.SpriteIdentifier;
+import net.minecraft.client.util.math.Rotation3;
+import net.minecraft.client.util.math.Vector3f;
+import net.minecraft.client.util.math.Vector4f;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
 import net.minecraftforge.client.model.*;
@@ -71,7 +76,7 @@ public class OBJModel implements IMultipartModelGeometry<OBJModel>
     public final boolean flipV;
     public final boolean ambientToFullbright;
 
-    public final ResourceLocation modelLocation;
+    public final Identifier modelLocation;
 
     @Nullable
     public final String materialLibraryOverrideLocation;
@@ -108,9 +113,9 @@ public class OBJModel implements IMultipartModelGeometry<OBJModel>
         {
             String lib = materialLibraryOverrideLocation;
             if (lib.contains(":"))
-                mtllib = OBJLoader.INSTANCE.loadMaterialLibrary(new ResourceLocation(lib));
+                mtllib = OBJLoader.INSTANCE.loadMaterialLibrary(new Identifier(lib));
             else
-                mtllib = OBJLoader.INSTANCE.loadMaterialLibrary(new ResourceLocation(modelDomain, modelPath + lib));
+                mtllib = OBJLoader.INSTANCE.loadMaterialLibrary(new Identifier(modelDomain, modelPath + lib));
         }
 
         String[] line;
@@ -125,9 +130,9 @@ public class OBJModel implements IMultipartModelGeometry<OBJModel>
 
                     String lib = line[1];
                     if (lib.contains(":"))
-                        mtllib = OBJLoader.INSTANCE.loadMaterialLibrary(new ResourceLocation(lib));
+                        mtllib = OBJLoader.INSTANCE.loadMaterialLibrary(new Identifier(lib));
                     else
-                        mtllib = OBJLoader.INSTANCE.loadMaterialLibrary(new ResourceLocation(modelDomain, modelPath + lib));
+                        mtllib = OBJLoader.INSTANCE.loadMaterialLibrary(new Identifier(modelDomain, modelPath + lib));
                     break;
                 }
 
@@ -338,7 +343,7 @@ public class OBJModel implements IMultipartModelGeometry<OBJModel>
         return Optional.ofNullable(parts.get(name));
     }
 
-    private Pair<BakedQuad,Direction> makeQuad(int[][] indices, int tintIndex, Vector4f colorTint, Vector4f ambientColor, TextureAtlasSprite texture, TransformationMatrix transform)
+    private Pair<BakedQuad,Direction> makeQuad(int[][] indices, int tintIndex, Vector4f colorTint, Vector4f ambientColor, Sprite texture, Rotation3 transform)
     {
         boolean needsNormalRecalculation = false;
         for (int[] ints : indices)
@@ -351,9 +356,9 @@ public class OBJModel implements IMultipartModelGeometry<OBJModel>
             Vector3f ab = positions.get(indices[1][0]);
             Vector3f ac = positions.get(indices[2][0]);
             Vector3f abs = ab.copy();
-            abs.sub(a);
+            abs.subtract(a);
             Vector3f acs = ac.copy();
-            acs.sub(a);
+            acs.subtract(a);
             abs.cross(acs);
             abs.normalize();
             faceNormal = abs;
@@ -380,7 +385,7 @@ public class OBJModel implements IMultipartModelGeometry<OBJModel>
 
         boolean hasTransform = !transform.isIdentity();
         // The incoming transform is referenced on the center of the block, but our coords are referenced on the corner
-        TransformationMatrix transformation = hasTransform ? transform.blockCenterToCorner() : transform;
+        Rotation3 transformation = hasTransform ? transform.blockCenterToCorner() : transform;
 
         for(int i=0;i<4;i++)
         {
@@ -407,55 +412,55 @@ public class OBJModel implements IMultipartModelGeometry<OBJModel>
             norm[i] = normal;
         }
 
-        builder.setQuadOrientation(Direction.getFacingFromVector(norm[0].getX(), norm[0].getY(),norm[0].getZ()));
+        builder.setQuadOrientation(Direction.getFacing(norm[0].getX(), norm[0].getY(),norm[0].getZ()));
 
         Direction cull = null;
         if (detectCullableFaces)
         {
-            if (MathHelper.epsilonEquals(pos[0].getX(), 0) && // vertex.position.x
-                    MathHelper.epsilonEquals(pos[1].getX(), 0) &&
-                    MathHelper.epsilonEquals(pos[2].getX(), 0) &&
-                    MathHelper.epsilonEquals(pos[3].getX(), 0) &&
+            if (MathHelper.approximatelyEquals(pos[0].getX(), 0) && // vertex.position.x
+                    MathHelper.approximatelyEquals(pos[1].getX(), 0) &&
+                    MathHelper.approximatelyEquals(pos[2].getX(), 0) &&
+                    MathHelper.approximatelyEquals(pos[3].getX(), 0) &&
                     norm[0].getX() < 0) // vertex.normal.x
             {
                 cull = Direction.WEST;
             }
-            else if (MathHelper.epsilonEquals(pos[0].getX(), 1) && // vertex.position.x
-                    MathHelper.epsilonEquals(pos[1].getX(), 1) &&
-                    MathHelper.epsilonEquals(pos[2].getX(), 1) &&
-                    MathHelper.epsilonEquals(pos[3].getX(), 1) &&
+            else if (MathHelper.approximatelyEquals(pos[0].getX(), 1) && // vertex.position.x
+                    MathHelper.approximatelyEquals(pos[1].getX(), 1) &&
+                    MathHelper.approximatelyEquals(pos[2].getX(), 1) &&
+                    MathHelper.approximatelyEquals(pos[3].getX(), 1) &&
                     norm[0].getX() > 0) // vertex.normal.x
             {
                 cull = Direction.EAST;
             }
-            else if (MathHelper.epsilonEquals(pos[0].getZ(), 0) && // vertex.position.z
-                    MathHelper.epsilonEquals(pos[1].getZ(), 0) &&
-                    MathHelper.epsilonEquals(pos[2].getZ(), 0) &&
-                    MathHelper.epsilonEquals(pos[3].getZ(), 0) &&
+            else if (MathHelper.approximatelyEquals(pos[0].getZ(), 0) && // vertex.position.z
+                    MathHelper.approximatelyEquals(pos[1].getZ(), 0) &&
+                    MathHelper.approximatelyEquals(pos[2].getZ(), 0) &&
+                    MathHelper.approximatelyEquals(pos[3].getZ(), 0) &&
                     norm[0].getZ() < 0) // vertex.normal.z
             {
                 cull = Direction.NORTH; // can never remember
             }
-            else if (MathHelper.epsilonEquals(pos[0].getZ(), 1) && // vertex.position.z
-                    MathHelper.epsilonEquals(pos[1].getZ(), 1) &&
-                    MathHelper.epsilonEquals(pos[2].getZ(), 1) &&
-                    MathHelper.epsilonEquals(pos[3].getZ(), 1) &&
+            else if (MathHelper.approximatelyEquals(pos[0].getZ(), 1) && // vertex.position.z
+                    MathHelper.approximatelyEquals(pos[1].getZ(), 1) &&
+                    MathHelper.approximatelyEquals(pos[2].getZ(), 1) &&
+                    MathHelper.approximatelyEquals(pos[3].getZ(), 1) &&
                     norm[0].getZ() > 0) // vertex.normal.z
             {
                 cull = Direction.SOUTH;
             }
-            else if (MathHelper.epsilonEquals(pos[0].getY(), 0) && // vertex.position.y
-                    MathHelper.epsilonEquals(pos[1].getY(), 0) &&
-                    MathHelper.epsilonEquals(pos[2].getY(), 0) &&
-                    MathHelper.epsilonEquals(pos[3].getY(), 0) &&
+            else if (MathHelper.approximatelyEquals(pos[0].getY(), 0) && // vertex.position.y
+                    MathHelper.approximatelyEquals(pos[1].getY(), 0) &&
+                    MathHelper.approximatelyEquals(pos[2].getY(), 0) &&
+                    MathHelper.approximatelyEquals(pos[3].getY(), 0) &&
                     norm[0].getY() < 0) // vertex.normal.z
             {
                 cull = Direction.DOWN; // can never remember
             }
-            else if (MathHelper.epsilonEquals(pos[0].getY(), 1) && // vertex.position.y
-                    MathHelper.epsilonEquals(pos[1].getY(), 1) &&
-                    MathHelper.epsilonEquals(pos[2].getY(), 1) &&
-                    MathHelper.epsilonEquals(pos[3].getY(), 1) &&
+            else if (MathHelper.approximatelyEquals(pos[0].getY(), 1) && // vertex.position.y
+                    MathHelper.approximatelyEquals(pos[1].getY(), 1) &&
+                    MathHelper.approximatelyEquals(pos[2].getY(), 1) &&
+                    MathHelper.approximatelyEquals(pos[3].getY(), 1) &&
                     norm[0].getY() > 0) // vertex.normal.y
             {
                 cull = Direction.UP;
@@ -465,13 +470,13 @@ public class OBJModel implements IMultipartModelGeometry<OBJModel>
         return Pair.of(builder.build(), cull);
     }
 
-    private void putVertexData(IVertexConsumer consumer, Vector4f position0, Vec2f texCoord0, Vector3f normal0, Vector4f color0, Vec2f uv2, TextureAtlasSprite texture)
+    private void putVertexData(IVertexConsumer consumer, Vector4f position0, Vec2f texCoord0, Vector3f normal0, Vector4f color0, Vec2f uv2, Sprite texture)
     {
         ImmutableList<VertexFormatElement> elements = consumer.getVertexFormat().getElements();
         for(int j=0;j<elements.size();j++)
         {
             VertexFormatElement e = elements.get(j);
-            switch(e.getUsage())
+            switch(e.getType())
             {
                 case POSITION:
                     consumer.put(j, position0.getX(), position0.getY(), position0.getZ(), position0.getW());
@@ -484,8 +489,8 @@ public class OBJModel implements IMultipartModelGeometry<OBJModel>
                     {
                         case 0:
                             consumer.put(j,
-                                    texture.getInterpolatedU(texCoord0.x * 16),
-                                    texture.getInterpolatedV((flipV ? (1 - texCoord0.y) : texCoord0.y) * 16)
+                                    texture.getFrameU(texCoord0.x * 16),
+                                    texture.getFrameV((flipV ? (1 - texCoord0.y) : texCoord0.y) * 16)
                             );
                             break;
                         case 2:
@@ -524,14 +529,14 @@ public class OBJModel implements IMultipartModelGeometry<OBJModel>
         }
 
         @Override
-        public void addQuads(IModelConfiguration owner, IModelBuilder<?> modelBuilder, ModelBakery bakery, Function<Material, TextureAtlasSprite> spriteGetter, IModelTransform modelTransform, ResourceLocation modelLocation)
+        public void addQuads(IModelConfiguration owner, IModelBuilder<?> modelBuilder, ModelLoader bakery, Function<SpriteIdentifier, Sprite> spriteGetter, ModelBakeSettings modelTransform, Identifier modelLocation)
         {
             for(ModelMesh mesh : meshes)
             {
                 MaterialLibrary.Material mat = mesh.mat;
                 if (mat == null)
                     continue;
-                TextureAtlasSprite texture = spriteGetter.apply(ModelLoaderRegistry.resolveTexture(mat.diffuseColorMap, owner));
+                Sprite texture = spriteGetter.apply(ModelLoaderRegistry.resolveTexture(mat.diffuseColorMap, owner));
                 int tintIndex = mat.diffuseTintIndex;
                 Vector4f colorTint = mat.diffuseColor;
 
@@ -547,7 +552,7 @@ public class OBJModel implements IMultipartModelGeometry<OBJModel>
         }
 
         @Override
-        public Collection<Material> getTextures(IModelConfiguration owner, Function<ResourceLocation, IUnbakedModel> modelGetter, Set<com.mojang.datafixers.util.Pair<String, String>> missingTextureErrors)
+        public Collection<SpriteIdentifier> getTextures(IModelConfiguration owner, Function<Identifier, UnbakedModel> modelGetter, Set<com.mojang.datafixers.util.Pair<String, String>> missingTextureErrors)
         {
             return meshes.stream().map(mesh -> ModelLoaderRegistry.resolveTexture(mesh.mat.diffuseColorMap, owner)).collect(Collectors.toSet());
         }
@@ -568,7 +573,7 @@ public class OBJModel implements IMultipartModelGeometry<OBJModel>
         }
 
         @Override
-        public void addQuads(IModelConfiguration owner, IModelBuilder<?> modelBuilder, ModelBakery bakery, Function<Material, TextureAtlasSprite> spriteGetter, IModelTransform modelTransform, ResourceLocation modelLocation)
+        public void addQuads(IModelConfiguration owner, IModelBuilder<?> modelBuilder, ModelLoader bakery, Function<SpriteIdentifier, Sprite> spriteGetter, ModelBakeSettings modelTransform, Identifier modelLocation)
         {
             super.addQuads(owner, modelBuilder, bakery, spriteGetter, modelTransform, modelLocation);
 
@@ -577,9 +582,9 @@ public class OBJModel implements IMultipartModelGeometry<OBJModel>
         }
 
         @Override
-        public Collection<Material> getTextures(IModelConfiguration owner, Function<ResourceLocation, IUnbakedModel> modelGetter, Set<com.mojang.datafixers.util.Pair<String, String>> missingTextureErrors)
+        public Collection<SpriteIdentifier> getTextures(IModelConfiguration owner, Function<Identifier, UnbakedModel> modelGetter, Set<com.mojang.datafixers.util.Pair<String, String>> missingTextureErrors)
         {
-            Set<Material> combined = Sets.newHashSet();
+            Set<SpriteIdentifier> combined = Sets.newHashSet();
             combined.addAll(super.getTextures(owner, modelGetter, missingTextureErrors));
             for (IModelGeometryPart part : getParts())
                 combined.addAll(part.getTextures(owner, modelGetter, missingTextureErrors));
@@ -605,7 +610,7 @@ public class OBJModel implements IMultipartModelGeometry<OBJModel>
     public static class ModelSettings
     {
         @Nonnull
-        public final ResourceLocation modelLocation;
+        public final Identifier modelLocation;
         public final boolean detectCullableFaces;
         public final boolean diffuseLighting;
         public final boolean flipV;
@@ -613,7 +618,7 @@ public class OBJModel implements IMultipartModelGeometry<OBJModel>
         @Nullable
         public final String materialLibraryOverrideLocation;
 
-        public ModelSettings(@Nonnull ResourceLocation modelLocation, boolean detectCullableFaces, boolean diffuseLighting, boolean flipV, boolean ambientToFullbright,
+        public ModelSettings(@Nonnull Identifier modelLocation, boolean detectCullableFaces, boolean diffuseLighting, boolean flipV, boolean ambientToFullbright,
                              @Nullable String materialLibraryOverrideLocation)
         {
             this.modelLocation = modelLocation;

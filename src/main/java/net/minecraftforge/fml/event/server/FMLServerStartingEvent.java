@@ -20,8 +20,8 @@
 package net.minecraftforge.fml.event.server;
 
 import com.mojang.brigadier.CommandDispatcher;
-import net.minecraft.command.CommandSource;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.ServerCommandSource;
 
 /**
  * Called after {@link FMLServerAboutToStartEvent} and before {@link FMLServerStartedEvent}.
@@ -37,7 +37,7 @@ public class FMLServerStartingEvent extends ServerLifecycleEvent
         super(server);
     }
 
-    public CommandDispatcher<CommandSource> getCommandDispatcher() {
+    public CommandDispatcher<ServerCommandSource> getCommandDispatcher() {
         return server.getCommandManager().getDispatcher();
     }
 }

@@ -40,6 +40,11 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import net.minecraft.client.renderer.*;
+import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.client.util.math.Rotation3;
+import net.minecraft.client.util.math.Vector3f;
+import net.minecraft.client.util.math.Vector4f;
+import net.minecraft.util.math.Quaternion;
 import net.minecraft.util.math.Vec2f;
 import net.minecraftforge.versions.forge.ForgeVersion;
 import org.apache.commons.io.IOUtils;
@@ -663,7 +668,7 @@ public class B3DModel
             Matrix4f t = new Matrix4f();
             if(mesh.getWeightMap().get(this).isEmpty())
             {
-                t.setIdentity();
+                t.loadIdentity();
             }
             else
             {
@@ -671,14 +676,14 @@ public class B3DModel
                 {
                     totalWeight += bone.getLeft();
                     Matrix4f bm = animator.apply(bone.getRight());
-                    bm.mul(bone.getLeft());
+                    bm.multiply(bone.getLeft());
                     t.add(bm);
                 }
-                if(Math.abs(totalWeight) > 1e-4) t.mul(1f / totalWeight);
-                else t.setIdentity();
+                if(Math.abs(totalWeight) > 1e-4) t.multiply(1f / totalWeight);
+                else t.loadIdentity();
             }
 
-            TransformationMatrix trsr = new TransformationMatrix(t);
+            Rotation3 trsr = new Rotation3(t);
 
             // pos
             Vector4f pos = new Vector4f(this.pos);
@@ -785,9 +790,9 @@ public class B3DModel
         public static Vector3f getNormal(Vertex v1, Vertex v2, Vertex v3)
         {
             Vector3f a = v2.getPos().copy();
-            a.sub(v1.getPos());
+            a.subtract(v1.getPos());
             Vector3f b = v3.getPos().copy();
-            b.sub(v1.getPos());
+            b.subtract(v1.getPos());
             Vector3f c = a.copy();
             c.cross(b);
             c.normalize();

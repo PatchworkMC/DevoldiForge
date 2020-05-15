@@ -1,0 +1,11 @@
+--- a/net/minecraft/container/PlayerContainer.java
++++ b/net/minecraft/container/PlayerContainer.java
+@@ -52,7 +52,7 @@
+             }
+ 
+             public boolean canInsert(ItemStack stack) {
+-               return equipmentslottype == MobEntity.getPreferredEquipmentSlot(stack);
++               return stack.canEquip(equipmentslottype, owner);
+             }
+ 
+             public boolean canTakeItems(PlayerEntity playerIn) {

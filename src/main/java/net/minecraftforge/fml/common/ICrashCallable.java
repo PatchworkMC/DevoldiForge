@@ -19,9 +19,9 @@
 
 package net.minecraftforge.fml.common;
 
-import net.minecraft.crash.ICrashReportDetail;
+import net.minecraft.util.crash.CrashCallable;
 
-public interface ICrashCallable extends ICrashReportDetail<String>
+public interface ICrashCallable extends CrashCallable<String>
 {
     String getLabel();
 }

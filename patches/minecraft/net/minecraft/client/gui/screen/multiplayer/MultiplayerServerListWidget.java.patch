@@ -1,0 +1,11 @@
+--- a/net/minecraft/client/gui/screen/multiplayer/MultiplayerServerListWidget.java
++++ b/net/minecraft/client/gui/screen/multiplayer/MultiplayerServerListWidget.java
+@@ -297,6 +297,8 @@
+             this.screen.setTooltip(s);
+          }
+ 
++         net.minecraftforge.fml.client.ClientHooks.drawForgePingInfo(this.screen, server, p_render_3_, p_render_2_, p_render_4_, i1, j1);
++
+          if (this.client.options.touchscreen || p_render_8_) {
+             this.client.getTextureManager().bindTexture(MultiplayerServerListWidget.SERVER_SELECTION_TEXTURE);
+             DrawableHelper.fill(p_render_3_, p_render_2_, p_render_3_ + 32, p_render_2_ + 32, -1601138544);

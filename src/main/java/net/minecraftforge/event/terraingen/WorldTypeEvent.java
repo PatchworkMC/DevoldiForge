@@ -19,9 +19,7 @@
 
 package net.minecraftforge.event.terraingen;
 
-import net.minecraft.world.WorldType;
-import net.minecraft.world.biome.provider.BiomeProvider;
-import net.minecraft.world.gen.layer.Layer;
+import net.minecraft.world.level.LevelGeneratorType;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.Cancelable;
 import net.minecraftforge.eventbus.api.Event;
@@ -38,14 +36,14 @@ import net.minecraftforge.eventbus.api.Event.HasResult;
  **/
 public class WorldTypeEvent extends Event
 {
-    private final WorldType worldType;
+    private final LevelGeneratorType worldType;
 
-    public WorldTypeEvent(WorldType worldType)
+    public WorldTypeEvent(LevelGeneratorType worldType)
     {
         this.worldType = worldType;
     }
 
-    public WorldType getWorldType()
+    public LevelGeneratorType getWorldType()
     {
         return worldType;
     }
@@ -70,7 +68,7 @@ public class WorldTypeEvent extends Event
         private final int originalSize;
         private int newSize;
 
-        public BiomeSize(WorldType worldType, int original)
+        public BiomeSize(LevelGeneratorType worldType, int original)
         {
             super(worldType);
             originalSize = original;

@@ -1,0 +1,27 @@
+--- a/net/minecraft/world/level/storage/LevelStorage.java
++++ b/net/minecraft/world/level/storage/LevelStorage.java
+@@ -141,13 +141,23 @@
+ 
+    @Nullable
+    public static LevelProperties readLevelProperties(File p_215780_0_, DataFixer p_215780_1_) {
++       return getWorldData(p_215780_0_, p_215780_1_, null);
++   }
++
++   @Nullable
++   public static LevelProperties getWorldData(File p_215780_0_, DataFixer p_215780_1_, @Nullable WorldSaveHandler saveHandler) {
+       try {
+          CompoundTag compoundnbt = NbtIo.readCompressed(new FileInputStream(p_215780_0_));
+          CompoundTag compoundnbt1 = compoundnbt.getCompound("Data");
+          CompoundTag compoundnbt2 = compoundnbt1.contains("Player", 10) ? compoundnbt1.getCompound("Player") : null;
+          compoundnbt1.remove("Player");
+          int i = compoundnbt1.contains("DataVersion", 99) ? compoundnbt1.getInt("DataVersion") : -1;
+-         return new LevelProperties(NbtHelper.update(p_215780_1_, DataFixTypes.LEVEL, compoundnbt1, i), p_215780_1_, i, compoundnbt2);
++         LevelProperties ret = new LevelProperties(NbtHelper.update(p_215780_1_, DataFixTypes.LEVEL, compoundnbt1, i), p_215780_1_, i, compoundnbt2);
++         if (saveHandler != null)
++            net.minecraftforge.fml.WorldPersistenceHooks.handleWorldDataLoad(saveHandler, ret, compoundnbt);
++         return ret;
++      } catch (net.minecraftforge.fml.StartupQuery.AbortedException e) {
++          throw e;
+       } catch (Exception exception) {
+          LOGGER.error("Exception reading {}", p_215780_0_, exception);
+          return null;

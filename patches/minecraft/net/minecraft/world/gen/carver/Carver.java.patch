@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/gen/carver/Carver.java
++++ b/net/minecraft/world/gen/carver/Carver.java
+@@ -22,7 +22,7 @@
+ import net.minecraft.world.chunk.Chunk;
+ import net.minecraft.world.gen.ProbabilityConfig;
+ 
+-public abstract class Carver<C extends CarverConfig> {
++public abstract class Carver<C extends CarverConfig> extends net.minecraftforge.registries.ForgeRegistryEntry<Carver<?>> {
+    public static final Carver<ProbabilityConfig> CAVE = register("cave", new CaveCarver(ProbabilityConfig::deserialize, 256));
+    public static final Carver<ProbabilityConfig> HELL_CAVE = register("hell_cave", new NetherCaveCarver(ProbabilityConfig::deserialize));
+    public static final Carver<ProbabilityConfig> CANYON = register("canyon", new RavineCarver(ProbabilityConfig::deserialize));

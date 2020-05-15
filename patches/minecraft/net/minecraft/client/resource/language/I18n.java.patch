@@ -1,0 +1,10 @@
+--- a/net/minecraft/client/resource/language/I18n.java
++++ b/net/minecraft/client/resource/language/I18n.java
+@@ -11,6 +11,7 @@
+ 
+    static void setLanguage(TranslationStorage i18nLocaleIn) {
+       storage = i18nLocaleIn;
++      net.minecraftforge.fml.ForgeI18n.loadLanguageData(storage.translations);
+    }
+ 
+    public static String translate(String translateKey, Object... parameters) {

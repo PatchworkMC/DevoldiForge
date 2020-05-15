@@ -1,0 +1,10 @@
+--- a/net/minecraft/data/server/RecipesProvider.java
++++ b/net/minecraft/data/server/RecipesProvider.java
+@@ -66,6 +66,7 @@
+ 
+          }
+       });
++      if (this.getClass() == RecipesProvider.class) //Forge: Subclasses don't need this.
+       this.saveRecipeAdvancement(cache, Advancement.Task.create().criterion("impossible", new ImpossibleCriterion.Conditions()).toJson(), path.resolve("data/minecraft/advancements/recipes/root.json"));
+    }
+ 

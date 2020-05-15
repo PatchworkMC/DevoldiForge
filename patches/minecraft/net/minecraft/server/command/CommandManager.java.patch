@@ -1,0 +1,19 @@
+--- a/net/minecraft/server/command/CommandManager.java
++++ b/net/minecraft/server/command/CommandManager.java
+@@ -140,7 +140,15 @@
+ 
+       try {
+          try {
+-            int lvt_4_3_ = this.dispatcher.execute(stringreader, source);
++            com.mojang.brigadier.ParseResults<ServerCommandSource> parse = this.dispatcher.parse(stringreader, source);
++            net.minecraftforge.event.CommandEvent event = new net.minecraftforge.event.CommandEvent(parse);
++            if (net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(event)) {
++               if (event.getException() != null) {
++                  com.google.common.base.Throwables.throwIfUnchecked(event.getException());
++               }
++               return 1;
++            }
++            int lvt_4_3_ = this.dispatcher.execute(event.getParseResults());
+             return lvt_4_3_;
+          } catch (CommandException commandexception) {
+             source.sendError(commandexception.getTextMessage());

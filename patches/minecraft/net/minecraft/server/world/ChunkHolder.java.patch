@@ -1,0 +1,53 @@
+--- a/net/minecraft/server/world/ChunkHolder.java
++++ b/net/minecraft/server/world/ChunkHolder.java
+@@ -138,7 +138,7 @@
+       WorldChunk chunk = this.getWorldChunk();
+       if (chunk != null) {
+          this.sectionsNeedingUpdateMask |= 1 << (y >> 4);
+-         if (this.blockUpdateCount < 64) {
++         { //Forge; Cache everything, so always run
+             short short1 = (short)(x << 12 | z << 8 | y);
+ 
+             for(int i = 0; i < this.blockUpdateCount; ++i) {
+@@ -147,6 +147,8 @@
+                }
+             }
+ 
++            if (this.blockUpdateCount == this.blockUpdatePositions.length)
++               this.blockUpdatePositions = java.util.Arrays.copyOf(this.blockUpdatePositions, this.blockUpdatePositions.length << 1);
+             this.blockUpdatePositions[this.blockUpdateCount++] = short1;
+          }
+ 
+@@ -169,7 +171,7 @@
+    public void flushUpdates(WorldChunk chunkIn) {
+       if (this.blockUpdateCount != 0 || this.skyLightUpdateBits != 0 || this.blockLightUpdateBits != 0) {
+          World world = chunkIn.getWorld();
+-         if (this.blockUpdateCount == 64) {
++         if (this.blockUpdateCount >= net.minecraftforge.common.ForgeConfig.SERVER.clumpingThreshold.get()) {
+             this.lightSentWithBlocksBits = -1;
+          }
+ 
+@@ -192,20 +194,19 @@
+             int k = (this.blockUpdatePositions[0] >> 8 & 15) + this.pos.z * 16;
+             BlockPos blockpos = new BlockPos(l, j1, k);
+             this.sendPacketToPlayersWatching(new BlockUpdateS2CPacket(world, blockpos), false);
+-            if (world.getBlockState(blockpos).getBlock().hasBlockEntity()) {
++            if (world.getBlockState(blockpos).hasTileEntity()) {
+                this.sendBlockEntityUpdatePacket(world, blockpos);
+             }
+-         } else if (this.blockUpdateCount == 64) {
++         } else if (this.blockUpdateCount >= net.minecraftforge.common.ForgeConfig.SERVER.clumpingThreshold.get()) {
+             this.sendPacketToPlayersWatching(new ChunkDataS2CPacket(chunkIn, this.sectionsNeedingUpdateMask), false);
+          } else if (this.blockUpdateCount != 0) {
+             this.sendPacketToPlayersWatching(new ChunkDeltaUpdateS2CPacket(this.blockUpdateCount, this.blockUpdatePositions, chunkIn), false);
+-
+             for(int i1 = 0; i1 < this.blockUpdateCount; ++i1) {
+                int k1 = (this.blockUpdatePositions[i1] >> 12 & 15) + this.pos.x * 16;
+                int l1 = this.blockUpdatePositions[i1] & 255;
+                int i2 = (this.blockUpdatePositions[i1] >> 8 & 15) + this.pos.z * 16;
+                BlockPos blockpos1 = new BlockPos(k1, l1, i2);
+-               if (world.getBlockState(blockpos1).getBlock().hasBlockEntity()) {
++               if (world.getBlockState(blockpos1).hasTileEntity()) {
+                   this.sendBlockEntityUpdatePacket(world, blockpos1);
+                }
+             }

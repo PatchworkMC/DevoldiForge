@@ -19,16 +19,16 @@
 
 package net.minecraftforge.items;
 
+import net.minecraft.container.Slot;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.BasicInventory;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.container.Slot;
 import net.minecraft.item.ItemStack;
 import javax.annotation.Nonnull;
 
 public class SlotItemHandler extends Slot
 {
-    private static IInventory emptyInventory = new Inventory(0);
+    private static Inventory emptyInventory = new BasicInventory(0);
     private final IItemHandler itemHandler;
     private final int index;
 
@@ -40,7 +40,7 @@ public class SlotItemHandler extends Slot
     }
 
     @Override
-    public boolean isItemValid(@Nonnull ItemStack stack)
+    public boolean canInsert(@Nonnull ItemStack stack)
     {
         if (stack.isEmpty())
             return false;
@@ -56,29 +56,29 @@ public class SlotItemHandler extends Slot
 
     // Override if your IItemHandler does not implement IItemHandlerModifiable
     @Override
-    public void putStack(@Nonnull ItemStack stack)
+    public void setStack(@Nonnull ItemStack stack)
     {
         ((IItemHandlerModifiable) this.getItemHandler()).setStackInSlot(index, stack);
-        this.onSlotChanged();
+        this.markDirty();
     }
 
     @Override
-    public void onSlotChange(@Nonnull ItemStack p_75220_1_, @Nonnull ItemStack p_75220_2_)
+    public void onStackChanged(@Nonnull ItemStack oldStackIn, @Nonnull ItemStack newStackIn)
     {
 
     }
 
     @Override
-    public int getSlotStackLimit()
+    public int getMaxStackAmount()
     {
         return this.itemHandler.getSlotLimit(this.index);
     }
 
     @Override
-    public int getItemStackLimit(@Nonnull ItemStack stack)
+    public int getMaxStackAmount(@Nonnull ItemStack stack)
     {
         ItemStack maxAdd = stack.copy();
-        int maxInput = stack.getMaxStackSize();
+        int maxInput = stack.getMaxCount();
         maxAdd.setCount(maxInput);
 
         IItemHandler handler = this.getItemHandler();
@@ -105,14 +105,14 @@ public class SlotItemHandler extends Slot
     }
 
     @Override
-    public boolean canTakeStack(PlayerEntity playerIn)
+    public boolean canTakeItems(PlayerEntity playerIn)
     {
         return !this.getItemHandler().extractItem(index, 1, true).isEmpty();
     }
 
     @Override
     @Nonnull
-    public ItemStack decrStackSize(int amount)
+    public ItemStack takeStack(int amount)
     {
         return this.getItemHandler().extractItem(index, amount, false);
     }

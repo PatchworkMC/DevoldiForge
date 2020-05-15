@@ -1,0 +1,35 @@
+--- a/net/minecraft/client/render/model/json/ModelItemPropertyOverrideList.java
++++ b/net/minecraft/client/render/model/json/ModelItemPropertyOverrideList.java
+@@ -13,6 +13,7 @@
+ import net.minecraft.client.render.model.ModelLoader;
+ import net.minecraft.client.render.model.ModelRotation;
+ import net.minecraft.client.render.model.UnbakedModel;
++import net.minecraft.client.util.SpriteIdentifier;
+ import net.minecraft.entity.LivingEntity;
+ import net.minecraft.item.ItemStack;
+ import net.minecraft.util.Identifier;
+@@ -30,10 +31,14 @@
+       this.models = Collections.emptyList();
+    }
+ 
++   @Deprecated //Forge: Use IUnbakedModel, add texture getter
+    public ModelItemPropertyOverrideList(ModelLoader modelBakeryIn, JsonUnbakedModel blockModelIn, Function<Identifier, UnbakedModel> modelGetter, List<ModelItemOverride> itemOverridesIn) {
++      this(modelBakeryIn, (UnbakedModel)blockModelIn, modelGetter, modelBakeryIn.getSpriteMap()::getSprite, itemOverridesIn);
++   }
++   public ModelItemPropertyOverrideList(ModelLoader modelBakeryIn, UnbakedModel blockModelIn, Function<Identifier, UnbakedModel> modelGetter, Function<SpriteIdentifier, net.minecraft.client.texture.Sprite> textureGetter, List<ModelItemOverride> itemOverridesIn) {
+       this.models = itemOverridesIn.stream().map((p_217649_3_) -> {
+          UnbakedModel iunbakedmodel = modelGetter.apply(p_217649_3_.getModelId());
+-         return Objects.equals(iunbakedmodel, blockModelIn) ? null : modelBakeryIn.bake(p_217649_3_.getModelId(), ModelRotation.X0_Y0);
++         return Objects.equals(iunbakedmodel, blockModelIn) ? null : modelBakeryIn.getBakedModel(p_217649_3_.getModelId(), ModelRotation.X0_Y0, textureGetter);
+       }).collect(Collectors.toList());
+       Collections.reverse(this.models);
+ 
+@@ -61,4 +66,8 @@
+ 
+       return model;
+    }
++
++   public com.google.common.collect.ImmutableList<ModelItemOverride> getOverrides() {
++      return com.google.common.collect.ImmutableList.copyOf(overrides);
++   }
+ }

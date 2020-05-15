@@ -1,0 +1,13 @@
+--- a/net/minecraft/tag/EntityTypeTags.java
++++ b/net/minecraft/tag/EntityTypeTags.java
+@@ -24,6 +24,10 @@
+       return container;
+    }
+ 
++   public static int getGeneration() {
++      return latestVersion;
++   }
++
+    private static Tag<EntityType<?>> register(String p_219763_0_) {
+       return new EntityTypeTags.CachingTag(new Identifier(p_219763_0_));
+    }

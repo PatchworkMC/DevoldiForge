@@ -1,0 +1,27 @@
+--- a/net/minecraft/command/arguments/BlockArgumentParser.java
++++ b/net/minecraft/command/arguments/BlockArgumentParser.java
+@@ -168,13 +168,13 @@
+ 
+    private boolean hasBlockEntity() {
+       if (this.blockState != null) {
+-         return this.blockState.getBlock().hasBlockEntity();
++         return this.blockState.hasTileEntity();
+       } else {
+          if (this.tagId != null) {
+             Tag<Block> tag = BlockTags.getContainer().get(this.tagId);
+             if (tag != null) {
+                for(Block block : tag.values()) {
+-                  if (block.hasBlockEntity()) {
++                  if (block.getDefaultState().hasTileEntity()) {
+                      return true;
+                   }
+                }
+@@ -291,7 +291,7 @@
+             builder.suggest(String.valueOf('['));
+          }
+ 
+-         if (this.blockState.getBlock().hasBlockEntity()) {
++         if (this.blockState.hasTileEntity()) {
+             builder.suggest(String.valueOf('{'));
+          }
+       }

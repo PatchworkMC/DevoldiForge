@@ -20,7 +20,7 @@
 package net.minecraftforge.event.world;
 
 import net.minecraft.world.IWorld;
-import net.minecraft.world.chunk.IChunk;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
 
 /**
@@ -34,21 +34,21 @@ import net.minecraftforge.common.MinecraftForge;
  **/
 public class ChunkEvent extends WorldEvent
 {
-    private final IChunk chunk;
+    private final Chunk chunk;
 
-    public ChunkEvent(IChunk chunk)
+    public ChunkEvent(Chunk chunk)
     {
         super(chunk.getWorldForge());
         this.chunk = chunk;
     }
 
-    public ChunkEvent(IChunk chunk, IWorld world)
+    public ChunkEvent(Chunk chunk, IWorld world)
     {
         super(world);
         this.chunk = chunk;
     }
 
-    public IChunk getChunk()
+    public Chunk getChunk()
     {
         return chunk;
     }
@@ -67,7 +67,7 @@ public class ChunkEvent extends WorldEvent
      **/
     public static class Load extends ChunkEvent
     {
-        public Load(IChunk chunk)
+        public Load(Chunk chunk)
         {
             super(chunk);
         }
@@ -86,7 +86,7 @@ public class ChunkEvent extends WorldEvent
      **/
     public static class Unload extends ChunkEvent
     {
-        public Unload(IChunk chunk)
+        public Unload(Chunk chunk)
         {
             super(chunk);
         }

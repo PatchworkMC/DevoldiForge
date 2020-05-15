@@ -1,0 +1,15 @@
+--- a/net/minecraft/server/ServerAdvancementLoader.java
++++ b/net/minecraft/server/ServerAdvancementLoader.java
+@@ -40,7 +40,11 @@
+       Map<Identifier, Advancement.Task> map = Maps.newHashMap();
+       objectIn.forEach((p_223387_1_, p_223387_2_) -> {
+          try {
+-            Advancement.Task advancement$builder = GSON.fromJson(p_223387_2_, Advancement.Task.class);
++            Advancement.Task advancement$builder = net.minecraftforge.common.crafting.ConditionalAdvancement.read(GSON, p_223387_1_, p_223387_2_);
++            if (advancement$builder == null) {
++               LOGGER.info("Skipping loading advancement {} as it's conditions were not met", p_223387_1_);
++               return;
++            }
+             map.put(p_223387_1_, advancement$builder);
+          } catch (IllegalArgumentException | JsonParseException jsonparseexception) {
+             LOGGER.error("Parsing error loading custom advancement {}: {}", p_223387_1_, jsonparseexception.getMessage());

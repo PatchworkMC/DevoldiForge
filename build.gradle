@@ -8,11 +8,15 @@ buildscript {
             name 'maven_central'
             url 'https://repo.maven.apache.org/maven2/'
         }
+	    mavenLocal()
+           maven { url 'https://oss.sonatype.org/content/groups/public/' }
+	    maven { url 'https://maven.fabricmc.net'}
     }
     dependencies {
         classpath 'net.minecraftforge.gradle:ForgeGradle:3.+'
         classpath 'org.ow2.asm:asm:7.2'
         classpath 'org.ow2.asm:asm-tree:7.2'
+	    classpath 'me.ramidzkh:yarnforge-plugin:1.2.0-LOCAL-SNAPSHOT'
     }
 }
 import groovy.json.JsonSlurper
@@ -64,7 +68,7 @@ ext {
         ]
     }
     MAPPING_CHANNEL = 'snapshot'
-    MAPPING_VERSION = '20200225-1.15.1'
+    MAPPING_VERSION = '20200514-1.15.1'
     MC_VERSION = '1.15.2'
     MCP_VERSION = '20200515.085601'
 }
@@ -1250,6 +1254,7 @@ project(':forge') {
     }
 }
 
+apply plugin: 'yarnforge-plugin'
 def dateToIso8601(date) {
     def format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
     def result = format.format(date)

@@ -35,19 +35,18 @@ import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-
-import net.minecraft.client.renderer.Vector3f;
-import net.minecraft.client.renderer.model.BlockFaceUV;
-import net.minecraft.client.renderer.model.BlockPart;
-import net.minecraft.client.renderer.model.BlockPartFace;
-import net.minecraft.client.renderer.model.BlockPartRotation;
-import net.minecraft.client.renderer.model.ItemCameraTransforms.TransformType;
-import net.minecraft.client.renderer.model.ItemTransformVec3f;
-import net.minecraft.client.renderer.model.BlockModel.GuiLight;
-import net.minecraft.client.renderer.texture.MissingTextureSprite;
-import net.minecraft.resources.ResourcePackType;
-import net.minecraft.util.Direction;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.render.model.json.JsonUnbakedModel.GuiLight;
+import net.minecraft.client.render.model.json.ModelElement;
+import net.minecraft.client.render.model.json.ModelElementFace;
+import net.minecraft.client.render.model.json.ModelElementTexture;
+import net.minecraft.client.render.model.json.ModelRotation;
+import net.minecraft.client.render.model.json.ModelTransformation.Mode;
+import net.minecraft.client.render.model.json.Transformation;
+import net.minecraft.client.texture.MissingSprite;
+import net.minecraft.client.util.math.Vector3f;
+import net.minecraft.resource.ResourceType;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 
 /**
@@ -74,7 +73,7 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
 
     protected final List<ElementBuilder> elements = new ArrayList<>();
 
-    protected ModelBuilder(ResourceLocation outputLocation, ExistingFileHelper existingFileHelper) {
+    protected ModelBuilder(Identifier outputLocation, ExistingFileHelper existingFileHelper) {
         super(outputLocation);
         this.existingFileHelper = existingFileHelper;
     }
@@ -121,11 +120,11 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
             this.textures.put(key, texture);
             return self();
         } else {
-            ResourceLocation asLoc;
+            Identifier asLoc;
             if (texture.contains(":")) {
-                asLoc = new ResourceLocation(texture);
+                asLoc = new Identifier(texture);
             } else {
-                asLoc = new ResourceLocation(getLocation().getNamespace(), texture);
+                asLoc = new Identifier(getLocation().getNamespace(), texture);
             }
             return texture(key, asLoc);
         }
@@ -143,10 +142,10 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
      *                               with {@code '#'}) and does not exist in any
      *                               known resource pack
      */
-    public T texture(String key, ResourceLocation texture) {
+    public T texture(String key, Identifier texture) {
         Preconditions.checkNotNull(key, "Key must not be null");
         Preconditions.checkNotNull(texture, "Texture must not be null");
-        Preconditions.checkArgument(existingFileHelper.exists(texture, ResourcePackType.CLIENT_RESOURCES, ".png", "textures"),
+        Preconditions.checkArgument(existingFileHelper.exists(texture, ResourceType.CLIENT_RESOURCES, ".png", "textures"),
                 "Texture %s does not exist in any known resource pack", texture);
         this.textures.put(key, texture.toString());
         return self();
@@ -209,20 +208,20 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
             root.addProperty("gui_light", this.guiLight.getSerializedName());
         }
 
-        Map<Perspective, ItemTransformVec3f> transforms = this.transforms.build();
+        Map<Perspective, Transformation> transforms = this.transforms.build();
         if (!transforms.isEmpty()) {
             JsonObject display = new JsonObject();
-            for (Entry<Perspective, ItemTransformVec3f> e : transforms.entrySet()) {
+            for (Entry<Perspective, Transformation> e : transforms.entrySet()) {
                 JsonObject transform = new JsonObject();
-                ItemTransformVec3f vec = e.getValue();
-                if (vec.equals(ItemTransformVec3f.DEFAULT)) continue;
-                if (!vec.rotation.equals(ItemTransformVec3f.Deserializer.ROTATION_DEFAULT)) {
+                Transformation vec = e.getValue();
+                if (vec.equals(Transformation.IDENTITY)) continue;
+                if (!vec.rotation.equals(Transformation.Deserializer.DEFAULT_ROATATION)) {
                     transform.add("rotation", serializeVector3f(vec.rotation));
                 }
-                if (!vec.translation.equals(ItemTransformVec3f.Deserializer.TRANSLATION_DEFAULT)) {
+                if (!vec.translation.equals(Transformation.Deserializer.DEFAULT_TRANSLATION)) {
                     transform.add("translation", serializeVector3f(e.getValue().translation));
                 }
-                if (!vec.scale.equals(ItemTransformVec3f.Deserializer.SCALE_DEFAULT)) {
+                if (!vec.scale.equals(Transformation.Deserializer.DEFAULT_SCALE)) {
                     transform.add("scale", serializeVector3f(e.getValue().scale));
                 }
                 display.add(e.getKey().name, transform);
@@ -242,16 +241,16 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
             JsonArray elements = new JsonArray();
             this.elements.stream().map(ElementBuilder::build).forEach(part -> { 
                 JsonObject partObj = new JsonObject();
-                partObj.add("from", serializeVector3f(part.positionFrom));
-                partObj.add("to", serializeVector3f(part.positionTo));
+                partObj.add("from", serializeVector3f(part.from));
+                partObj.add("to", serializeVector3f(part.to));
 
-                if (part.partRotation != null) {
+                if (part.rotation != null) {
                     JsonObject rotation = new JsonObject();
-                    rotation.add("origin", serializeVector3f(part.partRotation.origin));
-                    rotation.addProperty("axis", part.partRotation.axis.getName());
-                    rotation.addProperty("angle", part.partRotation.angle);
-                    if (part.partRotation.rescale) {
-                        rotation.addProperty("rescale", part.partRotation.rescale);
+                    rotation.add("origin", serializeVector3f(part.rotation.origin));
+                    rotation.addProperty("axis", part.rotation.axis.asString());
+                    rotation.addProperty("angle", part.rotation.angle);
+                    if (part.rotation.rescale) {
+                        rotation.addProperty("rescale", part.rotation.rescale);
                     }
                     partObj.add("rotation", rotation);
                 }
@@ -262,26 +261,26 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
 
                 JsonObject faces = new JsonObject();
                 for (Direction dir : Direction.values()) {
-                    BlockPartFace face = part.mapFaces.get(dir);
+                    ModelElementFace face = part.faces.get(dir);
                     if (face == null) continue;
 
                     JsonObject faceObj = new JsonObject();
-                    faceObj.addProperty("texture", serializeLocOrKey(face.texture));
-                    if (!Arrays.equals(face.blockFaceUV.uvs, part.getFaceUvs(dir))) {
-                        faceObj.add("uv", new Gson().toJsonTree(face.blockFaceUV.uvs));
+                    faceObj.addProperty("texture", serializeLocOrKey(face.textureId));
+                    if (!Arrays.equals(face.textureData.uvs, part.getRotatedMatrix(dir))) {
+                        faceObj.add("uv", new Gson().toJsonTree(face.textureData.uvs));
                     }
                     if (face.cullFace != null) {
-                        faceObj.addProperty("cullface", face.cullFace.getName());
+                        faceObj.addProperty("cullface", face.cullFace.asString());
                     }
-                    if (face.blockFaceUV.rotation != 0) {
-                        faceObj.addProperty("rotation", face.blockFaceUV.rotation);
+                    if (face.textureData.rotation != 0) {
+                        faceObj.addProperty("rotation", face.textureData.rotation);
                     }
                     if (face.tintIndex != -1) {
                         faceObj.addProperty("tintindex", face.tintIndex);
                     }
-                    faces.add(dir.getName(), faceObj);
+                    faces.add(dir.asString(), faceObj);
                 }
-                if (!part.mapFaces.isEmpty()) {
+                if (!part.faces.isEmpty()) {
                     partObj.add("faces", faces);
                 }
                 elements.add(partObj);
@@ -296,10 +295,10 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
         if (tex.charAt(0) == '#') {
             return tex;
         }
-        return serializeLoc(new ResourceLocation(tex));
+        return serializeLoc(new Identifier(tex));
     }
 
-    String serializeLoc(ResourceLocation loc) {
+    String serializeLoc(Identifier loc) {
         if (loc.getNamespace().equals("minecraft")) {
             return loc.getPath();
         }
@@ -464,10 +463,10 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
             return ($, f) -> f.texture(texture);
         }
 
-        BlockPart build() {
-            Map<Direction, BlockPartFace> faces = this.faces.entrySet().stream()
+        ModelElement build() {
+            Map<Direction, ModelElementFace> faces = this.faces.entrySet().stream()
                     .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().build(), (k1, k2) -> { throw new IllegalArgumentException(); }, LinkedHashMap::new));
-            return new BlockPart(from, to, faces, rotation == null ? null : rotation.build(), shade);
+            return new ModelElement(from, to, faces, rotation == null ? null : rotation.build(), shade);
         }
 
         public T end() { return self(); }
@@ -476,7 +475,7 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
 
             private Direction cullface;
             private int tintindex = -1;
-            private String texture = MissingTextureSprite.getLocation().toString();
+            private String texture = MissingSprite.getMissingSpriteId().toString();
             private float[] uvs;
             private FaceRotation rotation = FaceRotation.ZERO;
 
@@ -525,11 +524,11 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
                 return this;
             }
 
-            BlockPartFace build() {
+            ModelElementFace build() {
                 if (this.texture == null) {
                     throw new IllegalStateException("A model face must have a texture");
                 }
-                return new BlockPartFace(cullface, tintindex, texture, new BlockFaceUV(uvs, rotation.rotation));
+                return new ModelElementFace(cullface, tintindex, texture, new ModelElementTexture(uvs, rotation.rotation));
             }
 
             public ElementBuilder end() { return ElementBuilder.this; }
@@ -575,8 +574,8 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
                 return this;
             }
 
-            BlockPartRotation build() {
-                return new BlockPartRotation(origin, axis, angle, rescale);
+            ModelRotation build() {
+                return new ModelRotation(origin, axis, angle, rescale);
             }
 
             public ElementBuilder end() { return ElementBuilder.this; }
@@ -600,20 +599,20 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
     // Since vanilla doesn't keep the name in TransformType...
     public enum Perspective {
 
-        THIRDPERSON_RIGHT(TransformType.THIRD_PERSON_RIGHT_HAND, "thirdperson_righthand"),
-        THIRDPERSON_LEFT(TransformType.THIRD_PERSON_LEFT_HAND, "thirdperson_lefthand"),
-        FIRSTPERSON_RIGHT(TransformType.FIRST_PERSON_RIGHT_HAND, "firstperson_righthand"),
-        FIRSTPERSON_LEFT(TransformType.FIRST_PERSON_LEFT_HAND, "firstperson_lefthand"),
-        HEAD(TransformType.HEAD, "head"),
-        GUI(TransformType.GUI, "gui"),
-        GROUND(TransformType.GROUND, "ground"),
-        FIXED(TransformType.FIXED, "fixed"),
+        THIRDPERSON_RIGHT(Mode.THIRD_PERSON_RIGHT_HAND, "thirdperson_righthand"),
+        THIRDPERSON_LEFT(Mode.THIRD_PERSON_LEFT_HAND, "thirdperson_lefthand"),
+        FIRSTPERSON_RIGHT(Mode.FIRST_PERSON_RIGHT_HAND, "firstperson_righthand"),
+        FIRSTPERSON_LEFT(Mode.FIRST_PERSON_LEFT_HAND, "firstperson_lefthand"),
+        HEAD(Mode.HEAD, "head"),
+        GUI(Mode.GUI, "gui"),
+        GROUND(Mode.GROUND, "ground"),
+        FIXED(Mode.FIXED, "fixed"),
         ;
 
-        public final TransformType vanillaType;
+        public final Mode vanillaType;
         final String name;
 
-        private Perspective(TransformType vanillaType, String name) {
+        private Perspective(Mode vanillaType, String name) {
             this.vanillaType = vanillaType;
             this.name = name;
         }
@@ -635,7 +634,7 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
             return transforms.computeIfAbsent(type, TransformVecBuilder::new);
         }
 
-        Map<Perspective, ItemTransformVec3f> build() {
+        Map<Perspective, Transformation> build() {
             return this.transforms.entrySet().stream()
                     .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().build(), (k1, k2) -> { throw new IllegalArgumentException(); }, LinkedHashMap::new));
         }
@@ -671,8 +670,8 @@ public class ModelBuilder<T extends ModelBuilder<T>> extends ModelFile {
                 return this;
             }
 
-            ItemTransformVec3f build() {
-                return new ItemTransformVec3f(rotation, translation, scale);
+            Transformation build() {
+                return new Transformation(rotation, translation, scale);
             }
 
             public TransformsBuilder end() { return TransformsBuilder.this; }

@@ -1,0 +1,109 @@
+--- a/net/minecraft/recipe/Ingredient.java
++++ b/net/minecraft/recipe/Ingredient.java
+@@ -28,6 +28,12 @@
+ import net.minecraft.util.registry.Registry;
+ 
+ public class Ingredient implements Predicate<ItemStack> {
++   //Because Mojang caches things... we need to invalidate them.. so... here we go..
++   private static final java.util.Set<Ingredient> INSTANCES = java.util.Collections.newSetFromMap(new java.util.WeakHashMap<Ingredient, Boolean>());
++   public static void invalidateAll() {
++      INSTANCES.stream().filter(e -> e != null).forEach(i -> i.invalidate());
++   }
++
+    private static final Predicate<? super Ingredient.Entry> NON_EMPTY = (p_209361_0_) -> {
+       return !p_209361_0_.getStacks().stream().allMatch(ItemStack::isEmpty);
+    };
+@@ -35,11 +41,14 @@
+    private final Ingredient.Entry[] entries;
+    private ItemStack[] matchingStacks;
+    private IntList ids;
++   private final boolean isSimple;
+ 
+    protected Ingredient(Stream<? extends Ingredient.Entry> itemLists) {
+       this.entries = itemLists.filter(NON_EMPTY).toArray((p_209360_0_) -> {
+          return new Ingredient.Entry[p_209360_0_];
+       });
++      this.isSimple = !Arrays.stream(entries).anyMatch(list -> list.getStacks().stream().anyMatch(stack -> stack.getItem().isDamageable()));
++      Ingredient.INSTANCES.add(this);
+    }
+ 
+    public ItemStack[] getMatchingStacksClient() {
+@@ -93,6 +102,10 @@
+ 
+    public final void write(PacketByteBuf buffer) {
+       this.cacheMatchingStacks();
++      if (!this.isVanilla()) {
++         net.minecraftforge.common.crafting.CraftingHelper.write(buffer, this);
++         return;
++      }
+       buffer.writeVarInt(this.matchingStacks.length);
+ 
+       for(int i = 0; i < this.matchingStacks.length; ++i) {
+@@ -119,6 +132,25 @@
+       return this.entries.length == 0 && (this.matchingStacks == null || this.matchingStacks.length == 0) && (this.ids == null || this.ids.isEmpty());
+    }
+ 
++   protected void invalidate() {
++      this.matchingStacks = null;
++      this.ids = null;
++   }
++
++   public boolean isSimple() {
++      return isSimple || this == EMPTY;
++   }
++
++   private final boolean isVanilla = this.getClass() == Ingredient.class;
++   public final boolean isVanilla() {
++       return isVanilla;
++   }
++
++   public net.minecraftforge.common.crafting.IIngredientSerializer<? extends Ingredient> getSerializer() {
++      if (!isVanilla()) throw new IllegalStateException("Modderrs must implement Ingredient.getSerializer in their custom Ingredients: " + this);
++      return net.minecraftforge.common.crafting.VanillaIngredientSerializer.INSTANCE;
++   }
++
+    public static Ingredient ofEntries(Stream<? extends Ingredient.Entry> stream) {
+       Ingredient ingredient = new Ingredient(stream);
+       return ingredient.entries.length == 0 ? EMPTY : ingredient;
+@@ -142,6 +174,9 @@
+ 
+    public static Ingredient fromPacket(PacketByteBuf buffer) {
+       int i = buffer.readVarInt();
++      if (i == -1) {
++         return net.minecraftforge.common.crafting.CraftingHelper.getIngredient(buffer.readIdentifier(), buffer);
++      }
+       return ofEntries(Stream.generate(() -> {
+          return new Ingredient.StackEntry(buffer.readItemStack());
+       }).limit((long)i));
+@@ -149,6 +184,8 @@
+ 
+    public static Ingredient fromJson(@Nullable JsonElement json) {
+       if (json != null && !json.isJsonNull()) {
++         Ingredient ret = net.minecraftforge.common.crafting.CraftingHelper.getIngredient(json);
++         if (ret != null) return ret;
+          if (json.isJsonObject()) {
+             return ofEntries(Stream.of(entryFromJson(json.getAsJsonObject())));
+          } else if (json.isJsonArray()) {
+@@ -190,6 +227,12 @@
+       }
+    }
+ 
++   //Merges several vanilla Ingredients together. As a qwerk of how the json is structured, we can't tell if its a single Ingredient type or multiple so we split per item and remerge here.
++   //Only public for internal use, so we can access a private field in here.
++   public static Ingredient merge(Collection<Ingredient> parts) {
++      return ofEntries(parts.stream().flatMap(i -> Arrays.stream(i.entries)));
++   }
++
+    public interface Entry {
+       Collection<ItemStack> getStacks();
+ 
+@@ -228,6 +271,9 @@
+             list.add(new ItemStack(item));
+          }
+ 
++         if (list.size() == 0 && !net.minecraftforge.common.ForgeConfig.SERVER.treatEmptyTagsAsAir.get()) {
++            list.add(new ItemStack(net.minecraft.block.Blocks.BARRIER).setCustomName(new net.minecraft.text.LiteralText("Empty Tag: " + tag.getId().toString())));
++         }
+          return list;
+       }
+ 

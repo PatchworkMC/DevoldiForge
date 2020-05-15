@@ -1,0 +1,142 @@
+--- a/net/minecraft/loot/LootPool.java
++++ b/net/minecraft/loot/LootPool.java
+@@ -29,17 +29,19 @@
+ import org.apache.commons.lang3.mutable.MutableInt;
+ 
+ public class LootPool {
+-   private final LootEntry[] entries;
+-   private final LootCondition[] conditions;
++   private final String name;
++   private final List<LootEntry> entries;
++   private final List<LootCondition> conditions;
+    private final Predicate<LootContext> predicate;
+    private final LootFunction[] functions;
+    private final BiFunction<ItemStack, LootContext, ItemStack> javaFunctions;
+    private LootTableRange rollsRange;
+    private UniformLootTableRange bonusRollsRange;
+ 
+-   private LootPool(LootEntry[] p_i51268_1_, LootCondition[] p_i51268_2_, LootFunction[] p_i51268_3_, LootTableRange p_i51268_4_, UniformLootTableRange p_i51268_5_) {
+-      this.entries = p_i51268_1_;
+-      this.conditions = p_i51268_2_;
++   private LootPool(LootEntry[] p_i51268_1_, LootCondition[] p_i51268_2_, LootFunction[] p_i51268_3_, LootTableRange p_i51268_4_, UniformLootTableRange p_i51268_5_, String name) {
++      this.name = name;
++      this.entries = Lists.newArrayList(p_i51268_1_);
++      this.conditions = Lists.newArrayList(p_i51268_2_);
+       this.predicate = LootConditions.joinAnd(p_i51268_2_);
+       this.functions = p_i51268_3_;
+       this.javaFunctions = LootFunctions.join(p_i51268_3_);
+@@ -96,16 +98,16 @@
+    }
+ 
+    public void check(LootTableReporter p_227505_1_) {
+-      for(int i = 0; i < this.conditions.length; ++i) {
+-         this.conditions[i].check(p_227505_1_.makeChild(".condition[" + i + "]"));
++      for(int i = 0; i < this.conditions.size(); ++i) {
++         this.conditions.get(i).check(p_227505_1_.makeChild(".condition[" + i + "]"));
+       }
+ 
+       for(int j = 0; j < this.functions.length; ++j) {
+          this.functions[j].check(p_227505_1_.makeChild(".functions[" + j + "]"));
+       }
+ 
+-      for(int k = 0; k < this.entries.length; ++k) {
+-         this.entries[k].check(p_227505_1_.makeChild(".entries[" + k + "]"));
++      for(int k = 0; k < this.entries.size(); ++k) {
++         this.entries.get(k).check(p_227505_1_.makeChild(".entries[" + k + "]"));
+       }
+ 
+    }
+@@ -120,6 +122,7 @@
+       private final List<LootFunction> functions = Lists.newArrayList();
+       private LootTableRange rollsRange = new UniformLootTableRange(1.0F);
+       private UniformLootTableRange bonusRollsRange = new UniformLootTableRange(0.0F, 0.0F);
++      private String name;
+ 
+       public LootPool.Builder withRolls(LootTableRange rollsIn) {
+          this.rollsRange = rollsIn;
+@@ -145,15 +148,61 @@
+          return this;
+       }
+ 
++      public LootPool.Builder name(String name) {
++         this.name = name;
++         return this;
++      }
++
++      public LootPool.Builder bonusRolls(float min, float max) {
++         this.bonusRollsRange = new UniformLootTableRange(min, max);
++         return this;
++      }
++
+       public LootPool build() {
+          if (this.rollsRange == null) {
+             throw new IllegalArgumentException("Rolls not set");
+          } else {
+-            return new LootPool(this.entries.toArray(new LootEntry[0]), this.conditions.toArray(new LootCondition[0]), this.functions.toArray(new LootFunction[0]), this.rollsRange, this.bonusRollsRange);
++            return new LootPool(this.entries.toArray(new LootEntry[0]), this.conditions.toArray(new LootCondition[0]), this.functions.toArray(new LootFunction[0]), this.rollsRange, this.bonusRollsRange, name);
+          }
+       }
+    }
+ 
++   //======================== FORGE START =============================================
++   private boolean isFrozen = false;
++   public void freeze() { this.isFrozen = true; }
++   public boolean isFrozen(){ return this.isFrozen; }
++   private void checkFrozen() {
++      if (this.isFrozen())
++         throw new RuntimeException("Attempted to modify LootPool after being frozen!");
++   }
++   public String getName(){ return this.name; }
++   public LootTableRange getRolls()      { return this.rollsRange; }
++   public LootTableRange getBonusRolls() { return this.bonusRollsRange; }
++   public void setRolls     (UniformLootTableRange v){ checkFrozen(); this.rollsRange = v; }
++   public void setBonusRolls(UniformLootTableRange v){ checkFrozen(); this.bonusRollsRange = v; }
++   /*
++   public LootEntry getEntry(String name) {
++      return lootEntries.stream().filter(e -> name.equals(e.getEntryName())).findFirst().orElse(null);
++   }
++   public LootEntry removeEntry(String name) {
++      checkFrozen();
++      for (LootEntry entry : this.lootEntries) {
++         if (name.equals(entry.getEntryName())) {
++            this.lootEntries.remove(entry);
++            return entry;
++         }
++      }
++      return null;
++   }
++   public void addEntry(LootEntry entry) {
++      checkFrozen();
++      if (lootEntries.stream().anyMatch(e -> e == entry || e.getEntryName().equals(entry.getEntryName())))
++         throw new RuntimeException("Attempted to add a duplicate entry to pool: " + entry.getEntryName());
++      this.lootEntries.add(entry);
++   }
++   */
++   //======================== FORGE END ===============================================
++
+    public static class Serializer implements JsonDeserializer<LootPool>, JsonSerializer<LootPool> {
+       public LootPool deserialize(JsonElement p_deserialize_1_, Type p_deserialize_2_, JsonDeserializationContext p_deserialize_3_) throws JsonParseException {
+          JsonObject jsonobject = JsonHelper.asObject(p_deserialize_1_, "loot pool");
+@@ -162,18 +211,20 @@
+          LootFunction[] ailootfunction = JsonHelper.deserialize(jsonobject, "functions", new LootFunction[0], p_deserialize_3_, LootFunction[].class);
+          LootTableRange irandomrange = LootTableRanges.fromJson(jsonobject.get("rolls"), p_deserialize_3_);
+          UniformLootTableRange randomvaluerange = JsonHelper.deserialize(jsonobject, "bonus_rolls", new UniformLootTableRange(0.0F, 0.0F), p_deserialize_3_, UniformLootTableRange.class);
+-         return new LootPool(alootentry, ailootcondition, ailootfunction, irandomrange, randomvaluerange);
++         return new LootPool(alootentry, ailootcondition, ailootfunction, irandomrange, randomvaluerange, net.minecraftforge.common.ForgeHooks.readPoolName(jsonobject));
+       }
+ 
+       public JsonElement serialize(LootPool p_serialize_1_, Type p_serialize_2_, JsonSerializationContext p_serialize_3_) {
+          JsonObject jsonobject = new JsonObject();
++         if (p_serialize_1_.name != null && !p_serialize_1_.name.startsWith("custom#"))
++            jsonobject.add("name", p_serialize_3_.serialize(p_serialize_1_.name));
+          jsonobject.add("rolls", LootTableRanges.toJson(p_serialize_1_.rollsRange, p_serialize_3_));
+          jsonobject.add("entries", p_serialize_3_.serialize(p_serialize_1_.entries));
+          if (p_serialize_1_.bonusRollsRange.getMinValue() != 0.0F && p_serialize_1_.bonusRollsRange.getMaxValue() != 0.0F) {
+             jsonobject.add("bonus_rolls", p_serialize_3_.serialize(p_serialize_1_.bonusRollsRange));
+          }
+ 
+-         if (!ArrayUtils.isEmpty((Object[])p_serialize_1_.conditions)) {
++         if (!p_serialize_1_.conditions.isEmpty()) {
+             jsonobject.add("conditions", p_serialize_3_.serialize(p_serialize_1_.conditions));
+          }
+ 

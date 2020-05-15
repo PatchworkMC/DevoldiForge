@@ -1,0 +1,37 @@
+--- a/net/minecraft/container/BrewingStandContainer.java
++++ b/net/minecraft/container/BrewingStandContainer.java
+@@ -12,7 +12,6 @@
+ import net.minecraft.item.Items;
+ import net.minecraft.potion.Potion;
+ import net.minecraft.potion.PotionUtil;
+-import net.minecraft.recipe.BrewingRecipeRegistry;
+ import net.minecraft.server.network.ServerPlayerEntity;
+ import net.minecraftforge.api.distmarker.Dist;
+ import net.minecraftforge.api.distmarker.OnlyIn;
+@@ -143,7 +142,7 @@
+       }
+ 
+       public boolean canInsert(ItemStack stack) {
+-         return BrewingRecipeRegistry.isValidIngredient(stack);
++         return net.minecraftforge.common.brewing.BrewingRecipeRegistry.isValidIngredient(stack);
+       }
+ 
+       public int getMaxStackAmount() {
+@@ -167,6 +166,7 @@
+       public ItemStack onTakeItem(PlayerEntity thePlayer, ItemStack stack) {
+          Potion potion = PotionUtil.getPotion(stack);
+          if (thePlayer instanceof ServerPlayerEntity) {
++            net.minecraftforge.event.ForgeEventFactory.onPlayerBrewedPotion(thePlayer, stack);
+             Criterions.BREWED_POTION.trigger((ServerPlayerEntity)thePlayer, potion);
+          }
+ 
+@@ -175,8 +175,7 @@
+       }
+ 
+       public static boolean matches(ItemStack stack) {
+-         Item item = stack.getItem();
+-         return item == Items.POTION || item == Items.SPLASH_POTION || item == Items.LINGERING_POTION || item == Items.GLASS_BOTTLE;
++         return net.minecraftforge.common.brewing.BrewingRecipeRegistry.isValidInput(stack);
+       }
+    }
+ }

@@ -1,0 +1,10 @@
+--- a/net/minecraft/structure/StructureFeatures.java
++++ b/net/minecraft/structure/StructureFeatures.java
+@@ -32,6 +32,7 @@
+    public static final StructureFeature<?> VILLAGE = register("Village", Feature.VILLAGE);
+ 
+    private static StructureFeature<?> register(String key, StructureFeature<?> p_215141_1_) {
++      if (true) return p_215141_1_; // FORGE: Registry replaced with slave map
+       return Registry.register(Registry.STRUCTURE_FEATURE, key.toLowerCase(Locale.ROOT), p_215141_1_);
+    }
+ 

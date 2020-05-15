@@ -1,0 +1,10 @@
+--- a/net/minecraft/util/Language.java
++++ b/net/minecraft/util/Language.java
+@@ -37,6 +37,7 @@
+             this.translations.put(entry.getKey(), s);
+          }
+ 
++         net.minecraftforge.fml.server.LanguageHook.captureLanguageMap(this.translations);
+          this.timeLoaded = Util.getMeasuringTimeMs();
+       } catch (JsonParseException | IOException ioexception) {
+          LOGGER.error("Couldn't read strings from /assets/minecraft/lang/en_us.json", (Throwable)ioexception);

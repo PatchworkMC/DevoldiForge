@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/TestableWorld.java
++++ b/net/minecraft/world/TestableWorld.java
+@@ -8,4 +8,8 @@
+    boolean testBlockState(BlockPos p_217375_1_, Predicate<BlockState> p_217375_2_);
+ 
+    BlockPos getTopPosition(Heightmap.Type heightmapType, BlockPos pos);
++
++   default int getMaxHeight() {
++      return this instanceof net.minecraft.world.IWorld ? ((net.minecraft.world.IWorld)this).getWorld().getDimension().getHeight() : 256;
++   }
+ }

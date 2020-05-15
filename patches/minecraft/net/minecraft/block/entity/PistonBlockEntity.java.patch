@@ -1,0 +1,11 @@
+--- a/net/minecraft/block/entity/PistonBlockEntity.java
++++ b/net/minecraft/block/entity/PistonBlockEntity.java
+@@ -108,7 +108,7 @@
+          Box axisalignedbb = this.offsetHeadBox(this.getApproximateHeadBox(list));
+          List<Entity> list1 = this.world.getEntities((Entity)null, Boxes.stretch(axisalignedbb, direction, d0).union(axisalignedbb));
+          if (!list1.isEmpty()) {
+-            boolean flag = this.pushedBlock.getBlock() == Blocks.SLIME_BLOCK;
++            boolean flag = this.pushedBlock.isSlimeBlock(); //TODO: Merge with isStickyBlock? Look into further how vanilla splits slime vs honey
+ 
+             for(Entity entity : list1) {
+                if (entity.getPistonBehavior() != PistonBehavior.IGNORE) {

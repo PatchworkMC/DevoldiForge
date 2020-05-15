@@ -1,13 +1,13 @@
 --- a/net/minecraft/world/dimension/OverworldDimension.java
 +++ b/net/minecraft/world/dimension/OverworldDimension.java
-@@ -51,10 +51,6 @@
-       super(p_i49933_1_, p_i49933_2_, 0.0F);
+@@ -53,10 +53,6 @@
+       super(worldIn, typeIn, 0.0F);
     }
  
--   public DimensionType func_186058_p() {
--      return DimensionType.field_223227_a_;
+-   public DimensionType getType() {
+-      return DimensionType.OVERWORLD;
 -   }
 -
-    public ChunkGenerator<? extends GenerationSettings> func_186060_c() {
-       WorldType worldtype = this.field_76579_a.func_72912_H().func_76067_t();
-       ChunkGeneratorType<FlatGenerationSettings, FlatChunkGenerator> chunkgeneratortype = ChunkGeneratorType.field_205489_f;
+    public ChunkGenerator<? extends ChunkGeneratorConfig> createChunkGenerator() {
+       LevelGeneratorType worldtype = this.world.getLevelProperties().getGeneratorType();
+       ChunkGeneratorType<FlatChunkGeneratorConfig, FlatChunkGenerator> chunkgeneratortype = ChunkGeneratorType.FLAT;

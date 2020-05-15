@@ -1,0 +1,15 @@
+--- a/net/minecraft/util/hit/HitResult.java
++++ b/net/minecraft/util/hit/HitResult.java
+@@ -10,7 +10,12 @@
+    }
+ 
+    public abstract HitResult.Type getType();
++   /** Used to determine what sub-segment is hit */
++   public int subHit = -1;
+ 
++   /** Used to add extra hit info */
++   public Object hitInfo = null;
++
+    public Vec3d getPos() {
+       return this.pos;
+    }

@@ -1,0 +1,28 @@
+--- a/net/minecraft/network/packet/s2c/play/GameJoinS2CPacket.java
++++ b/net/minecraft/network/packet/s2c/play/GameJoinS2CPacket.java
+@@ -23,6 +23,7 @@
+    private int chunkLoadDistance;
+    private boolean reducedDebugInfo;
+    private boolean showsDeathScreen;
++   private int dimensionInt;
+ 
+    public GameJoinS2CPacket() {
+    }
+@@ -46,7 +47,7 @@
+       this.hardcore = (i & 8) == 8;
+       i = i & -9;
+       this.gameMode = GameMode.byId(i);
+-      this.dimension = DimensionType.byRawId(buf.readInt());
++      this.dimensionInt = buf.readInt();
+       this.seed = buf.readLong();
+       this.maxPlayers = buf.readUnsignedByte();
+       this.generatorType = LevelGeneratorType.getTypeFromName(buf.readString(16));
+@@ -102,7 +103,7 @@
+ 
+    @Environment(EnvType.CLIENT)
+    public DimensionType getDimension() {
+-      return this.dimension;
++      return this.dimension == null ? this.dimension = net.minecraftforge.fml.network.NetworkHooks.getDummyDimType(this.dimensionInt) : this.dimension;
+    }
+ 
+    @Environment(EnvType.CLIENT)

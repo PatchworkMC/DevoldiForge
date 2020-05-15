@@ -20,7 +20,7 @@
 package net.minecraftforge.event.world;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.Cancelable;
@@ -45,10 +45,10 @@ import java.util.List;
 public class GetCollisionBoxesEvent extends WorldEvent
 {
     private final Entity entity;
-    private final AxisAlignedBB aabb;
-    private final List<AxisAlignedBB> collisionBoxesList;
+    private final Box aabb;
+    private final List<Box> collisionBoxesList;
 
-    public GetCollisionBoxesEvent(World world, @Nullable Entity entity, AxisAlignedBB aabb, List<AxisAlignedBB> collisionBoxesList)
+    public GetCollisionBoxesEvent(World world, @Nullable Entity entity, Box aabb, List<Box> collisionBoxesList)
     {
         super(world);
         this.entity = entity;
@@ -61,12 +61,12 @@ public class GetCollisionBoxesEvent extends WorldEvent
         return entity;
     }
 
-    public AxisAlignedBB getAabb()
+    public Box getAabb()
     {
         return aabb;
     }
 
-    public List<AxisAlignedBB> getCollisionBoxesList()
+    public List<Box> getCollisionBoxesList()
     {
         return collisionBoxesList;
     }

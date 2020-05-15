@@ -1,0 +1,97 @@
+--- a/net/minecraft/client/render/RenderLayers.java
++++ b/net/minecraft/client/render/RenderLayers.java
+@@ -20,6 +20,7 @@
+ 
+ @Environment(EnvType.CLIENT)
+ public class RenderLayers {
++   @Deprecated
+    private static final Map<Block, RenderLayer> BLOCKS = Util.make(Maps.newHashMap(), (p_228395_0_) -> {
+       RenderLayer rendertype = RenderLayer.getCutoutMipped();
+       p_228395_0_.put(Blocks.GRASS_BLOCK, rendertype);
+@@ -240,6 +241,7 @@
+       p_228395_0_.put(Blocks.FROSTED_ICE, rendertype2);
+       p_228395_0_.put(Blocks.BUBBLE_COLUMN, rendertype2);
+    });
++   @Deprecated
+    private static final Map<Fluid, RenderLayer> FLUIDS = Util.make(Maps.newHashMap(), (p_228392_0_) -> {
+       RenderLayer rendertype = RenderLayer.getTranslucent();
+       p_228392_0_.put(Fluids.FLOWING_WATER, rendertype);
+@@ -247,6 +249,7 @@
+    });
+    private static boolean fancyGraphics;
+ 
++   @Deprecated
+    public static RenderLayer getBlockLayer(BlockState blockStateIn) {
+       Block block = blockStateIn.getBlock();
+       if (block instanceof LeavesBlock) {
+@@ -258,8 +261,7 @@
+    }
+ 
+    public static RenderLayer getEntityBlockLayer(BlockState blockStateIn) {
+-      RenderLayer rendertype = getBlockLayer(blockStateIn);
+-      return rendertype == RenderLayer.getTranslucent() ? TexturedRenderLayers.getEntityTranslucent() : TexturedRenderLayers.getEntityCutout();
++      return canRenderInLayer(blockStateIn, RenderLayer.getTranslucent()) ? TexturedRenderLayers.getEntityTranslucent() : TexturedRenderLayers.getEntityCutout();
+    }
+ 
+    public static RenderLayer getItemLayer(ItemStack itemStackIn) {
+@@ -272,11 +274,60 @@
+       }
+    }
+ 
++   @Deprecated
+    public static RenderLayer getFluidLayer(FluidState fluidStateIn) {
+       RenderLayer rendertype = FLUIDS.get(fluidStateIn.getFluid());
+       return rendertype != null ? rendertype : RenderLayer.getSolid();
+    }
+ 
++   // FORGE START
++
++   private static final Map<net.minecraftforge.registries.IRegistryDelegate<Block>, java.util.function.Predicate<RenderLayer>> blockRenderChecks = Maps.newHashMap();
++   private static final Map<net.minecraftforge.registries.IRegistryDelegate<Fluid>, java.util.function.Predicate<RenderLayer>> fluidRenderChecks = Maps.newHashMap();
++   static {
++      BLOCKS.forEach(RenderLayers::setRenderLayer);
++      FLUIDS.forEach(RenderLayers::setRenderLayer);
++   }
++
++   public static boolean canRenderInLayer(BlockState state, RenderLayer type) {
++      Block block = state.getBlock();
++      if (block instanceof LeavesBlock) {
++         return fancyGraphics ? type == RenderLayer.getCutoutMipped() : type == RenderLayer.getSolid();
++      } else {
++         java.util.function.Predicate<RenderLayer> rendertype;
++         synchronized (RenderLayers.class) {
++             rendertype = blockRenderChecks.get(block.delegate);
++         }
++         return rendertype != null ? rendertype.test(type) : type == RenderLayer.getSolid();
++      }
++   }
++
++   public static boolean canRenderInLayer(FluidState fluid, RenderLayer type) {
++      java.util.function.Predicate<RenderLayer> rendertype;
++      synchronized (RenderLayers.class) {
++          rendertype = fluidRenderChecks.get(fluid.getFluid().delegate);
++      }
++      return rendertype != null ? rendertype.test(type) : type == RenderLayer.getSolid();
++   }
++
++   public static void setRenderLayer(Block block, RenderLayer type) {
++       java.util.Objects.requireNonNull(type);
++       setRenderLayer(block, type::equals);
++   }
++
++   public static synchronized void setRenderLayer(Block block, java.util.function.Predicate<RenderLayer> predicate) {
++       blockRenderChecks.put(block.delegate, predicate);
++   }
++
++   public static void setRenderLayer(Fluid fluid, RenderLayer type) {
++       java.util.Objects.requireNonNull(type);
++       setRenderLayer(fluid, type::equals);
++   }
++
++   public static synchronized void setRenderLayer(Fluid fluid, java.util.function.Predicate<RenderLayer> predicate) {
++       fluidRenderChecks.put(fluid.delegate, predicate);
++   }
++
+    public static void setFancyGraphics(boolean fancyIn) {
+       fancyGraphics = fancyIn;
+    }

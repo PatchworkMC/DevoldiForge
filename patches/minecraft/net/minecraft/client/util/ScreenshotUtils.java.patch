@@ -1,0 +1,31 @@
+--- a/net/minecraft/client/util/ScreenshotUtils.java
++++ b/net/minecraft/client/util/ScreenshotUtils.java
+@@ -53,12 +53,25 @@
+          file2 = new File(file1, screenshotName);
+       }
+ 
++
++      net.minecraftforge.client.event.ScreenshotEvent event = net.minecraftforge.client.ForgeHooksClient.onScreenshot(nativeimage, file2);
++      if (event.isCanceled()) {
++         messageConsumer.accept(event.getCancelMessage());
++         return;
++      }
++
++      final File target = event.getScreenshotFile();
++
+       ResourceImpl.RESOURCE_IO_EXECUTOR.execute(() -> {
+          try {
+-            nativeimage.writeFile(file2);
+-            Text itextcomponent = (new LiteralText(file2.getName())).formatted(Formatting.UNDERLINE).styled((p_228050_1_) -> {
+-               p_228050_1_.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, file2.getAbsolutePath()));
++            nativeimage.writeFile(target);
++            Text itextcomponent = (new LiteralText(target.getName())).formatted(Formatting.UNDERLINE).styled((p_228050_1_) -> {
++               p_228050_1_.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_FILE, target.getAbsolutePath()));
+             });
++
++            if (event.getResultMessage() != null)
++               messageConsumer.accept(event.getResultMessage());
++            else
+             messageConsumer.accept(new TranslatableText("screenshot.success", itextcomponent));
+          } catch (Exception exception) {
+             LOGGER.warn("Couldn't save screenshot", (Throwable)exception);

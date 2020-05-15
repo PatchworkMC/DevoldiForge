@@ -1,0 +1,11 @@
+--- a/net/minecraft/tag/TagContainer.java
++++ b/net/minecraft/tag/TagContainer.java
+@@ -154,4 +154,8 @@
+    public Map<Identifier, Tag<T>> getEntries() {
+       return this.entries;
+    }
++
++   public Function<Identifier, Optional<T>> getEntryLookup() {
++       return this.getter;
++   }
+ }

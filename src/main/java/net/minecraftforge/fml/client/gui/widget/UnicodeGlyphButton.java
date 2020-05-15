@@ -20,9 +20,8 @@
 package net.minecraftforge.fml.client.gui.widget;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.widget.button.Button;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraftforge.fml.client.gui.GuiUtils;
 
 /**
@@ -35,7 +34,7 @@ public class UnicodeGlyphButton extends ExtendedButton
     public String glyph;
     public float  glyphScale;
 
-    public UnicodeGlyphButton(int xPos, int yPos, int width, int height, String displayString, String glyph, float glyphScale, IPressable handler)
+    public UnicodeGlyphButton(int xPos, int yPos, int width, int height, String displayString, String glyph, float glyphScale, PressAction handler)
     {
         super(xPos, yPos, width, height, displayString, handler);
         this.glyph = glyph;
@@ -47,32 +46,32 @@ public class UnicodeGlyphButton extends ExtendedButton
     {
         if (this.visible)
         {
-            Minecraft mc = Minecraft.getInstance();
+            MinecraftClient mc = MinecraftClient.getInstance();
             this.isHovered = mouseX >= this.x && mouseY >= this.y && mouseX < this.x + this.width && mouseY < this.y + this.height;
             int k = this.getYImage(this.isHovered);
-            GuiUtils.drawContinuousTexturedBox(Button.WIDGETS_LOCATION, this.x, this.y, 0, 46 + k * 20, this.width, this.height, 200, 20, 2, 3, 2, 2, this.getBlitOffset());
+            GuiUtils.drawContinuousTexturedBox(ButtonWidget.WIDGETS_LOCATION, this.x, this.y, 0, 46 + k * 20, this.width, this.height, 200, 20, 2, 3, 2, 2, this.getBlitOffset());
             this.renderBg(mc, mouseX, mouseY);
 
             String buttonText = this.getMessage();
-            int glyphWidth = (int) (mc.fontRenderer.getStringWidth(glyph) * glyphScale);
-            int strWidth = mc.fontRenderer.getStringWidth(buttonText);
-            int ellipsisWidth = mc.fontRenderer.getStringWidth("...");
+            int glyphWidth = (int) (mc.textRenderer.getStringWidth(glyph) * glyphScale);
+            int strWidth = mc.textRenderer.getStringWidth(buttonText);
+            int ellipsisWidth = mc.textRenderer.getStringWidth("...");
             int totalWidth = strWidth + glyphWidth;
 
             if (totalWidth > width - 6 && totalWidth > ellipsisWidth)
-                buttonText = mc.fontRenderer.trimStringToWidth(buttonText, width - 6 - ellipsisWidth).trim() + "...";
+                buttonText = mc.textRenderer.trimToWidth(buttonText, width - 6 - ellipsisWidth).trim() + "...";
 
-            strWidth = mc.fontRenderer.getStringWidth(buttonText);
+            strWidth = mc.textRenderer.getStringWidth(buttonText);
             totalWidth = glyphWidth + strWidth;
 
             RenderSystem.pushMatrix();
             RenderSystem.scalef(glyphScale, glyphScale, 1.0F);
-            this.drawCenteredString(mc.fontRenderer, glyph,
+            this.drawCenteredString(mc.textRenderer, glyph,
                     (int) (((this.x + (this.width / 2) - (strWidth / 2)) / glyphScale) - (glyphWidth / (2 * glyphScale)) + 2),
                     (int) (((this.y + ((this.height - 8) / glyphScale) / 2) - 1) / glyphScale), getFGColor());
             RenderSystem.popMatrix();
 
-            this.drawCenteredString(mc.fontRenderer, buttonText, (int) (this.x + (this.width / 2) + (glyphWidth / glyphScale)),
+            this.drawCenteredString(mc.textRenderer, buttonText, (int) (this.x + (this.width / 2) + (glyphWidth / glyphScale)),
                     this.y + (this.height - 8) / 2, getFGColor());
         }
     }

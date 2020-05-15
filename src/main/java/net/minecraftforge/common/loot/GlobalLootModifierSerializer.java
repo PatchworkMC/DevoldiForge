@@ -20,9 +20,8 @@
 package net.minecraftforge.common.loot;
 
 import com.google.gson.JsonObject;
-
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.storage.loot.conditions.ILootCondition;
+import net.minecraft.loot.condition.LootCondition;
+import net.minecraft.util.Identifier;
 import net.minecraftforge.registries.GameData;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 
@@ -33,7 +32,7 @@ import net.minecraftforge.registries.IForgeRegistryEntry;
  * @param <T> the Type to deserialize
  */
 public abstract class GlobalLootModifierSerializer<T extends IGlobalLootModifier> implements IForgeRegistryEntry<GlobalLootModifierSerializer<?>> {
-    private ResourceLocation registryName = null;
+    private Identifier registryName = null;
     
     public final GlobalLootModifierSerializer<T> setRegistryName(String name) {
         if (getRegistryName() != null)
@@ -45,12 +44,12 @@ public abstract class GlobalLootModifierSerializer<T extends IGlobalLootModifier
     
     //Helpers
     @Override
-    public final GlobalLootModifierSerializer<T> setRegistryName(ResourceLocation name){ return setRegistryName(name.toString()); }
+    public final GlobalLootModifierSerializer<T> setRegistryName(Identifier name){ return setRegistryName(name.toString()); }
 
     public final GlobalLootModifierSerializer<T> setRegistryName(String modID, String name){ return setRegistryName(modID + ":" + name); }
 
     @Override
-    public final ResourceLocation getRegistryName() {
+    public final Identifier getRegistryName() {
         return registryName;
     }
     
@@ -62,7 +61,7 @@ public abstract class GlobalLootModifierSerializer<T extends IGlobalLootModifier
      * @param json The full json object (including ILootConditions)
      * @param conditionsIn An already deserialized list of ILootConditions
      */
-    public abstract T read(ResourceLocation location, JsonObject object, ILootCondition[] ailootcondition);
+    public abstract T read(Identifier location, JsonObject object, LootCondition[] ailootcondition);
 
     /**
      * Used by Forge's registry system.

@@ -1,0 +1,25 @@
+--- a/net/minecraft/client/particle/BlockDustParticle.java
++++ b/net/minecraft/client/particle/BlockDustParticle.java
+@@ -39,6 +39,7 @@
+    }
+ 
+    public BlockDustParticle setBlockPos(BlockPos pos) {
++      updateSprite(pos);
+       this.blockPos = pos;
+       if (this.blockState.getBlock() == Blocks.GRASS_BLOCK) {
+          return this;
+@@ -96,7 +97,13 @@
+    public static class Factory implements ParticleFactory<BlockStateParticleEffect> {
+       public Particle createParticle(BlockStateParticleEffect typeIn, World worldIn, double x, double y, double z, double xSpeed, double ySpeed, double zSpeed) {
+          BlockState blockstate = typeIn.getBlockState();
+-         return !blockstate.isAir() && blockstate.getBlock() != Blocks.MOVING_PISTON ? (new BlockDustParticle(worldIn, x, y, z, xSpeed, ySpeed, zSpeed, blockstate)).setBlockPosFromPosition() : null;
++         return !blockstate.isAir() && blockstate.getBlock() != Blocks.MOVING_PISTON ? (new BlockDustParticle(worldIn, x, y, z, xSpeed, ySpeed, zSpeed, blockstate)).setBlockPosFromPosition().updateSprite(typeIn.getPos()) : null;
+       }
+    }
++
++   private Particle updateSprite(BlockPos pos) { //FORGE: we cannot assume that the x y z of the particles match the block pos of the block.
++      if (pos != null) // There are cases where we are not able to obtain the correct source pos, and need to fallback to the non-model data version
++         this.setSprite(MinecraftClient.getInstance().getBlockRenderManager().getModels().getTexture(blockState, world, pos));
++      return this;
++   }
+ }

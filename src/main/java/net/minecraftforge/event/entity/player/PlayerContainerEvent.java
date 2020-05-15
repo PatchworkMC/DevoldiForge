@@ -19,8 +19,8 @@
 
 package net.minecraftforge.event.entity.player;
 
+import net.minecraft.container.Container;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.container.Container;
 
 public class PlayerContainerEvent extends PlayerEvent
 {

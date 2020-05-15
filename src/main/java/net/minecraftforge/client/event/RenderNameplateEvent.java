@@ -20,10 +20,9 @@
 package net.minecraftforge.client.event;
 
 import javax.annotation.Nullable;
-
-import com.mojang.blaze3d.matrix.MatrixStack;
-import net.minecraft.client.renderer.IRenderTypeBuffer;
-import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.client.render.VertexConsumerProvider;
+import net.minecraft.client.render.entity.EntityRenderer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.EntityEvent;
@@ -57,16 +56,16 @@ public class RenderNameplateEvent extends EntityEvent
     private final String originalContent;
     private final EntityRenderer<?> entityRenderer;
     private final MatrixStack matrixStack;
-    private final IRenderTypeBuffer renderTypeBuffer;
+    private final VertexConsumerProvider renderTypeBuffer;
     private final int packedLight;
 
     @Deprecated //TODO 1.16: upon removal, also remove @Nullable on getEntityRenderer(), and update its javadoc
-    public RenderNameplateEvent(Entity entity, String content, MatrixStack matrixStack, IRenderTypeBuffer renderTypeBuffer)
+    public RenderNameplateEvent(Entity entity, String content, MatrixStack matrixStack, VertexConsumerProvider renderTypeBuffer)
     {
         this(entity, content, null, matrixStack, renderTypeBuffer, 0);
     }
 
-    public RenderNameplateEvent(Entity entity, String content, EntityRenderer<?> entityRenderer, MatrixStack matrixStack, IRenderTypeBuffer renderTypeBuffer, int packedLight)
+    public RenderNameplateEvent(Entity entity, String content, EntityRenderer<?> entityRenderer, MatrixStack matrixStack, VertexConsumerProvider renderTypeBuffer, int packedLight)
     {
         super(entity);
         this.originalContent = content;
@@ -121,7 +120,7 @@ public class RenderNameplateEvent extends EntityEvent
     /**
      * The render type buffer used during the rendering of the name plate/tag
      */
-    public IRenderTypeBuffer getRenderTypeBuffer()
+    public VertexConsumerProvider getRenderTypeBuffer()
     {
         return this.renderTypeBuffer;
     }

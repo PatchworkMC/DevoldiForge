@@ -1,0 +1,28 @@
+--- a/net/minecraft/entity/vehicle/BoatEntity.java
++++ b/net/minecraft/entity/vehicle/BoatEntity.java
+@@ -463,7 +463,7 @@
+                         blockpos$pooledmutable.set(l1, k2, i2);
+                         BlockState blockstate = this.world.getBlockState(blockpos$pooledmutable);
+                         if (!(blockstate.getBlock() instanceof LilyPadBlock) && VoxelShapes.matchesAnywhere(blockstate.getCollisionShape(this.world, blockpos$pooledmutable).offset((double)l1, (double)k2, (double)i2), voxelshape, BooleanBiFunction.AND)) {
+-                           f += blockstate.getBlock().getSlipperiness();
++                           f += blockstate.getSlipperiness(this.world, blockpos$pooledmutable, this);
+                            ++k1;
+                         }
+                      }
+@@ -778,6 +778,16 @@
+       return new EntitySpawnS2CPacket(this);
+    }
+ 
++   // Forge: Fix MC-119811 by instantly completing lerp on board
++   @Override
++   protected void addPassenger(Entity passenger) {
++      super.addPassenger(passenger);
++      if (this.isLogicalSideForUpdatingMovement() && this.field_7708 > 0) {
++         this.field_7708 = 0;
++         this.updatePositionAndAngles(this.field_7686, this.field_7700, this.field_7685, (float)this.field_7699, (float)this.field_7684);
++      }
++   }
++
+    public static enum Location {
+       IN_WATER,
+       UNDER_WATER,

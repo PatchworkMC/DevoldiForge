@@ -2,29 +2,29 @@
 +++ b/net/minecraft/data/DataGenerator.java
 @@ -19,7 +19,7 @@
  
-    public DataGenerator(Path p_i48266_1_, Collection<Path> p_i48266_2_) {
-       this.field_200395_c = p_i48266_1_;
--      this.field_200394_b = p_i48266_2_;
-+      this.field_200394_b = Lists.newArrayList(p_i48266_2_);
+    public DataGenerator(Path output, Collection<Path> input) {
+       this.output = output;
+-      this.inputs = input;
++      this.inputs = Lists.newArrayList(input);
     }
  
-    public Collection<Path> func_200389_a() {
+    public Collection<Path> getInputs() {
 @@ -38,6 +38,7 @@
  
-       for(IDataProvider idataprovider : this.field_200396_d) {
-          field_200393_a.info("Starting provider: {}", (Object)idataprovider.func_200397_b());
-+         net.minecraftforge.fml.StartupMessageManager.addModMessage("Generating: " + idataprovider.func_200397_b());
+       for(DataProvider idataprovider : this.providers) {
+          LOGGER.info("Starting provider: {}", (Object)idataprovider.getName());
++         net.minecraftforge.fml.StartupMessageManager.addModMessage("Generating: " + idataprovider.getName());
           stopwatch1.start();
-          idataprovider.func_200398_a(directorycache);
+          idataprovider.run(directorycache);
           stopwatch1.stop();
 @@ -53,6 +54,10 @@
-       this.field_200396_d.add(p_200390_1_);
+       this.providers.add(provider);
     }
  
 +   public void addInput(Path value) {
-+      this.field_200394_b.add(value);
++      this.inputs.add(value);
 +   }
 +
     static {
-       Bootstrap.func_151354_b();
+       Bootstrap.initialize();
     }

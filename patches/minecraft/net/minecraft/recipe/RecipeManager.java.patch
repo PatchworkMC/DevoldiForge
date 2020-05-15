@@ -1,0 +1,21 @@
+--- a/net/minecraft/recipe/RecipeManager.java
++++ b/net/minecraft/recipe/RecipeManager.java
+@@ -52,9 +52,18 @@
+ 
+       for(Entry<Identifier, JsonObject> entry : objectIn.entrySet()) {
+          Identifier resourcelocation = entry.getKey();
++         if (resourcelocation.getPath().startsWith("_")) continue; //Forge: filter anything beginning with "_" as it's used for metadata.
+ 
+          try {
++            if (!net.minecraftforge.common.crafting.CraftingHelper.processConditions(entry.getValue(), "conditions")) {
++               LOGGER.debug("Skipping loading recipe {} as it's conditions were not met", resourcelocation);
++               continue;
++            }
+             Recipe<?> irecipe = deserialize(resourcelocation, entry.getValue());
++            if (irecipe == null) {
++               LOGGER.info("Skipping loading recipe {} as it's serializer returned null", resourcelocation);
++               continue;
++            }
+             map.computeIfAbsent(irecipe.getType(), (p_223391_0_) -> {
+                return ImmutableMap.builder();
+             }).put(resourcelocation, irecipe);

@@ -1,0 +1,64 @@
+--- a/net/minecraft/server/dedicated/MinecraftDedicatedServer.java
++++ b/net/minecraft/server/dedicated/MinecraftDedicatedServer.java
+@@ -94,6 +94,7 @@
+    public boolean setupServer() throws IOException {
+       Thread thread = new Thread("Server console handler") {
+          public void run() {
++            if (net.minecraftforge.server.console.TerminalHandler.handleCommands(MinecraftDedicatedServer.this)) return;
+             BufferedReader bufferedreader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+ 
+             String s3;
+@@ -115,7 +116,9 @@
+          LOGGER.warn("To start the server with more ram, launch it as \"java -Xmx1024M -Xms1024M -jar minecraft_server.jar\"");
+       }
+ 
++      net.minecraftforge.fml.server.ServerModLoader.begin(this);
+       LOGGER.info("Loading properties");
++      this.propertiesLoader.apply(properties -> ServerPropertiesHandler.load(java.nio.file.Paths.get("server.properties")));
+       ServerPropertiesHandler serverproperties = this.propertiesLoader.getPropertiesHandler();
+       if (this.isSinglePlayer()) {
+          this.setServerIp("127.0.0.1");
+@@ -172,6 +175,7 @@
+       if (!ServerConfigHandler.checkSuccess(this)) {
+          return false;
+       } else {
++         net.minecraftforge.fml.server.ServerModLoader.end();
+          this.setPlayerManager(new DedicatedPlayerManager(this));
+          long i = Util.getMeasuringTimeNano();
+          String s = serverproperties.levelSeed;
+@@ -193,6 +197,7 @@
+          SkullBlockEntity.setUserCache(this.getUserCache());
+          SkullBlockEntity.setSessionService(this.getSessionService());
+          UserCache.setUseRemote(this.isOnlineMode());
++         if (!net.minecraftforge.fml.server.ServerLifecycleHooks.handleServerAboutToStart(this)) return false;
+          LOGGER.info("Preparing level \"{}\"", (Object)this.getLevelName());
+          JsonObject jsonobject = new JsonObject();
+          if (worldtype == LevelGeneratorType.FLAT) {
+@@ -205,6 +210,7 @@
+          long l = Util.getMeasuringTimeNano() - i;
+          String s2 = String.format(Locale.ROOT, "%.3fs", (double)l / 1.0E9D);
+          LOGGER.info("Done ({})! For help, type \"help\"", (Object)s2);
++         this.timeReference = Util.getMeasuringTimeMs(); //Forge: Update server time to prevent watchdog/spaming during long load.
+          if (serverproperties.announcePlayerAchievements != null) {
+             this.getGameRules().get(GameRules.ANNOUNCE_ADVANCEMENTS).set(serverproperties.announcePlayerAchievements, this);
+          }
+@@ -230,7 +236,8 @@
+          }
+ 
+          Items.AIR.appendStacks(ItemGroup.SEARCH, DefaultedList.of());
+-         return true;
++         // <3 you Grum for this, saves us ~30 patch files! --^
++         return net.minecraftforge.fml.server.ServerLifecycleHooks.handleServerStarting(this);
+       }
+    }
+ 
+@@ -544,4 +551,9 @@
+    public boolean isOwner(GameProfile profileIn) {
+       return false;
+    }
++
++   @Override //Forge: Enable formated text for colors in console.
++   public void sendMessage(net.minecraft.text.Text message) {
++      LOGGER.info(message.asFormattedString());
++   }
+ }

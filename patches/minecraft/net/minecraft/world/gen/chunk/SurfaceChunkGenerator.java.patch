@@ -1,0 +1,13 @@
+--- a/net/minecraft/world/gen/chunk/SurfaceChunkGenerator.java
++++ b/net/minecraft/world/gen/chunk/SurfaceChunkGenerator.java
+@@ -384,8 +384,8 @@
+                         }
+ 
+                         if (blockstate != AIR) {
+-                           if (blockstate.getLuminance() != 0) {
+-                              blockpos$mutable.set(j3, j2, i4);
++                           blockpos$mutable.set(j3, j2, i4);
++                           if (blockstate.getLightValue(chunkprimer, blockpos$mutable) != 0) {
+                               chunkprimer.addLightSource(blockpos$mutable);
+                            }
+ 

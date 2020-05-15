@@ -19,9 +19,13 @@
 
 package net.minecraftforge.client.extensions;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.client.renderer.*;
-import net.minecraft.util.Direction;
+import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Rotation3;
+import net.minecraft.client.util.math.Vector3f;
+import net.minecraft.client.util.math.Vector4f;
+import net.minecraft.util.math.Direction;
 
 /*
  * Replacement interface for ModelRotation to allow custom transformations of vanilla models.
@@ -29,14 +33,14 @@ import net.minecraft.util.Direction;
  */
 public interface IForgeTransformationMatrix
 {
-    default TransformationMatrix getTransformaion()
+    default Rotation3 getTransformaion()
     {
-        return (TransformationMatrix)this;
+        return (Rotation3)this;
     }
 
     default boolean isIdentity()
     {
-        return getTransformaion().equals(TransformationMatrix.identity());
+        return getTransformaion().equals(Rotation3.identity());
     }
 
     default void push(MatrixStack stack)
@@ -46,30 +50,30 @@ public interface IForgeTransformationMatrix
         Vector3f trans = getTransformaion().getTranslation();
         stack.translate(trans.getX(), trans.getY(), trans.getZ());
 
-        stack.rotate(getTransformaion().getRotationLeft());
+        stack.multiply(getTransformaion().getRotation2());
 
         Vector3f scale = getTransformaion().getScale();
         stack.scale(scale.getX(), scale.getY(), scale.getZ());
 
-        stack.rotate(getTransformaion().getRightRot());
+        stack.multiply(getTransformaion().getRightRot());
 
     }
 
-    default TransformationMatrix compose(TransformationMatrix other)
+    default Rotation3 compose(Rotation3 other)
     {
         if (getTransformaion().isIdentity()) return other;
         if (other.isIdentity()) return getTransformaion();
         Matrix4f m = getTransformaion().getMatrix();
-        m.mul(other.getMatrix());
-        return new TransformationMatrix(m);
+        m.multiply(other.getMatrix());
+        return new Rotation3(m);
     }
 
-    default TransformationMatrix inverse()
+    default Rotation3 inverse()
     {
         if (isIdentity()) return getTransformaion();
         Matrix4f m = getTransformaion().getMatrix().copy();
         m.invert();
-        return new TransformationMatrix(m);
+        return new Rotation3(m);
     }
 
     default void transformPosition(Vector4f position)
@@ -85,13 +89,13 @@ public interface IForgeTransformationMatrix
 
     default Direction rotateTransform(Direction facing)
     {
-        return Direction.rotateFace(getTransformaion().getMatrix(), facing);
+        return Direction.transform(getTransformaion().getMatrix(), facing);
     }
 
     /**
      * convert transformation from assuming center-block system to opposing-corner-block system
      */
-    default TransformationMatrix blockCenterToCorner()
+    default Rotation3 blockCenterToCorner()
     {
         return applyOrigin(new Vector3f(.5f, .5f, .5f));
     }
@@ -99,7 +103,7 @@ public interface IForgeTransformationMatrix
     /**
      * convert transformation from assuming opposing-corner-block system to center-block system
      */
-    default TransformationMatrix blockCornerToCenter()
+    default Rotation3 blockCornerToCenter()
     {
         return applyOrigin(new Vector3f(-.5f, -.5f, -.5f));
     }
@@ -109,16 +113,16 @@ public interface IForgeTransformationMatrix
      * Can be used for switching between coordinate systems.
      * Parameter is relative to the current origin.
      */
-    default TransformationMatrix applyOrigin(Vector3f origin) {
-        TransformationMatrix transform = getTransformaion();
-        if (transform.isIdentity()) return TransformationMatrix.identity();
+    default Rotation3 applyOrigin(Vector3f origin) {
+        Rotation3 transform = getTransformaion();
+        if (transform.isIdentity()) return Rotation3.identity();
 
         Matrix4f ret = transform.getMatrix();
-        Matrix4f tmp = Matrix4f.makeTranslate(origin.getX(), origin.getY(), origin.getZ());
+        Matrix4f tmp = Matrix4f.translate(origin.getX(), origin.getY(), origin.getZ());
         ret.multiplyBackward(tmp);
-        tmp.setIdentity();
+        tmp.loadIdentity();
         tmp.setTranslation(-origin.getX(), -origin.getY(), -origin.getZ());
-        ret.mul(tmp);
-        return new TransformationMatrix(ret);
+        ret.multiply(tmp);
+        return new Rotation3(ret);
     }
 }

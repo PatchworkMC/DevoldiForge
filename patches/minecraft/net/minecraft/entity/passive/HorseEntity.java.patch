@@ -1,0 +1,11 @@
+--- a/net/minecraft/entity/passive/HorseEntity.java
++++ b/net/minecraft/entity/passive/HorseEntity.java
+@@ -175,6 +175,8 @@
+          this.clearTextureInfo();
+       }
+ 
++      ItemStack stack = this.items.getInvStack(1);
++      if (canEquip(stack)) stack.onHorseArmorTick(world, this);
+    }
+ 
+    protected SoundEvent getAmbientSound() {

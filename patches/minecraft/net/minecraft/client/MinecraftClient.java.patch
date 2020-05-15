@@ -1,0 +1,531 @@
+--- a/net/minecraft/client/MinecraftClient.java
++++ b/net/minecraft/client/MinecraftClient.java
+@@ -129,15 +129,8 @@
+ import net.minecraft.client.world.ClientWorld;
+ import net.minecraft.datafixer.Schemas;
+ import net.minecraft.entity.Entity;
+-import net.minecraft.entity.decoration.ArmorStandEntity;
+-import net.minecraft.entity.decoration.EnderCrystalEntity;
+-import net.minecraft.entity.decoration.ItemFrameEntity;
+-import net.minecraft.entity.decoration.LeadKnotEntity;
+-import net.minecraft.entity.decoration.painting.PaintingEntity;
+ import net.minecraft.entity.player.PlayerEntity;
+ import net.minecraft.entity.player.PlayerInventory;
+-import net.minecraft.entity.vehicle.AbstractMinecartEntity;
+-import net.minecraft.entity.vehicle.BoatEntity;
+ import net.minecraft.item.Item;
+ import net.minecraft.item.ItemGroup;
+ import net.minecraft.item.ItemStack;
+@@ -164,7 +157,6 @@
+ import net.minecraft.server.MinecraftServer;
+ import net.minecraft.server.QueueingWorldGenerationProgressListener;
+ import net.minecraft.server.integrated.IntegratedServer;
+-import net.minecraft.tag.ItemTags;
+ import net.minecraft.text.KeybindText;
+ import net.minecraft.text.LiteralText;
+ import net.minecraft.text.Text;
+@@ -324,6 +316,7 @@
+    public MinecraftClient(RunArgs gameConfig) {
+       super("Client");
+       instance = this;
++      net.minecraftforge.client.ForgeHooksClient.invalidateLog4jThreadCache();
+       this.runDirectory = gameConfig.directories.runDir;
+       File file1 = gameConfig.directories.assetDir;
+       this.resourcePackDir = gameConfig.directories.resourcePackDir;
+@@ -338,7 +331,6 @@
+       this.sessionService = (new YggdrasilAuthenticationService(this.netProxy, UUID.randomUUID().toString())).createMinecraftSessionService();
+       this.session = gameConfig.network.session;
+       LOGGER.info("Setting user: {}", (Object)this.session.getUsername());
+-      LOGGER.debug("(Session ID is {})", (Object)this.session.getSessionId());
+       this.isDemo = gameConfig.game.demo;
+       this.is64Bit = checkIs64Bit();
+       this.server = null;
+@@ -352,7 +344,7 @@
+          i = 0;
+       }
+ 
+-      Bootstrap.initialize();
++      net.minecraftforge.fml.loading.BackgroundWaiter.runAndTick(()->Bootstrap.initialize(), net.minecraftforge.fml.loading.FMLLoader.progressWindowTick);
+       Bootstrap.logMissingTranslations();
+       KeybindText.i18n = KeyBinding::getLocalizedName;
+       this.dataFixer = Schemas.getFixer();
+@@ -385,13 +377,13 @@
+ 
+       this.window.setFramerateLimit(this.options.maxFps);
+       this.mouse = new Mouse(this);
+-      this.mouse.setup(this.window.getHandle());
+       this.keyboard = new Keyboard(this);
+       this.keyboard.setup(this.window.getHandle());
+       RenderSystem.initRenderer(this.options.glDebugVerbosity, false);
+       this.framebuffer = new Framebuffer(this.window.getFramebufferWidth(), this.window.getFramebufferHeight(), true, IS_SYSTEM_MAC);
+       this.framebuffer.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
+       this.resourceManager = new ReloadableResourceManagerImpl(ResourceType.CLIENT_RESOURCES, this.thread);
++      net.minecraftforge.fml.client.ClientModLoader.begin(this, this.resourcePackManager, this.resourceManager, this.builtinPackProvider);
+       this.options.addResourcePackProfilesToManager(this.resourcePackManager);
+       this.resourcePackManager.scanPacks();
+       this.languageManager = new LanguageManager(this.options.language);
+@@ -436,12 +428,14 @@
+          this.initializeSearchableContainers();
+          this.resourceManager.registerListener(this.searchManager);
+          this.particleManager = new ParticleManager(this.world, this.textureManager);
++         net.minecraftforge.fml.ModLoader.get().postEvent(new net.minecraftforge.client.event.ParticleFactoryRegisterEvent());
+          this.resourceManager.registerListener(this.particleManager);
+          this.paintingManager = new PaintingManager(this.textureManager);
+          this.resourceManager.registerListener(this.paintingManager);
+          this.statusEffectSpriteManager = new StatusEffectSpriteManager(this.textureManager);
+          this.resourceManager.registerListener(this.statusEffectSpriteManager);
+-         this.inGameHud = new InGameHud(this);
++         this.inGameHud = new net.minecraftforge.client.gui.ForgeIngameGui(this);
++         this.mouse.setup(this.window.getHandle()); //Forge: Moved below ingameGUI setting to prevent NPEs in handeler.
+          this.debugRenderer = new DebugRenderer(this);
+          RenderSystem.setErrorCallback(this::handleGlErrorByDisableVsync);
+          if (this.options.fullscreen && !this.window.isFullscreen()) {
+@@ -453,12 +447,11 @@
+          this.window.setRawMouseMotion(this.options.rawMouseInput);
+          this.window.logOnGlError();
+          this.onResolutionChanged();
+-         if (s != null) {
+-            this.openScreen(new ConnectScreen(new TitleScreen(), this, s, i));
+-         } else {
+-            this.openScreen(new TitleScreen(true));
+-         }
+ 
++         //Final needed so we can move into lambda below.
++         final String autoServerName = s;
++         final int autoServerPort = i;
++
+          SplashScreen.init(this);
+          List<ResourcePack> list = this.resourcePackManager.getEnabledProfiles().stream().map(ResourcePackProfile::createResourcePack).collect(Collectors.toList());
+          this.setOverlay(new SplashScreen(this, this.resourceManager.beginMonitoredReload(Util.getServerWorkerExecutor(), this, COMPLETED_UNIT_FUTURE, list), (p_229990_2_) -> {
+@@ -468,6 +461,14 @@
+                   this.checkGameData();
+                }
+ 
++               if (net.minecraftforge.fml.client.ClientModLoader.completeModLoading()) return; // Do not overwrite the error screen
++               // FORGE: Move opening initial screen to after startup and events are enabled.
++               // Also Fixes MC-145102
++               if (autoServerName != null) {
++                  this.openScreen(new ConnectScreen(new TitleScreen(), this, autoServerName, autoServerPort));
++               } else {
++                  this.openScreen(new TitleScreen(true));
++               }
+             });
+          }, false));
+       }
+@@ -507,7 +508,7 @@
+    }
+ 
+    private void handleResourceReloadExecption(Throwable throwableIn) {
+-      if (this.resourcePackManager.getEnabledProfiles().size() > 1) {
++      if (this.resourcePackManager.getEnabledProfiles().stream().anyMatch(e -> !e.isAlwaysEnabled())) { //Forge: This caused infinite loop if any resource packs are forced. Such as mod resources. So check if we can disable any.
+          Text itextcomponent;
+          if (throwableIn instanceof ReloadableResourceManagerImpl.PackAdditionFailedException) {
+             itextcomponent = new LiteralText(((ReloadableResourceManagerImpl.PackAdditionFailedException)throwableIn).getPack().getName());
+@@ -581,7 +582,7 @@
+          return Stream.of(Registry.ITEM.getId(p_213251_0_.getItem()));
+       });
+       IdentifierSearchableContainer<ItemStack> searchtreereloadable = new IdentifierSearchableContainer<>((p_213235_0_) -> {
+-         return ItemTags.getContainer().getTagsFor(p_213235_0_.getItem()).stream();
++         return p_213235_0_.getItem().getTags().stream();
+       });
+       DefaultedList<ItemStack> nonnulllist = DefaultedList.of();
+ 
+@@ -669,13 +670,13 @@
+       Bootstrap.println(report.asString());
+       if (report.getFile() != null) {
+          Bootstrap.println("#@!@# Game crashed! Crash report saved to: #@!@# " + report.getFile());
+-         System.exit(-1);
++         net.minecraftforge.fml.server.ServerLifecycleHooks.handleExit(-1);
+       } else if (report.writeToFile(file2)) {
+          Bootstrap.println("#@!@# Game crashed! Crash report saved to: #@!@# " + file2.getAbsolutePath());
+-         System.exit(-1);
++         net.minecraftforge.fml.server.ServerLifecycleHooks.handleExit(-1);
+       } else {
+          Bootstrap.println("#@?@# Game crashed! Crash report could not be saved. #@?@#");
+-         System.exit(-2);
++         net.minecraftforge.fml.server.ServerLifecycleHooks.handleExit(-2);
+       }
+ 
+    }
+@@ -684,6 +685,7 @@
+       return this.options.forceUnicodeFont;
+    }
+ 
++   @Deprecated // Forge: Use selective refreshResources method in FMLClientHandler
+    public CompletableFuture<Void> reloadResources() {
+       if (this.resourceReloadFuture != null) {
+          return this.resourceReloadFuture;
+@@ -762,10 +764,6 @@
+    }
+ 
+    public void openScreen(@Nullable Screen guiScreenIn) {
+-      if (this.currentScreen != null) {
+-         this.currentScreen.removed();
+-      }
+-
+       if (guiScreenIn == null && this.world == null) {
+          guiScreenIn = new TitleScreen();
+       } else if (guiScreenIn == null && this.player.getHealth() <= 0.0F) {
+@@ -776,6 +774,14 @@
+          }
+       }
+ 
++      Screen old = this.currentScreen;
++      net.minecraftforge.client.event.GuiOpenEvent event = new net.minecraftforge.client.event.GuiOpenEvent(guiScreenIn);
++      if (net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(event)) return;
++
++      guiScreenIn = event.getGui();
++      if (old != null && guiScreenIn != old)
++         old.removed();
++
+       if (guiScreenIn instanceof TitleScreen || guiScreenIn instanceof MultiplayerScreen) {
+          this.options.debugEnabled = false;
+          this.inGameHud.getChatHud().clear(true);
+@@ -907,11 +913,13 @@
+       RenderSystem.enableTexture();
+       this.profiler.pop();
+       if (!this.skipGameRender) {
++         net.minecraftforge.fml.hooks.BasicEventHooks.onRenderTickStart(this.renderTickCounter.tickDelta);
+          this.profiler.swap("gameRenderer");
+          this.gameRenderer.render(this.paused ? this.pausedTickDelta : this.renderTickCounter.tickDelta, i, renderWorldIn);
+          this.profiler.swap("toasts");
+          this.toastManager.draw();
+          this.profiler.pop();
++         net.minecraftforge.fml.hooks.BasicEventHooks.onRenderTickEnd(this.renderTickCounter.tickDelta);
+       }
+ 
+       this.profiler.endTick();
+@@ -978,7 +986,7 @@
+ 
+       Framebuffer framebuffer = this.getFramebuffer();
+       framebuffer.resize(this.window.getFramebufferWidth(), this.window.getFramebufferHeight(), IS_SYSTEM_MAC);
+-      this.gameRenderer.onResized(this.window.getFramebufferWidth(), this.window.getFramebufferHeight());
++      if (this.gameRenderer!=null) this.gameRenderer.onResized(this.window.getFramebufferWidth(), this.window.getFramebufferHeight());
+       this.mouse.onResolutionChanged();
+    }
+ 
+@@ -1166,11 +1174,21 @@
+          if (leftClick && this.crosshairTarget != null && this.crosshairTarget.getType() == HitResult.Type.BLOCK) {
+             BlockHitResult blockraytraceresult = (BlockHitResult)this.crosshairTarget;
+             BlockPos blockpos = blockraytraceresult.getBlockPos();
+-            if (!this.world.getBlockState(blockpos).isAir()) {
++            if (!this.world.isAir(blockpos)) {
++               net.minecraftforge.client.event.InputEvent.ClickInputEvent inputEvent = net.minecraftforge.client.ForgeHooksClient.onClickInput(0, this.options.keyAttack, Hand.MAIN_HAND);
++               if (inputEvent.isCanceled()) {
++                  if (inputEvent.shouldSwingHand()) {
++                     this.particleManager.addBlockHitEffects(blockpos, blockraytraceresult);
++                     this.player.swingHand(Hand.MAIN_HAND);
++                  }
++                  return;
++               }
+                Direction direction = blockraytraceresult.getSide();
+                if (this.interactionManager.updateBlockBreakingProgress(blockpos, direction)) {
+-                  this.particleManager.addBlockBreakingParticles(blockpos, direction);
++                  if (inputEvent.shouldSwingHand()) {
++                  this.particleManager.addBlockHitEffects(blockpos, blockraytraceresult);
+                   this.player.swingHand(Hand.MAIN_HAND);
++                  }
+                }
+             }
+ 
+@@ -1189,6 +1207,8 @@
+             }
+ 
+          } else if (!this.player.isRiding()) {
++            net.minecraftforge.client.event.InputEvent.ClickInputEvent inputEvent = net.minecraftforge.client.ForgeHooksClient.onClickInput(0, this.options.keyAttack, Hand.MAIN_HAND);
++            if (!inputEvent.isCanceled())
+             switch(this.crosshairTarget.getType()) {
+             case ENTITY:
+                this.interactionManager.attackEntity(this.player, ((EntityHitResult)this.crosshairTarget).getEntity());
+@@ -1196,7 +1216,7 @@
+             case BLOCK:
+                BlockHitResult blockraytraceresult = (BlockHitResult)this.crosshairTarget;
+                BlockPos blockpos = blockraytraceresult.getBlockPos();
+-               if (!this.world.getBlockState(blockpos).isAir()) {
++               if (!this.world.isAir(blockpos)) {
+                   this.interactionManager.attackBlock(blockpos, blockraytraceresult.getSide());
+                   break;
+                }
+@@ -1206,8 +1226,10 @@
+                }
+ 
+                this.player.resetLastAttackedTicks();
++               net.minecraftforge.common.ForgeHooks.onEmptyLeftClick(this.player);
+             }
+ 
++            if (inputEvent.shouldSwingHand())
+             this.player.swingHand(Hand.MAIN_HAND);
+          }
+       }
+@@ -1222,6 +1244,11 @@
+             }
+ 
+             for(Hand hand : Hand.values()) {
++               net.minecraftforge.client.event.InputEvent.ClickInputEvent inputEvent = net.minecraftforge.client.ForgeHooksClient.onClickInput(1, this.options.keyUse, hand);
++               if (inputEvent.isCanceled()) {
++                  if (inputEvent.shouldSwingHand()) this.player.swingHand(hand);
++                  return;
++               }
+                ItemStack itemstack = this.player.getStackInHand(hand);
+                if (this.crosshairTarget != null) {
+                   switch(this.crosshairTarget.getType()) {
+@@ -1235,6 +1262,7 @@
+ 
+                      if (actionresulttype.isAccepted()) {
+                         if (actionresulttype.shouldSwingHand()) {
++                           if (inputEvent.shouldSwingHand())
+                            this.player.swingHand(hand);
+                         }
+ 
+@@ -1247,6 +1275,7 @@
+                      ActionResult actionresulttype1 = this.interactionManager.interactBlock(this.player, this.world, hand, blockraytraceresult);
+                      if (actionresulttype1.isAccepted()) {
+                         if (actionresulttype1.shouldSwingHand()) {
++                           if (inputEvent.shouldSwingHand())
+                            this.player.swingHand(hand);
+                            if (!itemstack.isEmpty() && (itemstack.getCount() != i || this.interactionManager.hasCreativeInventory())) {
+                               this.gameRenderer.firstPersonRenderer.resetEquipProgress(hand);
+@@ -1262,6 +1291,9 @@
+                   }
+                }
+ 
++               if (itemstack.isEmpty() && (this.crosshairTarget == null || this.crosshairTarget.getType() == HitResult.Type.MISS))
++                   net.minecraftforge.common.ForgeHooks.onEmptyClick(this.player, hand);
++
+                if (!itemstack.isEmpty()) {
+                   ActionResult actionresulttype2 = this.interactionManager.interactItem(this.player, this.world, hand);
+                   if (actionresulttype2.isAccepted()) {
+@@ -1288,6 +1320,8 @@
+          --this.itemUseCooldown;
+       }
+ 
++      net.minecraftforge.fml.hooks.BasicEventHooks.onPreClientTick();
++
+       this.profiler.push("gui");
+       if (!this.paused) {
+          this.inGameHud.tick();
+@@ -1405,6 +1439,8 @@
+       this.profiler.swap("keyboard");
+       this.keyboard.pollDebugCrash();
+       this.profiler.pop();
++
++      net.minecraftforge.fml.hooks.BasicEventHooks.onPostClientTick();
+    }
+ 
+    private void handleInputEvents() {
+@@ -1559,6 +1595,12 @@
+       this.openScreen(worldloadprogressscreen);
+ 
+       while(!this.server.isLoading()) {
++         if (!net.minecraftforge.fml.StartupQuery.check() || this.server.isStopped()) {
++            this.openScreen(null);
++            return;
++         } else if (this.currentScreen == null) // if we're showing nothing, put the working screen back again
++           this.openScreen(worldloadprogressscreen);
++
+          worldloadprogressscreen.tick();
+          this.render(false);
+ 
+@@ -1579,11 +1621,17 @@
+       networkmanager.setPacketListener(new ClientLoginNetworkHandler(networkmanager, this, (Screen)null, (p_229998_0_) -> {
+       }));
+       networkmanager.send(new HandshakeC2SPacket(socketaddress.toString(), 0, NetworkState.LOGIN));
+-      networkmanager.send(new LoginHelloC2SPacket(this.getSession().getProfile()));
++      com.mojang.authlib.GameProfile gameProfile = this.getSession().getProfile();
++      if (!this.getSession().hasCachedProperties()) {
++         gameProfile = sessionService.fillProfileProperties(gameProfile, true); //Forge: Fill profile properties upon game load. Fixes MC-52974.
++         this.getSession().setProperties(gameProfile.getProperties());
++      }
++      networkmanager.send(new LoginHelloC2SPacket(gameProfile));
+       this.connection = networkmanager;
+    }
+ 
+    public void joinWorld(ClientWorld worldClientIn) {
++      if (world != null) net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.WorldEvent.Unload(world));
+       ProgressScreen workingscreen = new ProgressScreen();
+       workingscreen.method_15412(new TranslatableText("connect.joining"));
+       this.reset(workingscreen);
+@@ -1615,10 +1663,12 @@
+       IntegratedServer integratedserver = this.server;
+       this.server = null;
+       this.gameRenderer.reset();
++      net.minecraftforge.fml.client.ClientHooks.firePlayerLogout(this.interactionManager, this.player);
+       this.interactionManager = null;
+       NarratorManager.INSTANCE.clear();
+       this.reset(screenIn);
+       if (this.world != null) {
++         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.WorldEvent.Unload(world));
+          if (integratedserver != null) {
+             while(!integratedserver.isStopping()) {
+                this.render(false);
+@@ -1629,6 +1679,7 @@
+          this.inGameHud.clear();
+          this.currentServerEntry = null;
+          this.isIntegratedServerRunning = false;
++         net.minecraftforge.fml.client.ClientHooks.handleClientWorldClosing(world);
+          this.game.onLeaveGameSession();
+       }
+ 
+@@ -1651,6 +1702,7 @@
+       this.particleManager.setWorld(worldIn);
+       BlockEntityRenderDispatcher.INSTANCE.setWorld(worldIn);
+       this.updateWindowTitle();
++      net.minecraftforge.client.MinecraftForgeClient.clearRenderCache();
+    }
+ 
+    public final boolean isDemo() {
+@@ -1676,112 +1728,9 @@
+ 
+    private void doItemPick() {
+       if (this.crosshairTarget != null && this.crosshairTarget.getType() != HitResult.Type.MISS) {
+-         boolean flag = this.player.abilities.creativeMode;
+-         BlockEntity tileentity = null;
+-         HitResult.Type raytraceresult$type = this.crosshairTarget.getType();
+-         ItemStack itemstack;
+-         if (raytraceresult$type == HitResult.Type.BLOCK) {
+-            BlockPos blockpos = ((BlockHitResult)this.crosshairTarget).getBlockPos();
+-            BlockState blockstate = this.world.getBlockState(blockpos);
+-            Block block = blockstate.getBlock();
+-            if (blockstate.isAir()) {
+-               return;
+-            }
+-
+-            itemstack = block.getPickStack(this.world, blockpos, blockstate);
+-            if (itemstack.isEmpty()) {
+-               return;
+-            }
+-
+-            if (flag && Screen.hasControlDown() && block.hasBlockEntity()) {
+-               tileentity = this.world.getBlockEntity(blockpos);
+-            }
+-         } else {
+-            if (raytraceresult$type != HitResult.Type.ENTITY || !flag) {
+-               return;
+-            }
+-
+-            Entity entity = ((EntityHitResult)this.crosshairTarget).getEntity();
+-            if (entity instanceof PaintingEntity) {
+-               itemstack = new ItemStack(Items.PAINTING);
+-            } else if (entity instanceof LeadKnotEntity) {
+-               itemstack = new ItemStack(Items.LEAD);
+-            } else if (entity instanceof ItemFrameEntity) {
+-               ItemFrameEntity itemframeentity = (ItemFrameEntity)entity;
+-               ItemStack itemstack1 = itemframeentity.getHeldItemStack();
+-               if (itemstack1.isEmpty()) {
+-                  itemstack = new ItemStack(Items.ITEM_FRAME);
+-               } else {
+-                  itemstack = itemstack1.copy();
+-               }
+-            } else if (entity instanceof AbstractMinecartEntity) {
+-               AbstractMinecartEntity abstractminecartentity = (AbstractMinecartEntity)entity;
+-               Item item;
+-               switch(abstractminecartentity.getMinecartType()) {
+-               case FURNACE:
+-                  item = Items.FURNACE_MINECART;
+-                  break;
+-               case CHEST:
+-                  item = Items.CHEST_MINECART;
+-                  break;
+-               case TNT:
+-                  item = Items.TNT_MINECART;
+-                  break;
+-               case HOPPER:
+-                  item = Items.HOPPER_MINECART;
+-                  break;
+-               case COMMAND_BLOCK:
+-                  item = Items.COMMAND_BLOCK_MINECART;
+-                  break;
+-               default:
+-                  item = Items.MINECART;
+-               }
+-
+-               itemstack = new ItemStack(item);
+-            } else if (entity instanceof BoatEntity) {
+-               itemstack = new ItemStack(((BoatEntity)entity).asItem());
+-            } else if (entity instanceof ArmorStandEntity) {
+-               itemstack = new ItemStack(Items.ARMOR_STAND);
+-            } else if (entity instanceof EnderCrystalEntity) {
+-               itemstack = new ItemStack(Items.END_CRYSTAL);
+-            } else {
+-               SpawnEggItem spawneggitem = SpawnEggItem.forEntity(entity.getType());
+-               if (spawneggitem == null) {
+-                  return;
+-               }
+-
+-               itemstack = new ItemStack(spawneggitem);
+-            }
+-         }
+-
+-         if (itemstack.isEmpty()) {
+-            String s = "";
+-            if (raytraceresult$type == HitResult.Type.BLOCK) {
+-               s = Registry.BLOCK.getId(this.world.getBlockState(((BlockHitResult)this.crosshairTarget).getBlockPos()).getBlock()).toString();
+-            } else if (raytraceresult$type == HitResult.Type.ENTITY) {
+-               s = Registry.ENTITY_TYPE.getId(((EntityHitResult)this.crosshairTarget).getEntity().getType()).toString();
+-            }
+-
+-            LOGGER.warn("Picking on: [{}] {} gave null item", raytraceresult$type, s);
+-         } else {
+-            PlayerInventory playerinventory = this.player.inventory;
+-            if (tileentity != null) {
+-               this.addBlockEntityNbt(itemstack, tileentity);
+-            }
+-
+-            int i = playerinventory.getSlotWithStack(itemstack);
+-            if (flag) {
+-               playerinventory.addPickBlock(itemstack);
+-               this.interactionManager.clickCreativeStack(this.player.getStackInHand(Hand.MAIN_HAND), 36 + playerinventory.selectedSlot);
+-            } else if (i != -1) {
+-               if (PlayerInventory.isValidHotbarIndex(i)) {
+-                  playerinventory.selectedSlot = i;
+-               } else {
+-                  this.interactionManager.pickFromInventory(i);
+-               }
+-            }
+-
+-         }
++         if (!net.minecraftforge.client.ForgeHooksClient.onClickInput(2, this.options.keyPickItem, Hand.MAIN_HAND).isCanceled())
++         net.minecraftforge.common.ForgeHooks.onPickBlock(this.crosshairTarget, this.player, this.world);
++         // We delete this code wholly instead of commenting it out, to make sure we detect changes in it between MC versions
+       }
+    }
+ 
+@@ -1863,6 +1812,7 @@
+       return instance;
+    }
+ 
++   @Deprecated // Forge: Use selective scheduleResourceRefresh method in FMLClientHandler
+    public CompletableFuture<Void> reloadResourcesConcurrently() {
+       return this.submit(this::reloadResources).thenCompose((p_229993_0_) -> {
+          return p_229993_0_;
+@@ -1990,6 +1940,8 @@
+    }
+ 
+    public MusicTracker.MusicType getMusicType() {
++      MusicTracker.MusicType type = this.world == null || this.world.dimension == null ? null : this.world.dimension.getMusicType();
++      if (type != null) return type;
+       if (this.currentScreen instanceof CreditsScreen) {
+          return MusicTracker.MusicType.CREDITS;
+       } else if (this.player == null) {
+@@ -2166,7 +2118,7 @@
+          supplier = createV4ResourcePackFactory(supplier);
+       }
+ 
+-      return new ClientResourcePackProfile(name, isAlwaysEnabled, supplier, p_228011_3_, p_228011_4_, priority);
++      return new ClientResourcePackProfile(name, isAlwaysEnabled, supplier, p_228011_3_, p_228011_4_, priority, p_228011_3_.isHidden());
+    }
+ 
+    private static Supplier<ResourcePack> createV3ResoucePackFactory(Supplier<ResourcePack> p_228021_0_) {
+@@ -2184,4 +2136,12 @@
+    public void resetMipmapLevels(int p_228020_1_) {
+       this.bakedModelManager.resetMipmapLevels(p_228020_1_);
+    }
++
++   public ItemColors getItemColors() {
++      return this.itemColorMap;
++   }
++
++   public SearchManager getSearchTreeManager() {
++      return this.searchManager;
++   }
+ }

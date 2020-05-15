@@ -1,0 +1,42 @@
+--- a/net/minecraft/server/world/ThreadedAnvilChunkStorage.java
++++ b/net/minecraft/server/world/ThreadedAnvilChunkStorage.java
+@@ -367,6 +367,7 @@
+       iprofiler.swap("chunk_unload");
+       if (!this.world.isSavingDisabled()) {
+          this.method_20605(hasMoreTime);
++         if (this.currentChunkHolders.isEmpty()) net.minecraftforge.common.DimensionManager.unloadWorld(this.world);
+       }
+ 
+       iprofiler.pop();
+@@ -403,6 +404,7 @@
+             if (this.field_18807.remove(chunkPosIn, chunkHolderIn) && p_219185_5_ != null) {
+                if (p_219185_5_ instanceof WorldChunk) {
+                   ((WorldChunk)p_219185_5_).setLoadedToWorld(false);
++                  net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkEvent.Unload((WorldChunk)p_219185_5_));
+                }
+ 
+                this.save(p_219185_5_);
+@@ -593,6 +595,7 @@
+                if (list != null) {
+                   list.forEach(chunk::remove);
+                }
++               net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkEvent.Load(chunk));
+             }
+ 
+             return chunk;
+@@ -678,6 +681,7 @@
+ 
+             this.world.getProfiler().visit("chunkSave");
+             CompoundTag compoundnbt1 = ChunkSerializer.serialize(this.world, chunkIn);
++            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.world.ChunkDataEvent.Save(chunkIn, chunkIn.getWorldForge() != null ? chunkIn.getWorldForge() : this.world, compoundnbt1));
+             this.setTagAt(chunkpos, compoundnbt1);
+             return true;
+          } catch (Exception exception) {
+@@ -710,6 +714,7 @@
+ 
+    protected void sendWatchPackets(ServerPlayerEntity player, ChunkPos chunkPosIn, Packet<?>[] packetCache, boolean wasLoaded, boolean load) {
+       if (player.world == this.world) {
++         net.minecraftforge.event.ForgeEventFactory.fireChunkWatch(wasLoaded, load, player, chunkPosIn, this.world);
+          if (load && !wasLoaded) {
+             ChunkHolder chunkholder = this.getChunkHolder(chunkPosIn.toLong());
+             if (chunkholder != null) {

@@ -24,31 +24,30 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
-
-import net.minecraft.tags.TagCollection;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.tag.TagContainer;
+import net.minecraft.util.Identifier;
 
 public class ReverseTagWrapper<T>
 {
     private final T target;
     private final IntSupplier genSupplier;
-    private final Supplier<TagCollection<T>> colSupplier;
+    private final Supplier<TagContainer<T>> colSupplier;
 
     private int generation = -1;
-    private Set<ResourceLocation> cache = null;
+    private Set<Identifier> cache = null;
 
-    public ReverseTagWrapper(T target, IntSupplier genSupplier, Supplier<TagCollection<T>> colSupplier)
+    public ReverseTagWrapper(T target, IntSupplier genSupplier, Supplier<TagContainer<T>> colSupplier)
     {
         this.target = target;
         this.genSupplier = genSupplier;
         this.colSupplier = colSupplier;
     }
 
-    public Set<ResourceLocation> getTagNames()
+    public Set<Identifier> getTagNames()
     {
         if (cache == null || generation != genSupplier.getAsInt())
         {
-            this.cache = Collections.unmodifiableSet(new HashSet<>(colSupplier.get().getOwningTags(target)));
+            this.cache = Collections.unmodifiableSet(new HashSet<>(colSupplier.get().getTagsFor(target)));
             this.generation = genSupplier.getAsInt();
         }
         return this.cache;

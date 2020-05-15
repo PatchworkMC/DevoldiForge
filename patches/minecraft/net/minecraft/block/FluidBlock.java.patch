@@ -1,0 +1,85 @@
+--- a/net/minecraft/block/FluidBlock.java
++++ b/net/minecraft/block/FluidBlock.java
+@@ -32,9 +32,11 @@
+ 
+ public class FluidBlock extends Block implements FluidDrainable {
+    public static final IntProperty LEVEL = Properties.LEVEL_15;
+-   protected final BaseFluid fluid;
++   private final BaseFluid fluid;
+    private final List<FluidState> statesByLevel;
+ 
++   // Forge: Use the constructor that takes a supplier
++   @Deprecated
+    protected FluidBlock(BaseFluid fluidIn, Block.Settings builder) {
+       super(builder);
+       this.fluid = fluidIn;
+@@ -47,8 +49,21 @@
+ 
+       this.statesByLevel.add(fluidIn.getFlowing(8, true));
+       this.setDefaultState(this.stateManager.getDefaultState().with(LEVEL, Integer.valueOf(0)));
++      fluidStateCacheInitialized = true;
++      supplier = fluidIn.delegate;
+    }
+ 
++   /**
++    * @param supplier A fluid supplier such as {@link net.minecraftforge.fml.RegistryObject<Fluid>}
++    */
++   public FluidBlock(java.util.function.Supplier<? extends BaseFluid> supplier, Block.Settings p_i48368_1_) {
++      super(p_i48368_1_);
++      this.fluid = null;
++      this.statesByLevel = Lists.newArrayList();
++      this.setDefaultState(this.stateManager.getDefaultState().with(LEVEL, Integer.valueOf(0)));
++      this.supplier = supplier;
++   }
++
+    public void randomTick(BlockState state, ServerWorld worldIn, BlockPos pos, Random random) {
+       worldIn.getFluidState(pos).onRandomTick(worldIn, pos, random);
+    }
+@@ -63,6 +78,7 @@
+ 
+    public FluidState getFluidState(BlockState state) {
+       int i = state.get(LEVEL);
++      if (!fluidStateCacheInitialized) initFluidStateCache();
+       return this.statesByLevel.get(Math.min(i, 8));
+    }
+ 
+@@ -123,13 +139,13 @@
+          if (flag) {
+             FluidState ifluidstate = worldIn.getFluidState(pos);
+             if (ifluidstate.isStill()) {
+-               worldIn.setBlockState(pos, Blocks.OBSIDIAN.getDefaultState());
++               worldIn.setBlockState(pos, net.minecraftforge.event.ForgeEventFactory.fireFluidPlaceBlockEvent(worldIn, pos, pos, Blocks.OBSIDIAN.getDefaultState()));
+                this.playExtinguishSound(worldIn, pos);
+                return false;
+             }
+ 
+             if (ifluidstate.getHeight(worldIn, pos) >= 0.44444445F) {
+-               worldIn.setBlockState(pos, Blocks.COBBLESTONE.getDefaultState());
++               worldIn.setBlockState(pos, net.minecraftforge.event.ForgeEventFactory.fireFluidPlaceBlockEvent(worldIn, pos, pos, Blocks.COBBLESTONE.getDefaultState()));
+                this.playExtinguishSound(worldIn, pos);
+                return false;
+             }
+@@ -162,4 +178,23 @@
+       }
+ 
+    }
++
++   // Forge start
++   private final java.util.function.Supplier<? extends Fluid> supplier;
++   public BaseFluid getFluid() {
++      return (BaseFluid)supplier.get();
++   }
++
++   private boolean fluidStateCacheInitialized = false;
++   protected synchronized void initFluidStateCache() {
++      if (fluidStateCacheInitialized == false) {
++         this.statesByLevel.add(getFluid().getStill(false));
++
++         for (int i = 1; i < 8; ++i)
++            this.statesByLevel.add(getFluid().getFlowing(8 - i, false));
++
++         this.statesByLevel.add(getFluid().getFlowing(8, true));
++         fluidStateCacheInitialized = true;
++      }
++   }
+ }

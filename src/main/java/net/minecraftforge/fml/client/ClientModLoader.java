@@ -38,18 +38,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.ClientResourcePackInfo;
-import net.minecraft.client.resources.DownloadingPackFinder;
-import net.minecraft.profiler.IProfiler;
-import net.minecraft.resources.IFutureReloadListener;
-import net.minecraft.resources.IReloadableResourceManager;
-import net.minecraft.resources.IResourceManager;
-import net.minecraft.resources.ResourcePackInfo;
-import net.minecraft.resources.ResourcePackList;
-import net.minecraft.resources.data.PackMetadataSection;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.resource.ClientBuiltinResourcePackProvider;
+import net.minecraft.client.resource.ClientResourcePackProfile;
+import net.minecraft.resource.ReloadableResourceManager;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.resource.ResourcePackManager;
+import net.minecraft.resource.ResourcePackProfile;
+import net.minecraft.resource.ResourceReloadListener;
+import net.minecraft.resource.metadata.PackResourceMetadata;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.util.profiler.Profiler;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.ModelRegistryEvent;
@@ -75,16 +76,16 @@ import net.minecraftforge.fml.packs.ResourcePackLoader;
 import net.minecraftforge.fml.server.LanguageHook;
 import net.minecraftforge.forgespi.language.IModInfo;
 
-@OnlyIn(Dist.CLIENT)
+@Environment(EnvType.CLIENT)
 public class ClientModLoader
 {
     private static final Logger LOGGER = LogManager.getLogger();
     private static boolean loading;
-    private static Minecraft mc;
+    private static MinecraftClient mc;
     private static LoadingFailedException error;
     private static EarlyLoaderGUI earlyLoaderGUI;
 
-    public static void begin(final Minecraft minecraft, final ResourcePackList<ClientResourcePackInfo> defaultResourcePacks, final IReloadableResourceManager mcResourceManager, DownloadingPackFinder metadataSerializer)
+    public static void begin(final MinecraftClient minecraft, final ResourcePackManager<ClientResourcePackProfile> defaultResourcePacks, final ReloadableResourceManager mcResourceManager, ClientBuiltinResourcePackProvider metadataSerializer)
     {
         // force log4j to shutdown logging in a shutdown hook. This is because we disable default shutdown hook so the server properly logs it's shutdown
         Runtime.getRuntime().addShutdownHook(new Thread(LogManager::shutdown));
@@ -93,17 +94,17 @@ public class ClientModLoader
         SidedProvider.setClient(()->minecraft);
         LogicalSidedProvider.setClient(()->minecraft);
         LanguageHook.loadForgeAndMCLangs();
-        earlyLoaderGUI = new EarlyLoaderGUI(minecraft.getMainWindow());
+        earlyLoaderGUI = new EarlyLoaderGUI(minecraft.getWindow());
         createRunnableWithCatch(() -> ModLoader.get().gatherAndInitializeMods(earlyLoaderGUI::renderTick)).run();
         ResourcePackLoader.loadResourcePacks(defaultResourcePacks, ClientModLoader::buildPackFinder);
-        mcResourceManager.addReloadListener(ClientModLoader::onreload);
-        mcResourceManager.addReloadListener(BrandingControl.resourceManagerReloadListener());
+        mcResourceManager.registerListener(ClientModLoader::onreload);
+        mcResourceManager.registerListener(BrandingControl.resourceManagerReloadListener());
         ModelLoaderRegistry.init();
     }
 
-    private static CompletableFuture<Void> onreload(final IFutureReloadListener.IStage stage, final IResourceManager resourceManager, final IProfiler prepareProfiler, final IProfiler executeProfiler, final Executor asyncExecutor, final Executor syncExecutor) {
+    private static CompletableFuture<Void> onreload(final ResourceReloadListener.Synchronizer stage, final ResourceManager resourceManager, final Profiler prepareProfiler, final Profiler executeProfiler, final Executor asyncExecutor, final Executor syncExecutor) {
         return CompletableFuture.runAsync(createRunnableWithCatch(() -> startModLoading(syncExecutor)), asyncExecutor).
-                thenCompose(stage::markCompleteAwaitingOthers).
+                thenCompose(stage::whenPrepared).
                 thenRunAsync(() -> finishModLoading(syncExecutor), asyncExecutor);
     }
 
@@ -124,7 +125,7 @@ public class ClientModLoader
     }
 
     private static void postSidedRunnable(Consumer<Supplier<Event>> perModContainerEventProcessor) {
-        RenderingRegistry.loadEntityRenderers(mc.getRenderManager());
+        RenderingRegistry.loadEntityRenderers(mc.getEntityRenderManager());
         ModelLoaderRegistry.initComplete();
     }
 
@@ -137,7 +138,7 @@ public class ClientModLoader
         createRunnableWithCatch(() -> ModLoader.get().finishMods(executor)).run();
         loading = false;
         // reload game settings on main thread
-        executor.execute(()->mc.gameSettings.loadOptions());
+        executor.execute(()->mc.options.load());
     }
 
     public static VersionChecker.Status checkForUpdates()
@@ -169,7 +170,7 @@ public class ClientModLoader
             MinecraftForge.EVENT_BUS.start();
         }
         if (error != null || !warnings.isEmpty()) {
-            mc.displayGuiScreen(new LoadingErrorScreen(error, warnings));
+            mc.openScreen(new LoadingErrorScreen(error, warnings));
             return true;
         } else {
             ClientHooks.logMissingTextureErrors();
@@ -185,18 +186,18 @@ public class ClientModLoader
         return loading;
     }
 
-    private static <T extends ResourcePackInfo> ResourcePackLoader.IPackInfoFinder<T> buildPackFinder(Map<ModFile, ? extends ModFileResourcePack> modResourcePacks, BiConsumer<? super ModFileResourcePack, ? super T> packSetter) {
+    private static <T extends ResourcePackProfile> ResourcePackLoader.IPackInfoFinder<T> buildPackFinder(Map<ModFile, ? extends ModFileResourcePack> modResourcePacks, BiConsumer<? super ModFileResourcePack, ? super T> packSetter) {
         return (packList, factory) -> clientPackFinder(modResourcePacks, packSetter, packList, factory);
     }
 
-    private static <T extends ResourcePackInfo> void clientPackFinder(Map<ModFile, ? extends ModFileResourcePack> modResourcePacks, BiConsumer<? super ModFileResourcePack, ? super T> packSetter, Map<String, T> packList, ResourcePackInfo.IFactory<? extends T> factory) {
+    private static <T extends ResourcePackProfile> void clientPackFinder(Map<ModFile, ? extends ModFileResourcePack> modResourcePacks, BiConsumer<? super ModFileResourcePack, ? super T> packSetter, Map<String, T> packList, ResourcePackProfile.Factory<? extends T> factory) {
         List<DelegatableResourcePack> hiddenPacks = new ArrayList<>();
         for (Entry<ModFile, ? extends ModFileResourcePack> e : modResourcePacks.entrySet())
         {
             IModInfo mod = e.getKey().getModInfos().get(0);
             if (Objects.equals(mod.getModId(), "minecraft")) continue; // skip the minecraft "mod"
             final String name = "mod:" + mod.getModId();
-            final T packInfo = ResourcePackInfo.createResourcePack(name, false, e::getValue, factory, ResourcePackInfo.Priority.BOTTOM);
+            final T packInfo = ResourcePackProfile.of(name, false, e::getValue, factory, ResourcePackProfile.InsertionPosition.BOTTOM);
             if (packInfo == null) {
                 // Vanilla only logs an error, instead of propagating, so handle null and warn that something went wrong
                 ModLoader.get().addWarning(new ModLoadingWarning(mod, ModLoadingStage.ERROR, "fml.modloading.brokenresources", e.getKey()));
@@ -210,9 +211,9 @@ public class ClientModLoader
                 hiddenPacks.add(e.getValue());
             }
         }
-        final T packInfo = ResourcePackInfo.createResourcePack("mod_resources", true, () -> new DelegatingResourcePack("mod_resources", "Mod Resources",
-                new PackMetadataSection(new TranslationTextComponent("fml.resources.modresources", hiddenPacks.size()), 5),
-                hiddenPacks), factory, ResourcePackInfo.Priority.BOTTOM);
+        final T packInfo = ResourcePackProfile.of("mod_resources", true, () -> new DelegatingResourcePack("mod_resources", "Mod Resources",
+                new PackResourceMetadata(new TranslatableText("fml.resources.modresources", hiddenPacks.size()), 5),
+                hiddenPacks), factory, ResourcePackProfile.InsertionPosition.BOTTOM);
         packList.put("mod_resources", packInfo);
     }
 }

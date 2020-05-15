@@ -1,0 +1,11 @@
+--- a/net/minecraft/client/texture/LayeredTexture.java
++++ b/net/minecraft/client/texture/LayeredTexture.java
+@@ -32,7 +32,7 @@
+       String s = iterator.next();
+ 
+       try (Resource iresource = manager.getResource(new Identifier(s))) {
+-         NativeImage nativeimage = NativeImage.read(iresource.getInputStream());
++         NativeImage nativeimage = net.minecraftforge.client.MinecraftForgeClient.getImageLayer(new Identifier(s), manager);
+ 
+          while(iterator.hasNext()) {
+             String s1 = iterator.next();

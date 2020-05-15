@@ -24,8 +24,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nullable;
-
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Identifier;
 import net.minecraftforge.common.DimensionManager.SavedEntry;
 import net.minecraftforge.eventbus.api.Event;
 
@@ -38,22 +37,22 @@ import net.minecraftforge.eventbus.api.Event;
  */
 public class RegisterDimensionsEvent extends Event
 {
-    private final Map<ResourceLocation, SavedEntry> missing;
-    private final Set<ResourceLocation> keys;
+    private final Map<Identifier, SavedEntry> missing;
+    private final Set<Identifier> keys;
 
-    public RegisterDimensionsEvent(Map<ResourceLocation, SavedEntry> missing)
+    public RegisterDimensionsEvent(Map<Identifier, SavedEntry> missing)
     {
         this.missing = missing;
         this.keys = Collections.unmodifiableSet(this.missing.keySet());
     }
 
-    public Set<ResourceLocation> getMissingNames()
+    public Set<Identifier> getMissingNames()
     {
         return keys;
     }
 
     @Nullable
-    public SavedEntry getEntry(ResourceLocation key)
+    public SavedEntry getEntry(Identifier key)
     {
         return missing.get(key);
     }

@@ -1,0 +1,15 @@
+--- a/net/minecraft/client/render/entity/EntityRenderer.java
++++ b/net/minecraft/client/render/entity/EntityRenderer.java
+@@ -56,8 +56,10 @@
+    }
+ 
+    public void render(T entityIn, float entityYaw, float partialTicks, MatrixStack matrixStackIn, VertexConsumerProvider bufferIn, int packedLightIn) {
+-      if (this.hasLabel(entityIn)) {
+-         this.renderLabelIfPresent(entityIn, entityIn.getDisplayName().asFormattedString(), matrixStackIn, bufferIn, packedLightIn);
++      net.minecraftforge.client.event.RenderNameplateEvent renderNameplateEvent = new net.minecraftforge.client.event.RenderNameplateEvent(entityIn, entityIn.getDisplayName().asFormattedString(), this, matrixStackIn, bufferIn, packedLightIn);
++      net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(renderNameplateEvent);
++      if (renderNameplateEvent.getResult() != net.minecraftforge.eventbus.api.Event.Result.DENY && (renderNameplateEvent.getResult() == net.minecraftforge.eventbus.api.Event.Result.ALLOW || this.hasLabel(entityIn))) {
++         this.renderLabelIfPresent(entityIn, renderNameplateEvent.getContent(), matrixStackIn, bufferIn, packedLightIn);
+       }
+    }
+ 

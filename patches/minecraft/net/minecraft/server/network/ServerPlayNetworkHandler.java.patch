@@ -1,0 +1,62 @@
+--- a/net/minecraft/server/network/ServerPlayNetworkHandler.java
++++ b/net/minecraft/server/network/ServerPlayNetworkHandler.java
+@@ -336,9 +336,11 @@
+             }
+ 
+             entity.updatePositionAndAngles(d3, d4, d5, f, f1);
++            this.player.updatePositionAndAngles(d3, d4, d5, this.player.yaw, this.player.pitch); // Forge - Resync player position on vehicle moving
+             boolean flag2 = serverworld.doesNotCollide(entity, entity.getBoundingBox().contract(0.0625D));
+             if (flag && (flag1 || !flag2)) {
+                entity.updatePositionAndAngles(d0, d1, d2, f, f1);
++               this.player.updatePositionAndAngles(d3, d4, d5, this.player.yaw, this.player.pitch); // Forge - Resync player position on vehicle moving
+                this.connection.send(new VehicleMoveS2CPacket(entity));
+                return;
+             }
+@@ -845,7 +847,9 @@
+       Direction direction = blockraytraceresult.getSide();
+       this.player.updateLastActionTime();
+       if (blockpos.getY() < this.server.getWorldHeight() - 1 || direction != Direction.UP && blockpos.getY() < this.server.getWorldHeight()) {
+-         if (this.requestedTeleportPos == null && this.player.squaredDistanceTo((double)blockpos.getX() + 0.5D, (double)blockpos.getY() + 0.5D, (double)blockpos.getZ() + 0.5D) < 64.0D && serverworld.canPlayerModifyAt(this.player, blockpos)) {
++         double dist = player.getAttributeInstance(net.minecraft.entity.player.PlayerEntity.REACH_DISTANCE).getValue() + 3;
++         dist *= dist;
++         if (this.requestedTeleportPos == null && this.player.squaredDistanceTo((double)blockpos.getX() + 0.5D, (double)blockpos.getY() + 0.5D, (double)blockpos.getZ() + 0.5D) < dist && serverworld.canPlayerModifyAt(this.player, blockpos)) {
+             ActionResult actionresulttype = this.player.interactionManager.interactBlock(this.player, serverworld, itemstack, hand, blockraytraceresult);
+             if (actionresulttype.shouldSwingHand()) {
+                this.player.swingHand(hand, true);
+@@ -968,7 +972,9 @@
+          if (s.startsWith("/")) {
+             this.executeCommand(s);
+          } else {
+-            Text itextcomponent = new TranslatableText("chat.type.text", this.player.getDisplayName(), s);
++            Text itextcomponent = new TranslatableText("chat.type.text", this.player.getDisplayName(), net.minecraftforge.common.ForgeHooks.newChatWithLinks(s));
++            itextcomponent = net.minecraftforge.common.ForgeHooks.onServerChatEvent(this, s, itextcomponent);
++            if (itextcomponent == null) return;
+             this.server.getPlayerManager().broadcastChatMessage(itextcomponent, false);
+          }
+ 
+@@ -1061,6 +1067,7 @@
+                this.player.interact(entity, hand);
+             } else if (packetIn.getType() == PlayerInteractEntityC2SPacket.InteractionType.INTERACT_AT) {
+                Hand hand1 = packetIn.getHand();
++               if (net.minecraftforge.common.ForgeHooks.onInteractEntityAt(player, entity, packetIn.getHitPosition(), hand1) != null) return;
+                ActionResult actionresulttype = entity.interactAt(this.player, packetIn.getHitPosition(), hand1);
+                if (actionresulttype.shouldSwingHand()) {
+                   this.player.swingHand(hand1, true);
+@@ -1094,7 +1101,7 @@
+                return;
+             }
+ 
+-            this.player = this.server.getPlayerManager().respawnPlayer(this.player, DimensionType.OVERWORLD, false);
++            this.player = this.server.getPlayerManager().respawnPlayer(this.player, this.player.dimension, false);
+             if (this.server.isHardcore()) {
+                this.player.setGameMode(GameMode.SPECTATOR);
+                this.player.getServerWorld().getGameRules().get(GameRules.SPECTATORS_GENERATE_CHUNKS).set(false, this.server);
+@@ -1268,6 +1275,8 @@
+    }
+ 
+    public void onCustomPayload(CustomPayloadC2SPacket packetIn) {
++      NetworkThreadUtils.forceMainThread(packetIn, this, this.player.getServerWorld());
++      net.minecraftforge.fml.network.NetworkHooks.onCustomPayload(packetIn, this.connection);
+    }
+ 
+    public void onUpdateDifficulty(UpdateDifficultyC2SPacket p_217263_1_) {

@@ -1,0 +1,10 @@
+--- a/net/minecraft/world/level/LevelProperties.java
++++ b/net/minecraft/world/level/LevelProperties.java
+@@ -362,6 +362,7 @@
+       CompoundTag compoundnbt1 = new CompoundTag();
+ 
+       for(Entry<DimensionType, CompoundTag> entry : this.worldData.entrySet()) {
++         if (entry.getValue() == null || entry.getValue().isEmpty()) continue;
+          compoundnbt1.put(String.valueOf(entry.getKey().getRawId()), entry.getValue());
+       }
+ 

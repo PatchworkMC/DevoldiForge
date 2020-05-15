@@ -1,0 +1,62 @@
+--- a/net/minecraft/entity/mob/SlimeEntity.java
++++ b/net/minecraft/entity/mob/SlimeEntity.java
+@@ -39,7 +39,6 @@
+ import net.minecraft.world.biome.Biome;
+ import net.minecraft.world.biome.Biomes;
+ import net.minecraft.world.gen.ChunkRandom;
+-import net.minecraft.world.level.LevelGeneratorType;
+ 
+ public class SlimeEntity extends MobEntity implements Monster {
+    private static final TrackedData<Integer> SLIME_SIZE = DataTracker.registerData(SlimeEntity.class, TrackedDataHandlerRegistry.INTEGER);
+@@ -128,6 +127,7 @@
+       if (this.onGround && !this.onGroundLastTick) {
+          int i = this.getSize();
+ 
++         if (spawnCustomParticles()) i = 0; // don't spawn particles if it's handled by the implementation itself
+          for(int j = 0; j < i * 8; ++j) {
+             float f = this.random.nextFloat() * ((float)Math.PI * 2F);
+             float f1 = this.random.nextFloat() * 0.5F + 0.5F;
+@@ -179,9 +179,10 @@
+       return (EntityType<? extends SlimeEntity>) super.getType();
+    }
+ 
+-   public void remove() {
++   @Override
++   public void remove(boolean keepData) {
+       int i = this.getSize();
+-      if (!this.world.isClient && i > 1 && this.getHealth() <= 0.0F) {
++      if (!this.world.isClient && i > 1 && this.getHealth() <= 0.0F && !this.removed) {
+          int j = 2 + this.random.nextInt(3);
+ 
+          for(int k = 0; k < j; ++k) {
+@@ -203,7 +204,7 @@
+          }
+       }
+ 
+-      super.remove();
++      super.remove(keepData);
+    }
+ 
+    public void pushAwayFrom(Entity entityIn) {
+@@ -261,7 +262,7 @@
+    }
+ 
+    public static boolean canSpawn(EntityType<SlimeEntity> p_223366_0_, IWorld p_223366_1_, SpawnType reason, BlockPos p_223366_3_, Random randomIn) {
+-      if (p_223366_1_.getLevelProperties().getGeneratorType() == LevelGeneratorType.FLAT && randomIn.nextInt(4) != 1) {
++      if (p_223366_1_.getLevelProperties().getGeneratorType().handleSlimeSpawnReduction(randomIn, p_223366_1_) && randomIn.nextInt(4) != 1) {
+          return false;
+       } else {
+          if (p_223366_1_.getDifficulty() != Difficulty.PEACEFUL) {
+@@ -319,6 +320,12 @@
+       return super.getDimensions(poseIn).scaled(0.255F * (float)this.getSize());
+    }
+ 
++   /**
++    * Called when the slime spawns particles on landing, see onUpdate.
++    * Return true to prevent the spawning of the default particles.
++    */
++   protected boolean spawnCustomParticles() { return false; }
++
+    static class FaceTowardTargetGoal extends Goal {
+       private final SlimeEntity slime;
+       private int ticksLeft;

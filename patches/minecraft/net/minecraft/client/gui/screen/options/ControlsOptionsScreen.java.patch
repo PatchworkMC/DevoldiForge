@@ -1,0 +1,26 @@
+--- a/net/minecraft/client/gui/screen/options/ControlsOptionsScreen.java
++++ b/net/minecraft/client/gui/screen/options/ControlsOptionsScreen.java
+@@ -34,7 +34,7 @@
+       this.children.add(this.keyBindingListWidget);
+       this.resetButton = this.addButton(new ButtonWidget(this.width / 2 - 155, this.height - 29, 150, 20, I18n.translate("controls.resetAll"), (p_213125_1_) -> {
+          for(KeyBinding keybinding : this.gameOptions.keysAll) {
+-            keybinding.setKeyCode(keybinding.getDefaultKeyCode());
++            keybinding.setToDefault();
+          }
+ 
+          KeyBinding.updateKeysByCode();
+@@ -58,11 +58,14 @@
+    public boolean keyPressed(int p_keyPressed_1_, int p_keyPressed_2_, int p_keyPressed_3_) {
+       if (this.focusedBinding != null) {
+          if (p_keyPressed_1_ == 256) {
++            this.focusedBinding.setKeyModifierAndCode(net.minecraftforge.client.settings.KeyModifier.getActiveModifier(), InputUtil.UNKNOWN_KEYCODE);
+             this.gameOptions.setKeyCode(this.focusedBinding, InputUtil.UNKNOWN_KEYCODE);
+          } else {
++            this.focusedBinding.setKeyModifierAndCode(net.minecraftforge.client.settings.KeyModifier.getActiveModifier(), InputUtil.getKeyCode(p_keyPressed_1_, p_keyPressed_2_));
+             this.gameOptions.setKeyCode(this.focusedBinding, InputUtil.getKeyCode(p_keyPressed_1_, p_keyPressed_2_));
+          }
+ 
++         if (!net.minecraftforge.client.settings.KeyModifier.isKeyCodeModifier(this.focusedBinding.getKey()))
+          this.focusedBinding = null;
+          this.time = Util.getMeasuringTimeMs();
+          KeyBinding.updateKeysByCode();

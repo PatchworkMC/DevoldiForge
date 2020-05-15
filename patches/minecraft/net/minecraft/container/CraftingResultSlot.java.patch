@@ -1,0 +1,21 @@
+--- a/net/minecraft/container/CraftingResultSlot.java
++++ b/net/minecraft/container/CraftingResultSlot.java
+@@ -43,6 +43,7 @@
+    protected void onCrafted(ItemStack stack) {
+       if (this.amount > 0) {
+          stack.onCraft(this.player.world, this.player, this.amount);
++         net.minecraftforge.fml.hooks.BasicEventHooks.firePlayerCraftingEvent(this.player, stack, this.craftingInv);
+       }
+ 
+       if (this.inventory instanceof RecipeUnlocker) {
+@@ -54,8 +55,9 @@
+ 
+    public ItemStack onTakeItem(PlayerEntity thePlayer, ItemStack stack) {
+       this.onCrafted(stack);
++      net.minecraftforge.common.ForgeHooks.setCraftingPlayer(thePlayer);
+       DefaultedList<ItemStack> nonnulllist = thePlayer.world.getRecipeManager().getRemainingStacks(RecipeType.CRAFTING, this.craftingInv, thePlayer.world);
+-
++      net.minecraftforge.common.ForgeHooks.setCraftingPlayer(null);
+       for(int i = 0; i < nonnulllist.size(); ++i) {
+          ItemStack itemstack = this.craftingInv.getInvStack(i);
+          ItemStack itemstack1 = nonnulllist.get(i);

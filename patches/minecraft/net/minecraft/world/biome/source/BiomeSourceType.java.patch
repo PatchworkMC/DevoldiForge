@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/biome/source/BiomeSourceType.java
++++ b/net/minecraft/world/biome/source/BiomeSourceType.java
+@@ -4,7 +4,7 @@
+ import net.minecraft.util.registry.Registry;
+ import net.minecraft.world.level.LevelProperties;
+ 
+-public class BiomeSourceType<C extends BiomeSourceConfig, T extends BiomeSource> {
++public class BiomeSourceType<C extends BiomeSourceConfig, T extends BiomeSource> extends net.minecraftforge.registries.ForgeRegistryEntry<BiomeSourceType<?, ?>> {
+    public static final BiomeSourceType<CheckerboardBiomeSourceConfig, CheckerboardBiomeSource> CHECKERBOARD = register("checkerboard", CheckerboardBiomeSource::new, CheckerboardBiomeSourceConfig::new);
+    public static final BiomeSourceType<FixedBiomeSourceConfig, FixedBiomeSource> FIXED = register("fixed", FixedBiomeSource::new, FixedBiomeSourceConfig::new);
+    public static final BiomeSourceType<VanillaLayeredBiomeSourceConfig, VanillaLayeredBiomeSource> VANILLA_LAYERED = register("vanilla_layered", VanillaLayeredBiomeSource::new, VanillaLayeredBiomeSourceConfig::new);

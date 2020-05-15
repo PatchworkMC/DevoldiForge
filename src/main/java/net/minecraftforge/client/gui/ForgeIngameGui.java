@@ -23,34 +23,33 @@ import static net.minecraftforge.client.event.RenderGameOverlayEvent.ElementType
 
 import java.util.ArrayList;
 import java.util.List;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.AbstractGui;
-import net.minecraft.client.gui.IngameGui;
-import net.minecraft.client.gui.overlay.DebugOverlayGui;
-import net.minecraft.client.network.play.ClientPlayNetHandler;
-import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SharedMonsterAttributes;
-import net.minecraft.entity.ai.attributes.IAttributeInstance;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.entity.player.HungerManager;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.block.Blocks;
-import net.minecraft.potion.Effects;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.gui.hud.DebugHud;
+import net.minecraft.client.gui.hud.InGameHud;
+import net.minecraft.client.network.ClientPlayNetworkHandler;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.scoreboard.ScoreObjective;
-import net.minecraft.scoreboard.ScorePlayerTeam;
 import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.tags.FluidTags;
-import net.minecraft.util.FoodStats;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.StringUtils;
+import net.minecraft.scoreboard.ScoreboardObjective;
+import net.minecraft.scoreboard.Team;
+import net.minecraft.tag.FluidTags;
+import net.minecraft.text.Text;
+import net.minecraft.util.ChatUtil;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.world.GameType;
+import net.minecraft.world.GameMode;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.client.event.RenderGameOverlayEvent.ElementType;
 import net.minecraftforge.common.MinecraftForge;
@@ -59,7 +58,7 @@ import org.lwjgl.opengl.GL11;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
-public class ForgeIngameGui extends IngameGui
+public class ForgeIngameGui extends InGameHud
 {
     //private static final ResourceLocation VIGNETTE     = new ResourceLocation("textures/misc/vignette.png");
     //private static final ResourceLocation WIDGITS      = new ResourceLocation("textures/gui/widgets.png");
@@ -93,38 +92,38 @@ public class ForgeIngameGui extends IngameGui
      */
     public static double rayTraceDistance = 20.0D;
 
-    private FontRenderer fontrenderer = null;
+    private TextRenderer fontrenderer = null;
     private RenderGameOverlayEvent eventParent;
     //private static final String MC_VERSION = MinecraftForge.MC_VERSION;
     private GuiOverlayDebugForge debugOverlay;
 
-    public ForgeIngameGui(Minecraft mc)
+    public ForgeIngameGui(MinecraftClient mc)
     {
         super(mc);
         debugOverlay = new GuiOverlayDebugForge(mc);
     }
 
     @Override
-    public void renderGameOverlay(float partialTicks)
+    public void render(float partialTicks)
     {
-        this.scaledWidth = this.mc.getMainWindow().getScaledWidth();
-        this.scaledHeight = this.mc.getMainWindow().getScaledHeight();
-        eventParent = new RenderGameOverlayEvent(partialTicks, this.mc.getMainWindow());
-        renderHealthMount = mc.player.getRidingEntity() instanceof LivingEntity;
-        renderFood = mc.player.getRidingEntity() == null;
-        renderJumpBar = mc.player.isRidingHorse();
+        this.scaledWidth = this.client.getWindow().getScaledWidth();
+        this.scaledHeight = this.client.getWindow().getScaledHeight();
+        eventParent = new RenderGameOverlayEvent(partialTicks, this.client.getWindow());
+        renderHealthMount = client.player.getVehicle() instanceof LivingEntity;
+        renderFood = client.player.getVehicle() == null;
+        renderJumpBar = client.player.hasJumpingMount();
 
         right_height = 39;
         left_height = 39;
 
         if (pre(ALL)) return;
 
-        fontrenderer = mc.fontRenderer;
+        fontrenderer = client.textRenderer;
         //mc.entityRenderer.setupOverlayRendering();
         RenderSystem.enableBlend();
-        if (renderVignette && Minecraft.isFancyGraphicsEnabled())
+        if (renderVignette && MinecraftClient.isFancyGraphicsEnabled())
         {
-            renderVignette(mc.getRenderViewEntity());
+            renderVignetteOverlay(client.getCameraEntity());
         }
         else
         {
@@ -134,30 +133,30 @@ public class ForgeIngameGui extends IngameGui
 
         if (renderHelmet) renderHelmet(partialTicks);
 
-        if (renderPortal && !mc.player.isPotionActive(Effects.NAUSEA))
+        if (renderPortal && !client.player.hasStatusEffect(StatusEffects.NAUSEA))
         {
-            renderPortal(partialTicks);
+            renderPortalOverlay(partialTicks);
         }
 
-        if (this.mc.playerController.getCurrentGameType() == GameType.SPECTATOR)
+        if (this.client.interactionManager.getCurrentGameMode() == GameMode.SPECTATOR)
         {
-            if (renderSpectatorTooltip) spectatorGui.renderTooltip(partialTicks);
+            if (renderSpectatorTooltip) spectatorHud.render(partialTicks);
         }
-        else if (!this.mc.gameSettings.hideGUI)
+        else if (!this.client.options.hudHidden)
         {
             if (renderHotbar) renderHotbar(partialTicks);
         }
 
-        if (!this.mc.gameSettings.hideGUI) {
+        if (!this.client.options.hudHidden) {
             RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
             setBlitOffset(-90);
-            rand.setSeed((long)(ticks * 312871));
+            random.setSeed((long)(ticks * 312871));
 
-            if (renderCrosshairs) renderAttackIndicator();
+            if (renderCrosshairs) renderCrosshair();
             if (renderBossHealth) renderBossHealth();
 
             RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-            if (this.mc.playerController.shouldDrawHUD() && this.mc.getRenderViewEntity() instanceof PlayerEntity)
+            if (this.client.interactionManager.hasStatusBars() && this.client.getCameraEntity() instanceof PlayerEntity)
             {
                 if (renderHealth) renderHealth(this.scaledWidth, this.scaledHeight);
                 if (renderArmor)  renderArmor(this.scaledWidth, this.scaledHeight);
@@ -168,16 +167,16 @@ public class ForgeIngameGui extends IngameGui
 
             if (renderJumpBar)
             {
-                renderHorseJumpBar(this.scaledWidth / 2 - 91);
+                renderMountJumpBar(this.scaledWidth / 2 - 91);
             }
             else if (renderExperiance)
             {
                 renderExperience(this.scaledWidth / 2 - 91);
             }
-            if (this.mc.gameSettings.heldItemTooltips && this.mc.playerController.getCurrentGameType() != GameType.SPECTATOR) {
-                this.renderSelectedItem();
-             } else if (this.mc.player.isSpectator()) {
-                this.spectatorGui.renderSelectedItem();
+            if (this.client.options.heldItemTooltips && this.client.interactionManager.getCurrentGameMode() != GameMode.SPECTATOR) {
+                this.renderHeldItemTooltip();
+             } else if (this.client.player.isSpectator()) {
+                this.spectatorHud.render();
              }
         }
 
@@ -185,26 +184,26 @@ public class ForgeIngameGui extends IngameGui
 
         renderHUDText(this.scaledWidth, this.scaledHeight);
         renderFPSGraph();
-        renderPotionEffects();
-        if (!mc.gameSettings.hideGUI) {
+        renderStatusEffectOverlay();
+        if (!client.options.hudHidden) {
             renderRecordOverlay(this.scaledWidth, this.scaledHeight, partialTicks);
             renderSubtitles();
             renderTitle(this.scaledWidth, this.scaledHeight, partialTicks);
         }
 
 
-        Scoreboard scoreboard = this.mc.world.getScoreboard();
-        ScoreObjective objective = null;
-        ScorePlayerTeam scoreplayerteam = scoreboard.getPlayersTeam(mc.player.getScoreboardName());
+        Scoreboard scoreboard = this.client.world.getScoreboard();
+        ScoreboardObjective objective = null;
+        Team scoreplayerteam = scoreboard.getPlayerTeam(client.player.getEntityName());
         if (scoreplayerteam != null)
         {
             int slot = scoreplayerteam.getColor().getColorIndex();
-            if (slot >= 0) objective = scoreboard.getObjectiveInDisplaySlot(3 + slot);
+            if (slot >= 0) objective = scoreboard.getObjectiveForSlot(3 + slot);
         }
-        ScoreObjective scoreobjective1 = objective != null ? objective : scoreboard.getObjectiveInDisplaySlot(1);
+        ScoreboardObjective scoreobjective1 = objective != null ? objective : scoreboard.getObjectiveForSlot(1);
         if (renderObjective && scoreobjective1 != null)
         {
-            this.renderScoreboard(scoreobjective1);
+            this.renderScoreboardSidebar(scoreobjective1);
         }
 
         RenderSystem.enableBlend();
@@ -222,46 +221,46 @@ public class ForgeIngameGui extends IngameGui
     }
 
     @Override
-    protected void renderAttackIndicator()
+    protected void renderCrosshair()
     {
         if (pre(CROSSHAIRS)) return;
-        bind(AbstractGui.GUI_ICONS_LOCATION);
+        bind(DrawableHelper.GUI_ICONS_LOCATION);
         RenderSystem.enableBlend();
         RenderSystem.enableAlphaTest();
-        super.renderAttackIndicator();
+        super.renderCrosshair();
         post(CROSSHAIRS);
     }
 
     @Override
-    protected void renderPotionEffects()
+    protected void renderStatusEffectOverlay()
     {
         if (pre(POTION_ICONS)) return;
-        super.renderPotionEffects();
+        super.renderStatusEffectOverlay();
         post(POTION_ICONS);
     }
 
     protected void renderSubtitles()
     {
         if (pre(SUBTITLES)) return;
-        this.overlaySubtitle.render();
+        this.subtitlesHud.render();
         post(SUBTITLES);
     }
 
     protected void renderBossHealth()
     {
         if (pre(BOSSHEALTH)) return;
-        bind(AbstractGui.GUI_ICONS_LOCATION);
+        bind(DrawableHelper.GUI_ICONS_LOCATION);
         RenderSystem.defaultBlendFunc();
-        mc.getProfiler().startSection("bossHealth");
+        client.getProfiler().push("bossHealth");
         RenderSystem.enableBlend();
-        this.overlayBoss.render();
+        this.bossBarHud.render();
         RenderSystem.disableBlend();
-        mc.getProfiler().endSection();
+        client.getProfiler().pop();
         post(BOSSHEALTH);
     }
 
     @Override
-    protected void renderVignette(Entity entity)
+    protected void renderVignetteOverlay(Entity entity)
     {
         if (pre(VIGNETTE))
         {
@@ -270,7 +269,7 @@ public class ForgeIngameGui extends IngameGui
             RenderSystem.defaultBlendFunc();
             return;
         }
-        super.renderVignette(entity);
+        super.renderVignetteOverlay(entity);
         post(VIGNETTE);
     }
 
@@ -278,9 +277,9 @@ public class ForgeIngameGui extends IngameGui
     {
         if (pre(HELMET)) return;
 
-        ItemStack itemstack = this.mc.player.inventory.armorItemInSlot(3);
+        ItemStack itemstack = this.client.player.inventory.getArmorStack(3);
 
-        if (this.mc.gameSettings.thirdPersonView == 0 && !itemstack.isEmpty())
+        if (this.client.options.perspective == 0 && !itemstack.isEmpty())
         {
             Item item = itemstack.getItem();
             if (item == Blocks.CARVED_PUMPKIN.asItem())
@@ -289,7 +288,7 @@ public class ForgeIngameGui extends IngameGui
             }
             else
             {
-                item.renderHelmetOverlay(itemstack, mc.player, this.scaledWidth, this.scaledHeight, partialTicks);
+                item.renderHelmetOverlay(itemstack, client.player, this.scaledWidth, this.scaledHeight, partialTicks);
             }
         }
 
@@ -299,13 +298,13 @@ public class ForgeIngameGui extends IngameGui
     protected void renderArmor(int width, int height)
     {
         if (pre(ARMOR)) return;
-        mc.getProfiler().startSection("armor");
+        client.getProfiler().push("armor");
 
         RenderSystem.enableBlend();
         int left = width / 2 - 91;
         int top = height - left_height;
 
-        int level = mc.player.getTotalArmorValue();
+        int level = client.player.getArmor();
         for (int i = 1; level > 0 && i < 20; i += 2)
         {
             if (i < level)
@@ -325,20 +324,20 @@ public class ForgeIngameGui extends IngameGui
         left_height += 10;
 
         RenderSystem.disableBlend();
-        mc.getProfiler().endSection();
+        client.getProfiler().pop();
         post(ARMOR);
     }
 
     @Override
-    protected void renderPortal(float partialTicks)
+    protected void renderPortalOverlay(float partialTicks)
     {
         if (pre(PORTAL)) return;
 
-        float f1 = mc.player.prevTimeInPortal + (mc.player.timeInPortal - mc.player.prevTimeInPortal) * partialTicks;
+        float f1 = client.player.lastNauseaStrength + (client.player.nextNauseaStrength - client.player.lastNauseaStrength) * partialTicks;
 
         if (f1 > 0.0F)
         {
-            super.renderPortal(f1);
+            super.renderPortalOverlay(f1);
         }
 
         post(PORTAL);
@@ -349,9 +348,9 @@ public class ForgeIngameGui extends IngameGui
     {
         if (pre(HOTBAR)) return;
 
-        if (mc.playerController.getCurrentGameType() == GameType.SPECTATOR)
+        if (client.interactionManager.getCurrentGameMode() == GameMode.SPECTATOR)
         {
-            this.spectatorGui.renderTooltip(partialTicks);
+            this.spectatorHud.render(partialTicks);
         }
         else
         {
@@ -362,22 +361,22 @@ public class ForgeIngameGui extends IngameGui
     }
 
     @Override
-    public void setOverlayMessage(ITextComponent component, boolean animateColor)
+    public void setOverlayMessage(Text component, boolean animateColor)
     {
-        this.setOverlayMessage(component.getFormattedText(), animateColor);
+        this.setOverlayMessage(component.asFormattedString(), animateColor);
     }
 
     protected void renderAir(int width, int height)
     {
         if (pre(AIR)) return;
-        mc.getProfiler().startSection("air");
-        PlayerEntity player = (PlayerEntity)this.mc.getRenderViewEntity();
+        client.getProfiler().push("air");
+        PlayerEntity player = (PlayerEntity)this.client.getCameraEntity();
         RenderSystem.enableBlend();
         int left = width / 2 + 91;
         int top = height - right_height;
 
         int air = player.getAir();
-        if (player.areEyesInFluid(FluidTags.WATER) || air < 300)
+        if (player.isInFluid(FluidTags.WATER) || air < 300)
         {
             int full = MathHelper.ceil((double)(air - 2) * 10.0D / 300.0D);
             int partial = MathHelper.ceil((double)air * 10.0D / 300.0D) - full;
@@ -390,7 +389,7 @@ public class ForgeIngameGui extends IngameGui
         }
 
         RenderSystem.disableBlend();
-        mc.getProfiler().endSection();
+        client.getProfiler().pop();
         post(AIR);
     }
 
@@ -398,42 +397,42 @@ public class ForgeIngameGui extends IngameGui
     {
         bind(GUI_ICONS_LOCATION);
         if (pre(HEALTH)) return;
-        mc.getProfiler().startSection("health");
+        client.getProfiler().push("health");
         RenderSystem.enableBlend();
 
-        PlayerEntity player = (PlayerEntity)this.mc.getRenderViewEntity();
+        PlayerEntity player = (PlayerEntity)this.client.getCameraEntity();
         int health = MathHelper.ceil(player.getHealth());
-        boolean highlight = healthUpdateCounter > (long)ticks && (healthUpdateCounter - (long)ticks) / 3L %2L == 1L;
+        boolean highlight = heartJumpEndTick > (long)ticks && (heartJumpEndTick - (long)ticks) / 3L %2L == 1L;
 
-        if (health < this.playerHealth && player.hurtResistantTime > 0)
+        if (health < this.lastHealthValue && player.timeUntilRegen > 0)
         {
-            this.lastSystemTime = Util.milliTime();
-            this.healthUpdateCounter = (long)(this.ticks + 20);
+            this.lastHealthCheckTime = Util.getMeasuringTimeMs();
+            this.heartJumpEndTick = (long)(this.ticks + 20);
         }
-        else if (health > this.playerHealth && player.hurtResistantTime > 0)
+        else if (health > this.lastHealthValue && player.timeUntilRegen > 0)
         {
-            this.lastSystemTime = Util.milliTime();
-            this.healthUpdateCounter = (long)(this.ticks + 10);
-        }
-
-        if (Util.milliTime() - this.lastSystemTime > 1000L)
-        {
-            this.playerHealth = health;
-            this.lastPlayerHealth = health;
-            this.lastSystemTime = Util.milliTime();
+            this.lastHealthCheckTime = Util.getMeasuringTimeMs();
+            this.heartJumpEndTick = (long)(this.ticks + 10);
         }
 
-        this.playerHealth = health;
-        int healthLast = this.lastPlayerHealth;
+        if (Util.getMeasuringTimeMs() - this.lastHealthCheckTime > 1000L)
+        {
+            this.lastHealthValue = health;
+            this.renderHealthValue = health;
+            this.lastHealthCheckTime = Util.getMeasuringTimeMs();
+        }
 
-        IAttributeInstance attrMaxHealth = player.getAttribute(SharedMonsterAttributes.MAX_HEALTH);
+        this.lastHealthValue = health;
+        int healthLast = this.renderHealthValue;
+
+        EntityAttributeInstance attrMaxHealth = player.getAttributeInstance(EntityAttributes.MAX_HEALTH);
         float healthMax = (float)attrMaxHealth.getValue();
         float absorb = MathHelper.ceil(player.getAbsorptionAmount());
 
         int healthRows = MathHelper.ceil((healthMax + absorb) / 2.0F / 10.0F);
         int rowHeight = Math.max(10 - (healthRows - 2), 3);
 
-        this.rand.setSeed((long)(ticks * 312871));
+        this.random.setSeed((long)(ticks * 312871));
 
         int left = width / 2 - 91;
         int top = height - left_height;
@@ -441,16 +440,16 @@ public class ForgeIngameGui extends IngameGui
         if (rowHeight != 10) left_height += 10 - rowHeight;
 
         int regen = -1;
-        if (player.isPotionActive(Effects.REGENERATION))
+        if (player.hasStatusEffect(StatusEffects.REGENERATION))
         {
             regen = ticks % 25;
         }
 
-        final int TOP =  9 * (mc.world.getWorldInfo().isHardcore() ? 5 : 0);
+        final int TOP =  9 * (client.world.getLevelProperties().isHardcore() ? 5 : 0);
         final int BACKGROUND = (highlight ? 25 : 16);
         int MARGIN = 16;
-        if (player.isPotionActive(Effects.POISON))      MARGIN += 36;
-        else if (player.isPotionActive(Effects.WITHER)) MARGIN += 72;
+        if (player.hasStatusEffect(StatusEffects.POISON))      MARGIN += 36;
+        else if (player.hasStatusEffect(StatusEffects.WITHER)) MARGIN += 72;
         float absorbRemaining = absorb;
 
         for (int i = MathHelper.ceil((healthMax + absorb) / 2.0F) - 1; i >= 0; --i)
@@ -460,7 +459,7 @@ public class ForgeIngameGui extends IngameGui
             int x = left + i % 10 * 8;
             int y = top - row * rowHeight;
 
-            if (health <= 4) y += rand.nextInt(2);
+            if (health <= 4) y += random.nextInt(2);
             if (i == regen) y -= 2;
 
             blit(x, y, BACKGROUND, TOP, 9, 9);
@@ -496,23 +495,23 @@ public class ForgeIngameGui extends IngameGui
         }
 
         RenderSystem.disableBlend();
-        mc.getProfiler().endSection();
+        client.getProfiler().pop();
         post(HEALTH);
     }
 
     public void renderFood(int width, int height)
     {
         if (pre(FOOD)) return;
-        mc.getProfiler().startSection("food");
+        client.getProfiler().push("food");
 
-        PlayerEntity player = (PlayerEntity)this.mc.getRenderViewEntity();
+        PlayerEntity player = (PlayerEntity)this.client.getCameraEntity();
         RenderSystem.enableBlend();
         int left = width / 2 + 91;
         int top = height - right_height;
         right_height += 10;
         boolean unused = false;// Unused flag in vanilla, seems to be part of a 'fade out' mechanic
 
-        FoodStats stats = mc.player.getFoodStats();
+        HungerManager stats = client.player.getHungerManager();
         int level = stats.getFoodLevel();
 
         for (int i = 0; i < 10; ++i)
@@ -523,16 +522,16 @@ public class ForgeIngameGui extends IngameGui
             int icon = 16;
             byte background = 0;
 
-            if (mc.player.isPotionActive(Effects.HUNGER))
+            if (client.player.hasStatusEffect(StatusEffects.HUNGER))
             {
                 icon += 36;
                 background = 13;
             }
             if (unused) background = 1; //Probably should be a += 1 but vanilla never uses this
 
-            if (player.getFoodStats().getSaturationLevel() <= 0.0F && ticks % (level * 3 + 1) == 0)
+            if (player.getHungerManager().getSaturationLevel() <= 0.0F && ticks % (level * 3 + 1) == 0)
             {
-                y = top + (rand.nextInt(3) - 1);
+                y = top + (random.nextInt(3) - 1);
             }
 
             blit(x, y, 16 + background * 9, 27, 9, 9);
@@ -543,18 +542,18 @@ public class ForgeIngameGui extends IngameGui
                 blit(x, y, icon + 45, 27, 9, 9);
         }
         RenderSystem.disableBlend();
-        mc.getProfiler().endSection();
+        client.getProfiler().pop();
         post(FOOD);
     }
 
     protected void renderSleepFade(int width, int height)
     {
-        if (mc.player.getSleepTimer() > 0)
+        if (client.player.getSleepTimer() > 0)
         {
-            mc.getProfiler().startSection("sleep");
+            client.getProfiler().push("sleep");
             RenderSystem.disableDepthTest();
             RenderSystem.disableAlphaTest();
-            int sleepTime = mc.player.getSleepTimer();
+            int sleepTime = client.player.getSleepTimer();
             float opacity = (float)sleepTime / 100.0F;
 
             if (opacity > 1.0F)
@@ -566,7 +565,7 @@ public class ForgeIngameGui extends IngameGui
             fill(0, 0, width, height, color);
             RenderSystem.enableAlphaTest();
             RenderSystem.enableDepthTest();
-            mc.getProfiler().endSection();
+            client.getProfiler().pop();
         }
     }
 
@@ -577,9 +576,9 @@ public class ForgeIngameGui extends IngameGui
         RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.disableBlend();
 
-        if (mc.playerController.gameIsSurvivalOrAdventure())
+        if (client.interactionManager.hasExperienceBar())
         {
-            super.renderExpBar(x);
+            super.renderExperienceBar(x);
         }
         RenderSystem.enableBlend();
         RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
@@ -588,17 +587,17 @@ public class ForgeIngameGui extends IngameGui
     }
 
     @Override
-    public void renderHorseJumpBar(int x)
+    public void renderMountJumpBar(int x)
     {
         bind(GUI_ICONS_LOCATION);
         if (pre(JUMPBAR)) return;
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
         RenderSystem.disableBlend();
 
-        super.renderHorseJumpBar(x);
+        super.renderMountJumpBar(x);
 
         RenderSystem.enableBlend();
-        mc.getProfiler().endSection();
+        client.getProfiler().pop();
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
 
         post(JUMPBAR);
@@ -606,25 +605,25 @@ public class ForgeIngameGui extends IngameGui
 
     protected void renderHUDText(int width, int height)
     {
-        mc.getProfiler().startSection("forgeHudText");
+        client.getProfiler().push("forgeHudText");
         RenderSystem.defaultBlendFunc();
         ArrayList<String> listL = new ArrayList<String>();
         ArrayList<String> listR = new ArrayList<String>();
 
-        if (mc.isDemo())
+        if (client.isDemo())
         {
-            long time = mc.world.getGameTime();
+            long time = client.world.getTime();
             if (time >= 120500L)
             {
-                listR.add(I18n.format("demo.demoExpired"));
+                listR.add(I18n.translate("demo.demoExpired"));
             }
             else
             {
-                listR.add(I18n.format("demo.remainingTime", StringUtils.ticksToElapsedTime((int)(120500L - time))));
+                listR.add(I18n.translate("demo.remainingTime", ChatUtil.ticksToString((int)(120500L - time))));
             }
         }
 
-        if (this.mc.gameSettings.showDebugInfo && !pre(DEBUG))
+        if (this.client.options.debugEnabled && !pre(DEBUG))
         {
             debugOverlay.update();
             listL.addAll(debugOverlay.getLeft());
@@ -639,9 +638,9 @@ public class ForgeIngameGui extends IngameGui
             for (String msg : listL)
             {
                 if (msg == null) continue;
-                fill(1, top - 1, 2 + fontrenderer.getStringWidth(msg) + 1, top + fontrenderer.FONT_HEIGHT - 1, -1873784752);
-                fontrenderer.drawStringWithShadow(msg, 2, top, 14737632);
-                top += fontrenderer.FONT_HEIGHT;
+                fill(1, top - 1, 2 + fontrenderer.getStringWidth(msg) + 1, top + fontrenderer.fontHeight - 1, -1873784752);
+                fontrenderer.drawWithShadow(msg, 2, top, 14737632);
+                top += fontrenderer.fontHeight;
             }
 
             top = 2;
@@ -650,19 +649,19 @@ public class ForgeIngameGui extends IngameGui
                 if (msg == null) continue;
                 int w = fontrenderer.getStringWidth(msg);
                 int left = width - 2 - w;
-                fill(left - 1, top - 1, left + w + 1, top + fontrenderer.FONT_HEIGHT - 1, -1873784752);
-                fontrenderer.drawStringWithShadow(msg, left, top, 14737632);
-                top += fontrenderer.FONT_HEIGHT;
+                fill(left - 1, top - 1, left + w + 1, top + fontrenderer.fontHeight - 1, -1873784752);
+                fontrenderer.drawWithShadow(msg, left, top, 14737632);
+                top += fontrenderer.fontHeight;
             }
         }
 
-        mc.getProfiler().endSection();
+        client.getProfiler().pop();
         post(TEXT);
     }
 
     protected void renderFPSGraph()
     {
-        if (this.mc.gameSettings.showDebugInfo && this.mc.gameSettings.showLagometer && !pre(FPS_GRAPH))
+        if (this.client.options.debugEnabled && this.client.options.debugTpsEnabled && !pre(FPS_GRAPH))
         {
             this.debugOverlay.render();
             post(FPS_GRAPH);
@@ -671,10 +670,10 @@ public class ForgeIngameGui extends IngameGui
 
     protected void renderRecordOverlay(int width, int height, float partialTicks)
     {
-        if (overlayMessageTime > 0)
+        if (overlayRemaining > 0)
         {
-            mc.getProfiler().startSection("overlayMessage");
-            float hue = (float)overlayMessageTime - partialTicks;
+            client.getProfiler().push("overlayMessage");
+            float hue = (float)overlayRemaining - partialTicks;
             int opacity = (int)(hue * 256.0F / 20.0F);
             if (opacity > 255) opacity = 255;
 
@@ -684,30 +683,30 @@ public class ForgeIngameGui extends IngameGui
                 RenderSystem.translatef((float)(width / 2), (float)(height - 68), 0.0F);
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
-                int color = (animateOverlayMessageColor ? MathHelper.hsvToRGB(hue / 50.0F, 0.7F, 0.6F) & WHITE : WHITE);
-                fontrenderer.drawStringWithShadow(overlayMessage, -fontrenderer.getStringWidth(overlayMessage) / 2, -4, color | (opacity << 24));
+                int color = (overlayTinted ? MathHelper.hsvToRgb(hue / 50.0F, 0.7F, 0.6F) & WHITE : WHITE);
+                fontrenderer.drawWithShadow(overlayMessage, -fontrenderer.getStringWidth(overlayMessage) / 2, -4, color | (opacity << 24));
                 RenderSystem.disableBlend();
                 RenderSystem.popMatrix();
             }
 
-            mc.getProfiler().endSection();
+            client.getProfiler().pop();
         }
     }
 
     protected void renderTitle(int width, int height, float partialTicks)
     {
-        if (titlesTimer > 0)
+        if (titleTotalTicks > 0)
         {
-            mc.getProfiler().startSection("titleAndSubtitle");
-            float age = (float)this.titlesTimer - partialTicks;
+            client.getProfiler().push("titleAndSubtitle");
+            float age = (float)this.titleTotalTicks - partialTicks;
             int opacity = 255;
 
-            if (titlesTimer > titleFadeOut + titleDisplayTime)
+            if (titleTotalTicks > titleFadeOutTicks + titleRemainTicks)
             {
-                float f3 = (float)(titleFadeIn + titleDisplayTime + titleFadeOut) - age;
-                opacity = (int)(f3 * 255.0F / (float)titleFadeIn);
+                float f3 = (float)(titleFadeInTicks + titleRemainTicks + titleFadeOutTicks) - age;
+                opacity = (int)(f3 * 255.0F / (float)titleFadeInTicks);
             }
-            if (titlesTimer <= titleFadeOut) opacity = (int)(age * 255.0F / (float)this.titleFadeOut);
+            if (titleTotalTicks <= titleFadeOutTicks) opacity = (int)(age * 255.0F / (float)this.titleFadeOutTicks);
 
             opacity = MathHelper.clamp(opacity, 0, 255);
 
@@ -720,59 +719,59 @@ public class ForgeIngameGui extends IngameGui
                 RenderSystem.pushMatrix();
                 RenderSystem.scalef(4.0F, 4.0F, 4.0F);
                 int l = opacity << 24 & -16777216;
-                this.getFontRenderer().drawStringWithShadow(this.displayedTitle, (float)(-this.getFontRenderer().getStringWidth(this.displayedTitle) / 2), -10.0F, 16777215 | l);
+                this.getFontRenderer().drawWithShadow(this.title, (float)(-this.getFontRenderer().getStringWidth(this.title) / 2), -10.0F, 16777215 | l);
                 RenderSystem.popMatrix();
                 RenderSystem.pushMatrix();
                 RenderSystem.scalef(2.0F, 2.0F, 2.0F);
-                this.getFontRenderer().drawStringWithShadow(this.displayedSubTitle, (float)(-this.getFontRenderer().getStringWidth(this.displayedSubTitle) / 2), 5.0F, 16777215 | l);
+                this.getFontRenderer().drawWithShadow(this.subtitle, (float)(-this.getFontRenderer().getStringWidth(this.subtitle) / 2), 5.0F, 16777215 | l);
                 RenderSystem.popMatrix();
                 RenderSystem.disableBlend();
                 RenderSystem.popMatrix();
             }
 
-            this.mc.getProfiler().endSection();
+            this.client.getProfiler().pop();
         }
     }
 
     protected void renderChat(int width, int height)
     {
-        mc.getProfiler().startSection("chat");
+        client.getProfiler().push("chat");
 
         RenderGameOverlayEvent.Chat event = new RenderGameOverlayEvent.Chat(eventParent, 0, height - 48);
         if (MinecraftForge.EVENT_BUS.post(event)) return;
 
         RenderSystem.pushMatrix();
         RenderSystem.translatef((float) event.getPosX(), (float) event.getPosY(), 0.0F);
-        persistantChatGUI.render(ticks);
+        chatHud.render(ticks);
         RenderSystem.popMatrix();
 
         post(CHAT);
 
-        mc.getProfiler().endSection();
+        client.getProfiler().pop();
     }
 
     protected void renderPlayerList(int width, int height)
     {
-        ScoreObjective scoreobjective = this.mc.world.getScoreboard().getObjectiveInDisplaySlot(0);
-        ClientPlayNetHandler handler = mc.player.connection;
+        ScoreboardObjective scoreobjective = this.client.world.getScoreboard().getObjectiveForSlot(0);
+        ClientPlayNetworkHandler handler = client.player.networkHandler;
 
-        if (mc.gameSettings.keyBindPlayerList.isKeyDown() && (!mc.isIntegratedServerRunning() || handler.getPlayerInfoMap().size() > 1 || scoreobjective != null))
+        if (client.options.keyPlayerList.isPressed() && (!client.isInSingleplayer() || handler.getPlayerList().size() > 1 || scoreobjective != null))
         {
-            this.overlayPlayerList.setVisible(true);
+            this.playerListHud.tick(true);
             if (pre(PLAYER_LIST)) return;
-            this.overlayPlayerList.render(width, this.mc.world.getScoreboard(), scoreobjective);
+            this.playerListHud.render(width, this.client.world.getScoreboard(), scoreobjective);
             post(PLAYER_LIST);
         }
         else
         {
-            this.overlayPlayerList.setVisible(false);
+            this.playerListHud.tick(false);
         }
     }
 
     protected void renderHealthMount(int width, int height)
     {
-        PlayerEntity player = (PlayerEntity)mc.getRenderViewEntity();
-        Entity tmp = player.getRidingEntity();
+        PlayerEntity player = (PlayerEntity)client.getCameraEntity();
+        Entity tmp = player.getVehicle();
         if (!(tmp instanceof LivingEntity)) return;
 
         bind(GUI_ICONS_LOCATION);
@@ -782,11 +781,11 @@ public class ForgeIngameGui extends IngameGui
         boolean unused = false;
         int left_align = width / 2 + 91;
 
-        mc.getProfiler().endStartSection("mountHealth");
+        client.getProfiler().swap("mountHealth");
         RenderSystem.enableBlend();
         LivingEntity mount = (LivingEntity)tmp;
         int health = (int)Math.ceil((double)mount.getHealth());
-        float healthMax = mount.getMaxHealth();
+        float healthMax = mount.getMaximumHealth();
         int hearts = (int)(healthMax + 0.5F) / 2;
 
         if (hearts > 30) hearts = 30;
@@ -829,35 +828,35 @@ public class ForgeIngameGui extends IngameGui
     {
         MinecraftForge.EVENT_BUS.post(new RenderGameOverlayEvent.Post(eventParent, type));
     }
-    private void bind(ResourceLocation res)
+    private void bind(Identifier res)
     {
-        mc.getTextureManager().bindTexture(res);
+        client.getTextureManager().bindTexture(res);
     }
 
-    private class GuiOverlayDebugForge extends DebugOverlayGui
+    private class GuiOverlayDebugForge extends DebugHud
     {
-        private Minecraft mc;
-        private GuiOverlayDebugForge(Minecraft mc)
+        private MinecraftClient mc;
+        private GuiOverlayDebugForge(MinecraftClient mc)
         {
             super(mc);
             this.mc = mc;
         }
         public void update()
         {
-            Entity entity = this.mc.getRenderViewEntity();
-            this.rayTraceBlock = entity.pick(rayTraceDistance, 0.0F, false);
-            this.rayTraceFluid = entity.pick(rayTraceDistance, 0.0F, true);
+            Entity entity = this.mc.getCameraEntity();
+            this.blockHit = entity.rayTrace(rayTraceDistance, 0.0F, false);
+            this.fluidHit = entity.rayTrace(rayTraceDistance, 0.0F, true);
         }
-        @Override protected void renderDebugInfoLeft(){}
-        @Override protected void renderDebugInfoRight(){}
+        @Override protected void renderLeftText(){}
+        @Override protected void renderRightText(){}
         private List<String> getLeft()
         {
-            List<String> ret = this.getDebugInfoLeft();
+            List<String> ret = this.getLeftText();
             ret.add("");
-            ret.add("Debug: Pie [shift]: " + (this.mc.gameSettings.showDebugProfilerChart ? "visible" : "hidden") + " FPS [alt]: " + (this.mc.gameSettings.showLagometer ? "visible" : "hidden"));
+            ret.add("Debug: Pie [shift]: " + (this.mc.options.debugProfilerEnabled ? "visible" : "hidden") + " FPS [alt]: " + (this.mc.options.debugTpsEnabled ? "visible" : "hidden"));
             ret.add("For help: press F3 + Q");
             return ret;
         }
-        private List<String> getRight(){ return this.getDebugInfoRight(); }
+        private List<String> getRight(){ return this.getRightText(); }
     }
 }

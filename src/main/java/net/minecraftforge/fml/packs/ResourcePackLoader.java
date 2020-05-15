@@ -34,9 +34,9 @@ import java.util.stream.Collectors;
 
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import net.minecraft.resources.IPackFinder;
-import net.minecraft.resources.ResourcePackInfo;
-import net.minecraft.resources.ResourcePackList;
+import net.minecraft.resource.ResourcePackManager;
+import net.minecraft.resource.ResourcePackProfile;
+import net.minecraft.resource.ResourcePackProvider;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.moddiscovery.ModFile;
 import net.minecraftforge.fml.loading.moddiscovery.ModFileInfo;
@@ -44,7 +44,7 @@ import net.minecraftforge.fml.loading.moddiscovery.ModFileInfo;
 public class ResourcePackLoader
 {
     private static Map<ModFile, ModFileResourcePack> modResourcePacks;
-    private static ResourcePackList<?> resourcePackList;
+    private static ResourcePackManager<?> resourcePackList;
 
     public static Optional<ModFileResourcePack> getResourcePackFor(String modId)
     {
@@ -52,13 +52,13 @@ public class ResourcePackLoader
                 map(ModFileInfo::getFile).map(mf->modResourcePacks.get(mf));
     }
 
-    public static <T extends ResourcePackInfo> void loadResourcePacks(ResourcePackList<T> resourcePacks, BiFunction<Map<ModFile, ? extends ModFileResourcePack>, BiConsumer<? super ModFileResourcePack, T>, IPackInfoFinder> packFinder) {
+    public static <T extends ResourcePackProfile> void loadResourcePacks(ResourcePackManager<T> resourcePacks, BiFunction<Map<ModFile, ? extends ModFileResourcePack>, BiConsumer<? super ModFileResourcePack, T>, IPackInfoFinder> packFinder) {
         resourcePackList = resourcePacks;
         modResourcePacks = ModList.get().getModFiles().stream().
                 filter(mf->!Objects.equals(mf.getModLoader(),"minecraft")).
                 map(mf -> new ModFileResourcePack(mf.getFile())).
                 collect(Collectors.toMap(ModFileResourcePack::getModFile, Function.identity(), (u,v) -> { throw new IllegalStateException(String.format("Duplicate key %s", u)); },  LinkedHashMap::new));
-        resourcePacks.addPackFinder(new LambdaFriendlyPackFinder(packFinder.apply(modResourcePacks, ModFileResourcePack::setPackInfo)));
+        resourcePacks.registerProvider(new LambdaFriendlyPackFinder(packFinder.apply(modResourcePacks, ModFileResourcePack::setPackInfo)));
     }
 
     public static <V> Comparator<Map.Entry<String,V>> getSorter() {
@@ -91,13 +91,13 @@ public class ResourcePackLoader
         };
     }
 
-    public interface IPackInfoFinder<T extends ResourcePackInfo> {
-        void addPackInfosToMap(Map<String, T> packList, ResourcePackInfo.IFactory<T> factory);
+    public interface IPackInfoFinder<T extends ResourcePackProfile> {
+        void addPackInfosToMap(Map<String, T> packList, ResourcePackProfile.Factory<T> factory);
     }
 
     // SO GROSS - DON'T @ me bro
     @SuppressWarnings("unchecked")
-    private static class LambdaFriendlyPackFinder implements IPackFinder {
+    private static class LambdaFriendlyPackFinder implements ResourcePackProvider {
         private IPackInfoFinder wrapped;
 
         private LambdaFriendlyPackFinder(final IPackInfoFinder wrapped) {
@@ -105,7 +105,7 @@ public class ResourcePackLoader
         }
 
         @Override
-        public <T extends ResourcePackInfo> void addPackInfosToMap(Map<String, T> packList, ResourcePackInfo.IFactory<T> factory)
+        public <T extends ResourcePackProfile> void register(Map<String, T> packList, ResourcePackProfile.Factory<T> factory)
         {
             wrapped.addPackInfosToMap(packList, factory);
         }

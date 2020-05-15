@@ -19,17 +19,16 @@
 
 package net.minecraftforge.fml;
 
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
-
 import java.util.List;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 
 public class TextComponentMessageFormatHandler {
-    public static int handle(final TranslationTextComponent parent, final List<ITextComponent> children, final Object[] formatArgs, final String format) {
+    public static int handle(final TranslatableText parent, final List<Text> children, final Object[] formatArgs, final String format) {
         try {
-            StringTextComponent component = new StringTextComponent(ForgeI18n.parseFormat(format, formatArgs));
-            component.getStyle().setParentStyle(parent.getStyle());
+            LiteralText component = new LiteralText(ForgeI18n.parseFormat(format, formatArgs));
+            component.getStyle().setParent(parent.getStyle());
             children.add(component);
             return format.length();
         } catch (IllegalArgumentException ex) {

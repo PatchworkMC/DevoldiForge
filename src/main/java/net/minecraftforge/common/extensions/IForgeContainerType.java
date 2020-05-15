@@ -19,10 +19,10 @@
 
 package net.minecraftforge.common.extensions;
 
+import net.minecraft.container.Container;
+import net.minecraft.container.ContainerType;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.PacketByteBuf;
 
 public interface IForgeContainerType<T>
 {
@@ -31,5 +31,5 @@ public interface IForgeContainerType<T>
         return new ContainerType<>(factory);
     }
     
-    T create(int windowId, PlayerInventory playerInv, PacketBuffer extraData);
+    T create(int windowId, PlayerInventory playerInv, PacketByteBuf extraData);
 }

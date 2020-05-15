@@ -22,11 +22,11 @@ package net.minecraftforge.client.model.obj;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
-import net.minecraft.client.Minecraft;
-import net.minecraft.resources.IResource;
-import net.minecraft.resources.IResourceManager;
-import net.minecraft.util.JSONUtils;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.resource.Resource;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.JsonHelper;
 import net.minecraftforge.client.model.IModelLoader;
 
 import javax.annotation.Nullable;
@@ -38,12 +38,12 @@ public class OBJLoader implements IModelLoader<OBJModel>
     public static OBJLoader INSTANCE = new OBJLoader();
 
     private final Map<OBJModel.ModelSettings, OBJModel> modelCache = Maps.newHashMap();
-    private final Map<ResourceLocation, MaterialLibrary> materialCache = Maps.newHashMap();
+    private final Map<Identifier, MaterialLibrary> materialCache = Maps.newHashMap();
 
-    private IResourceManager manager = Minecraft.getInstance().getResourceManager();
+    private ResourceManager manager = MinecraftClient.getInstance().getResourceManager();
 
     @Override
-    public void onResourceManagerReload(IResourceManager resourceManager)
+    public void apply(ResourceManager resourceManager)
     {
         modelCache.clear();
         materialCache.clear();
@@ -58,20 +58,20 @@ public class OBJLoader implements IModelLoader<OBJModel>
 
         String modelLocation = modelContents.get("model").getAsString();
 
-        boolean detectCullableFaces = JSONUtils.getBoolean(modelContents, "detectCullableFaces", true);
-        boolean diffuseLighting = JSONUtils.getBoolean(modelContents, "diffuseLighting", false);
-        boolean flipV = JSONUtils.getBoolean(modelContents, "flip-v", false);
-        boolean ambientToFullbright = JSONUtils.getBoolean(modelContents, "ambientToFullbright", true);
+        boolean detectCullableFaces = JsonHelper.getBoolean(modelContents, "detectCullableFaces", true);
+        boolean diffuseLighting = JsonHelper.getBoolean(modelContents, "diffuseLighting", false);
+        boolean flipV = JsonHelper.getBoolean(modelContents, "flip-v", false);
+        boolean ambientToFullbright = JsonHelper.getBoolean(modelContents, "ambientToFullbright", true);
         @Nullable
-        String materialLibraryOverrideLocation = modelContents.has("materialLibraryOverride") ? JSONUtils.getString(modelContents, "materialLibraryOverride") : null;
+        String materialLibraryOverrideLocation = modelContents.has("materialLibraryOverride") ? JsonHelper.getString(modelContents, "materialLibraryOverride") : null;
 
-        return loadModel(new OBJModel.ModelSettings(new ResourceLocation(modelLocation), detectCullableFaces, diffuseLighting, flipV, ambientToFullbright, materialLibraryOverrideLocation));
+        return loadModel(new OBJModel.ModelSettings(new Identifier(modelLocation), detectCullableFaces, diffuseLighting, flipV, ambientToFullbright, materialLibraryOverrideLocation));
     }
 
     public OBJModel loadModel(OBJModel.ModelSettings settings)
     {
         return modelCache.computeIfAbsent(settings, (data) -> {
-            IResource resource;
+            Resource resource;
             try
             {
                 resource = manager.getResource(settings.modelLocation);
@@ -92,10 +92,10 @@ public class OBJLoader implements IModelLoader<OBJModel>
         });
     }
 
-    public MaterialLibrary loadMaterialLibrary(ResourceLocation materialLocation)
+    public MaterialLibrary loadMaterialLibrary(Identifier materialLocation)
     {
         return materialCache.computeIfAbsent(materialLocation, (location) -> {
-            IResource resource;
+            Resource resource;
             try
             {
                 resource = manager.getResource(location);

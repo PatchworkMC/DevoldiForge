@@ -20,11 +20,10 @@
 package net.minecraftforge.common;
 
 import java.util.function.BiFunction;
-
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.PacketByteBuf;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.ColumnFuzzedBiomeMagnifier;
-import net.minecraft.world.biome.IBiomeMagnifier;
+import net.minecraft.world.biome.source.BiomeAccessType;
+import net.minecraft.world.biome.source.HorizontalVoronoiBiomeAccessType;
 import net.minecraft.world.dimension.Dimension;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.registries.ForgeRegistryEntry;
@@ -46,7 +45,7 @@ public abstract class ModDimension extends ForgeRegistryEntry<ModDimension>
      * @param buffer The data buffer to write to.
      * @param network true when sent over the network, so you can only data needed by the client.
      */
-    public void write(PacketBuffer buffer, boolean network){}
+    public void write(PacketByteBuf buffer, boolean network){}
 
     /**
      * Deserialize any necessary data, this is called both when saving the world on the server.
@@ -55,10 +54,10 @@ public abstract class ModDimension extends ForgeRegistryEntry<ModDimension>
      * @param buffer The data buffer to write to.
      * @param network true when sent over the network, so you can only data needed by the client.
      */
-    public void read(PacketBuffer buffer, boolean network){}
+    public void read(PacketByteBuf buffer, boolean network){}
 
-    public IBiomeMagnifier getMagnifier() {
-        return ColumnFuzzedBiomeMagnifier.INSTANCE;
+    public BiomeAccessType getMagnifier() {
+        return HorizontalVoronoiBiomeAccessType.INSTANCE;
     }
 
     /**

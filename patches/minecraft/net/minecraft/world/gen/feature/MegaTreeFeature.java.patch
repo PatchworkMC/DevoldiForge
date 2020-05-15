@@ -1,0 +1,56 @@
+--- a/net/minecraft/world/gen/feature/MegaTreeFeature.java
++++ b/net/minecraft/world/gen/feature/MegaTreeFeature.java
+@@ -25,7 +25,7 @@
+ 
+    private boolean doesTreeFit(TestableWorld worldIn, BlockPos leavesPos, int height) {
+       boolean flag = true;
+-      if (leavesPos.getY() >= 1 && leavesPos.getY() + height + 1 <= 256) {
++      if (leavesPos.getY() >= 1 && leavesPos.getY() + height + 1 <= worldIn.getMaxHeight()) {
+          for(int i = 0; i <= 1 + height; ++i) {
+             int j = 2;
+             if (i == 0) {
+@@ -36,7 +36,7 @@
+ 
+             for(int k = -j; k <= j && flag; ++k) {
+                for(int l = -j; l <= j && flag; ++l) {
+-                  if (leavesPos.getY() + i < 0 || leavesPos.getY() + i >= 256 || !canTreeReplace(worldIn, leavesPos.add(k, i, l))) {
++                  if (leavesPos.getY() + i < 0 || leavesPos.getY() + i >= worldIn.getMaxHeight() || !canTreeReplace(worldIn, leavesPos.add(k, i, l))) {
+                      flag = false;
+                   }
+                }
+@@ -49,23 +49,28 @@
+       }
+    }
+ 
+-   private boolean replaceGround(ModifiableTestableWorld worldIn, BlockPos pos) {
++   private boolean validSoil(ModifiableTestableWorld worldIn, BlockPos pos, net.minecraftforge.common.IPlantable sapling) {
+       BlockPos blockpos = pos.down();
+-      if (isNaturalDirtOrGrass(worldIn, blockpos) && pos.getY() >= 2) {
+-         this.setToDirt(worldIn, blockpos);
+-         this.setToDirt(worldIn, blockpos.east());
+-         this.setToDirt(worldIn, blockpos.south());
+-         this.setToDirt(worldIn, blockpos.south().east());
++      if (isSoil(worldIn, blockpos, sapling) && pos.getY() >= 2) {
++         setDirtAt(worldIn, blockpos, pos);
++         setDirtAt(worldIn, blockpos.east(), pos);
++         setDirtAt(worldIn, blockpos.south(), pos);
++         setDirtAt(worldIn, blockpos.south().east(), pos);
+          return true;
+       } else {
+          return false;
+       }
+    }
+ 
++   @Deprecated //Forge: Use config sensitive version
+    protected boolean checkTreeFitsAndReplaceGround(ModifiableTestableWorld worldIn, BlockPos p_203427_2_, int p_203427_3_) {
+-      return this.doesTreeFit(worldIn, p_203427_2_, p_203427_3_) && this.replaceGround(worldIn, p_203427_2_);
++      return this.doesTreeFit(worldIn, p_203427_2_, p_203427_3_) && this.validSoil(worldIn, p_203427_2_, (net.minecraftforge.common.IPlantable)net.minecraft.block.Blocks.OAK_SAPLING);
+    }
+ 
++   protected boolean hasRoom(ModifiableTestableWorld world, BlockPos pos, int height, TreeFeatureConfig config) {
++      return this.doesTreeFit(world, pos, height) && this.validSoil(world, pos, config.getSapling());
++   }
++
+    protected void makeSquaredLeafLayer(ModifiableTestableWorld p_227255_1_, Random p_227255_2_, BlockPos p_227255_3_, int p_227255_4_, Set<BlockPos> p_227255_5_, BlockBox p_227255_6_, TreeFeatureConfig p_227255_7_) {
+       int i = p_227255_4_ * p_227255_4_;
+ 

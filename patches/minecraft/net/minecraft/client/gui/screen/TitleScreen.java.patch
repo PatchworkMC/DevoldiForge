@@ -1,0 +1,73 @@
+--- a/net/minecraft/client/gui/screen/TitleScreen.java
++++ b/net/minecraft/client/gui/screen/TitleScreen.java
+@@ -51,6 +51,7 @@
+    private final RotatingCubeMapRenderer backgroundRenderer = new RotatingCubeMapRenderer(PANORAMA_CUBE_MAP);
+    private final boolean doBackgroundFade;
+    private long backgroundFadeStart;
++   private net.minecraftforge.client.gui.NotificationModUpdateScreen modUpdateNotification;
+ 
+    public TitleScreen() {
+       this(false);
+@@ -94,10 +95,14 @@
+       this.copyrightTextX = this.width - this.copyrightTextWidth - 2;
+       int i = 24;
+       int j = this.height / 4 + 48;
++      ButtonWidget modbutton = null;
+       if (this.minecraft.isDemo()) {
+          this.initWidgetsDemo(j, 24);
+       } else {
+          this.initWidgetsNormal(j, 24);
++         modbutton = this.addButton(new ButtonWidget(this.width / 2 - 100, j + 24 * 2, 98, 20, I18n.translate("fml.menu.mods"), button -> {
++            this.minecraft.openScreen(new net.minecraftforge.fml.client.gui.screen.ModListScreen(this));
++         }));
+       }
+ 
+       this.addButton(new TexturedButtonWidget(this.width / 2 - 124, j + 72 + 12, 20, 20, 0, 106, 20, ButtonWidget.WIDGETS_LOCATION, 256, 256, (p_213090_1_) -> {
+@@ -122,6 +127,7 @@
+       if (this.areRealmsNotificationsEnabled()) {
+          this.realmsNotificationGui.init(this.minecraft, this.width, this.height);
+       }
++      modUpdateNotification = net.minecraftforge.client.gui.NotificationModUpdateScreen.init(this, modbutton);
+ 
+    }
+ 
+@@ -137,7 +143,7 @@
+          }
+ 
+       }));
+-      this.addButton(new ButtonWidget(this.width / 2 - 100, yIn + rowHeightIn * 2, 200, 20, I18n.translate("menu.online"), (p_213095_1_) -> {
++      this.addButton(new ButtonWidget(this.width / 2 + 2, yIn + rowHeightIn * 2, 98, 20, I18n.translate("menu.online"), (p_213095_1_) -> {
+          this.switchToRealms();
+       }));
+    }
+@@ -201,6 +207,7 @@
+ 
+          this.minecraft.getTextureManager().bindTexture(EDITION_TITLE_TEXTURE);
+          blit(j + 88, 67, 0.0F, 0.0F, 98, 14, 128, 16);
++         net.minecraftforge.client.ForgeHooksClient.renderMainMenu(this, this.font, this.width, this.height);
+          if (this.splashText != null) {
+             RenderSystem.pushMatrix();
+             RenderSystem.translatef((float)(this.width / 2 + 90), 70.0F, 0.0F);
+@@ -223,7 +230,13 @@
+             s = s + I18n.translate("menu.modded");
+          }
+ 
+-         this.drawString(this.font, s, 2, this.height - 10, 16777215 | l);
++         net.minecraftforge.fml.BrandingControl.forEachLine(true, true, (brdline, brd) ->
++            this.drawString(this.font, brd, 2, this.height - ( 10 + brdline * (this.font.fontHeight + 1)), 16777215 | l)
++         );
++
++         net.minecraftforge.fml.BrandingControl.forEachAboveCopyrightLine((brdline, brd) ->
++              this.drawString(this.font, brd, this.width - font.getStringWidth(brd), this.height - (10 + (brdline + 1) * ( this.font.fontHeight + 1)), 16777215 | l)
++         );
+          this.drawString(this.font, "Copyright Mojang AB. Do not distribute!", this.copyrightTextX, this.height - 10, 16777215 | l);
+          if (p_render_1_ > this.copyrightTextX && p_render_1_ < this.copyrightTextX + this.copyrightTextWidth && p_render_2_ > this.height - 10 && p_render_2_ < this.height) {
+             fill(this.copyrightTextX, this.height - 1, this.copyrightTextX + this.copyrightTextWidth, this.height, 16777215 | l);
+@@ -237,6 +250,7 @@
+          if (this.areRealmsNotificationsEnabled() && f1 >= 1.0F) {
+             this.realmsNotificationGui.render(p_render_1_, p_render_2_, p_render_3_);
+          }
++         modUpdateNotification.render(p_render_1_, p_render_2_, p_render_3_);
+ 
+       }
+    }

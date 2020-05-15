@@ -19,7 +19,7 @@
 
 package net.minecraftforge.client.model.b3d;
 
-import net.minecraft.client.renderer.TransformationMatrix;
+import net.minecraft.client.util.math.Rotation3;
 import net.minecraftforge.client.model.b3d.B3DLoader.NodeJoint;
 import net.minecraftforge.client.model.b3d.B3DModel.Key;
 import net.minecraftforge.client.model.b3d.B3DModel.Node;
@@ -63,25 +63,25 @@ public enum B3DClip implements IClip
         }
 
         @Override
-        public TransformationMatrix apply(float time)
+        public Rotation3 apply(float time)
         {
-            TransformationMatrix ret = TransformationMatrix.identity();
+            Rotation3 ret = Rotation3.identity();
             if(node.getAnimation() == null)
             {
-                return ret.compose(new TransformationMatrix(node.getPos(), node.getRot(), node.getScale(), null));
+                return ret.compose(new Rotation3(node.getPos(), node.getRot(), node.getScale(), null));
             }
             int start = Math.max(1, (int)Math.round(Math.floor(time)));
             int end = Math.min(start + 1, (int)Math.round(Math.ceil(time)));
             float progress = time - (float)Math.floor(time);
             Key keyStart = node.getAnimation().getKeys().get(start, node);
             Key keyEnd = node.getAnimation().getKeys().get(end, node);
-            TransformationMatrix startTr = keyStart == null ? null : new TransformationMatrix(keyStart.getPos(), keyStart.getRot(),keyStart.getScale(), null);
-            TransformationMatrix endTr = keyEnd == null ? null : new TransformationMatrix(keyEnd.getPos(), keyEnd.getRot(),keyEnd.getScale(), null);
+            Rotation3 startTr = keyStart == null ? null : new Rotation3(keyStart.getPos(), keyStart.getRot(),keyStart.getScale(), null);
+            Rotation3 endTr = keyEnd == null ? null : new Rotation3(keyEnd.getPos(), keyEnd.getRot(),keyEnd.getScale(), null);
             if(keyStart == null)
             {
                 if(keyEnd == null)
                 {
-                    ret = ret.compose(new TransformationMatrix(node.getPos(), node.getRot(), node.getScale(), null));
+                    ret = ret.compose(new Rotation3(node.getPos(), node.getRot(), node.getScale(), null));
                 }
                 // TODO animated TRSRTransformation for speed?
                 else

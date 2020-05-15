@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/gen/feature/FlowerFeature.java
++++ b/net/minecraft/world/gen/feature/FlowerFeature.java
+@@ -20,7 +20,7 @@
+ 
+       for(int j = 0; j < this.method_23370(config); ++j) {
+          BlockPos blockpos = this.method_23371(rand, pos, config);
+-         if (worldIn.isAir(blockpos) && blockpos.getY() < 255 && blockstate.canPlaceAt(worldIn, blockpos) && this.method_23369(worldIn, blockpos, config)) {
++         if (worldIn.isAir(blockpos) && blockpos.getY() < worldIn.getMaxHeight() - 1 && blockstate.canPlaceAt(worldIn, blockpos) && this.method_23369(worldIn, blockpos, config)) {
+             worldIn.setBlockState(blockpos, blockstate, 2);
+             ++i;
+          }

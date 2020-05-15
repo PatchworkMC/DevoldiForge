@@ -1,26 +1,26 @@
 --- a/net/minecraft/world/gen/feature/DarkOakTreeFeature.java
 +++ b/net/minecraft/world/gen/feature/DarkOakTreeFeature.java
 @@ -20,17 +20,17 @@
-       int j = p_225557_3_.func_177958_n();
-       int k = p_225557_3_.func_177956_o();
-       int l = p_225557_3_.func_177952_p();
+       int j = positionIn.getX();
+       int k = positionIn.getY();
+       int l = positionIn.getZ();
 -      if (k >= 1 && k + i + 1 < 256) {
-+      if (k >= 1 && k + i + 1 < p_225557_1_.getMaxHeight()) {
-          BlockPos blockpos = p_225557_3_.func_177977_b();
--         if (!func_214589_h(p_225557_1_, blockpos)) {
-+         if (!isSoil(p_225557_1_, blockpos, p_225557_7_.getSapling())) {
++      if (k >= 1 && k + i + 1 < generationReader.getMaxHeight()) {
+          BlockPos blockpos = positionIn.down();
+-         if (!isNaturalDirtOrGrass(generationReader, blockpos)) {
++         if (!isSoil(generationReader, blockpos, configIn.getSapling())) {
              return false;
-          } else if (!this.func_214615_a(p_225557_1_, p_225557_3_, i)) {
+          } else if (!this.doesTreeFit(generationReader, positionIn, i)) {
              return false;
           } else {
--            this.func_214584_a(p_225557_1_, blockpos);
--            this.func_214584_a(p_225557_1_, blockpos.func_177974_f());
--            this.func_214584_a(p_225557_1_, blockpos.func_177968_d());
--            this.func_214584_a(p_225557_1_, blockpos.func_177968_d().func_177974_f());
-+            this.setDirtAt(p_225557_1_, blockpos, p_225557_3_);
-+            this.setDirtAt(p_225557_1_, blockpos.func_177974_f(), p_225557_3_);
-+            this.setDirtAt(p_225557_1_, blockpos.func_177968_d(), p_225557_3_);
-+            this.setDirtAt(p_225557_1_, blockpos.func_177968_d().func_177974_f(), p_225557_3_);
-             Direction direction = Direction.Plane.HORIZONTAL.func_179518_a(p_225557_2_);
-             int i1 = i - p_225557_2_.nextInt(4);
-             int j1 = 2 - p_225557_2_.nextInt(3);
+-            this.setToDirt(generationReader, blockpos);
+-            this.setToDirt(generationReader, blockpos.east());
+-            this.setToDirt(generationReader, blockpos.south());
+-            this.setToDirt(generationReader, blockpos.south().east());
++            this.setDirtAt(generationReader, blockpos, positionIn);
++            this.setDirtAt(generationReader, blockpos.east(), positionIn);
++            this.setDirtAt(generationReader, blockpos.south(), positionIn);
++            this.setDirtAt(generationReader, blockpos.south().east(), positionIn);
+             Direction direction = Direction.Type.HORIZONTAL.random(rand);
+             int i1 = i - rand.nextInt(4);
+             int j1 = 2 - rand.nextInt(3);

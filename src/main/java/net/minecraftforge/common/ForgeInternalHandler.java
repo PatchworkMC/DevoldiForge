@@ -20,11 +20,11 @@
 package net.minecraftforge.common;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.item.ItemEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -46,7 +46,7 @@ public class ForgeInternalHandler
         Entity entity = event.getEntity();
         if (entity.getClass().equals(ItemEntity.class))
         {
-            ItemStack stack = ((ItemEntity)entity).getItem();
+            ItemStack stack = ((ItemEntity)entity).getStack();
             Item item = stack.getItem();
             if (item.hasCustomEntity(stack))
             {
@@ -55,7 +55,7 @@ public class ForgeInternalHandler
                 {
                     entity.remove();
                     event.setCanceled(true);
-                    event.getWorld().addEntity(newEntity);
+                    event.getWorld().spawnEntity(newEntity);
                 }
             }
         }
@@ -85,7 +85,7 @@ public class ForgeInternalHandler
     @SubscribeEvent
     public void onChunkUnload(ChunkEvent.Unload event)
     {
-        if (!event.getWorld().isRemote())
+        if (!event.getWorld().isClient())
             FarmlandWaterManager.removeTickets(event.getChunk());
     }
 
@@ -93,13 +93,13 @@ public class ForgeInternalHandler
     public void playerChangeDimension(PlayerEvent.PlayerChangedDimensionEvent event)
     {
         if (event.getPlayer() instanceof ServerPlayerEntity)
-            DimensionManager.rebuildPlayerMap(((ServerPlayerEntity)event.getPlayer()).server.getPlayerList(), true);
+            DimensionManager.rebuildPlayerMap(((ServerPlayerEntity)event.getPlayer()).server.getPlayerManager(), true);
     }
 
     @SubscribeEvent
     public void playerLogin(PlayerEvent.PlayerLoggedInEvent event)
     {
-        UsernameCache.setUsername(event.getPlayer().getUniqueID(), event.getPlayer().getGameProfile().getName());
+        UsernameCache.setUsername(event.getPlayer().getUuid(), event.getPlayer().getGameProfile().getName());
     }
 
     @SubscribeEvent

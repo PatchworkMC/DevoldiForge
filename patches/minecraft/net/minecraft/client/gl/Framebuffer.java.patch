@@ -1,0 +1,47 @@
+--- a/net/minecraft/client/gl/Framebuffer.java
++++ b/net/minecraft/client/gl/Framebuffer.java
+@@ -103,8 +103,14 @@
+       GlStateManager.framebufferTexture2D(FramebufferInfo.FRAME_BUFFER, FramebufferInfo.COLOR_ATTACHMENT, 3553, this.colorAttachment, 0);
+       if (this.useDepthAttachment) {
+          GlStateManager.bindRenderbuffer(FramebufferInfo.RENDER_BUFFER, this.depthAttachment);
++         if (!stencilEnabled) {
+          GlStateManager.renderbufferStorage(FramebufferInfo.RENDER_BUFFER, 33190, this.textureWidth, this.textureHeight);
+          GlStateManager.framebufferRenderbuffer(FramebufferInfo.FRAME_BUFFER, FramebufferInfo.DEPTH_ATTACHMENT, FramebufferInfo.RENDER_BUFFER, this.depthAttachment);
++         } else {
++         GlStateManager.renderbufferStorage(FramebufferInfo.RENDER_BUFFER, org.lwjgl.opengl.EXTPackedDepthStencil.GL_DEPTH24_STENCIL8_EXT, this.textureWidth, this.textureHeight);
++         GlStateManager.framebufferRenderbuffer(FramebufferInfo.FRAME_BUFFER, org.lwjgl.opengl.EXTFramebufferObject.GL_DEPTH_ATTACHMENT_EXT, FramebufferInfo.RENDER_BUFFER, this.depthAttachment);
++         GlStateManager.framebufferRenderbuffer(FramebufferInfo.FRAME_BUFFER, org.lwjgl.opengl.EXTFramebufferObject.GL_STENCIL_ATTACHMENT_EXT, FramebufferInfo.RENDER_BUFFER, this.depthAttachment);
++         }
+       }
+ 
+       this.checkFramebufferStatus();
+@@ -257,4 +263,29 @@
+       GlStateManager.clear(i, onMac);
+       this.endWrite();
+    }
++
++    /*================================ FORGE START ================================================*/
++    private boolean stencilEnabled = false;
++    /**
++     * Attempts to enable 8 bits of stencil buffer on this FrameBuffer.
++     * Modders must call this directly to set things up.
++     * This is to prevent the default cause where graphics cards do not support stencil bits.
++     * <b>Make sure to call this on the main render thread!</b>
++     */
++    public void enableStencil()
++    {
++        if(stencilEnabled) return;
++        stencilEnabled = true;
++        this.resize(viewportWidth, viewportHeight, net.minecraft.client.MinecraftClient.IS_SYSTEM_MAC);
++    }
++
++    /**
++     * Returns wither or not this FBO has been successfully initialized with stencil bits.
++     * If not, and a modder wishes it to be, they must call enableStencil.
++     */
++    public boolean isStencilEnabled()
++    {
++        return this.stencilEnabled;
++    }
++    /*================================ FORGE END   ================================================*/
+ }

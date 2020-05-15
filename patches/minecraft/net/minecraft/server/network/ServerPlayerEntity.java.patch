@@ -1,0 +1,173 @@
+--- a/net/minecraft/server/network/ServerPlayerEntity.java
++++ b/net/minecraft/server/network/ServerPlayerEntity.java
+@@ -430,6 +430,7 @@
+    }
+ 
+    public void onDeath(DamageSource cause) {
++      if (net.minecraftforge.common.ForgeHooks.onLivingDeath(this, cause)) return;
+       boolean flag = this.world.getGameRules().getBoolean(GameRules.SHOW_DEATH_MESSAGES);
+       if (flag) {
+          Text itextcomponent = this.getDamageTracker().getDeathMessage();
+@@ -548,13 +549,15 @@
+       return this.server.isPvpEnabled();
+    }
+ 
++   @Override
+    @Nullable
+-   public Entity changeDimension(DimensionType destination) {
++   public Entity changeDimension(DimensionType destination, net.minecraftforge.common.util.ITeleporter teleporter) {
++      if (!net.minecraftforge.common.ForgeHooks.onTravelToDimension(this, destination)) return null;
+       this.inTeleportationState = true;
+       DimensionType dimensiontype = this.dimension;
+-      if (dimensiontype == DimensionType.THE_END && destination == DimensionType.OVERWORLD) {
++      if (dimensiontype == DimensionType.THE_END && destination == DimensionType.OVERWORLD && teleporter instanceof net.minecraft.world.PortalForcer) { //Forge: Fix non-vanilla teleporters triggering end credits
+          this.detach();
+-         this.getServerWorld().removePlayer(this);
++         this.getServerWorld().removePlayer(this, true); //Forge: The player entity is cloned so keep the data until after cloning calls copyFrom
+          if (!this.notInAnyWorld) {
+             this.notInAnyWorld = true;
+             this.networkHandler.sendPacket(new GameStateChangeS2CPacket(4, this.seenCredits ? 0.0F : 1.0F));
+@@ -567,12 +570,14 @@
+          this.dimension = destination;
+          ServerWorld serverworld1 = this.server.getWorld(destination);
+          LevelProperties worldinfo = serverworld1.getLevelProperties();
++         net.minecraftforge.fml.network.NetworkHooks.sendDimensionDataPacket(this.networkHandler.connection, this);
+          this.networkHandler.sendPacket(new PlayerRespawnS2CPacket(destination, LevelProperties.sha256Hash(worldinfo.getSeed()), worldinfo.getGeneratorType(), this.interactionManager.getGameMode()));
+          this.networkHandler.sendPacket(new DifficultyS2CPacket(worldinfo.getDifficulty(), worldinfo.isDifficultyLocked()));
+          PlayerManager playerlist = this.server.getPlayerManager();
+          playerlist.sendCommandTree(this);
+-         serverworld.removePlayer(this);
+-         this.removed = false;
++         serverworld.removeEntity(this, true); //Forge: the player entity is moved to the new world, NOT cloned. So keep the data alive with no matching invalidate call.
++         this.revive();
++         Entity e = teleporter.placeEntity(this, serverworld, serverworld1, this.yaw, spawnPortal -> {//Forge: Start vanilla logic
+          double d0 = this.getX();
+          double d1 = this.getY();
+          double d2 = this.getZ();
+@@ -581,13 +586,11 @@
+          double d3 = 8.0D;
+          float f2 = f1;
+          serverworld.getProfiler().push("moving");
++         double moveFactor = serverworld.getDimension().getMovementFactor() / serverworld1.getDimension().getMovementFactor();
++         d0 *= moveFactor;
++         d2 *= moveFactor;
+          if (dimensiontype == DimensionType.OVERWORLD && destination == DimensionType.THE_NETHER) {
+             this.enteredNetherPos = this.getPos();
+-            d0 /= 8.0D;
+-            d2 /= 8.0D;
+-         } else if (dimensiontype == DimensionType.THE_NETHER && destination == DimensionType.OVERWORLD) {
+-            d0 *= 8.0D;
+-            d2 *= 8.0D;
+          } else if (dimensiontype == DimensionType.OVERWORLD && destination == DimensionType.THE_END) {
+             BlockPos blockpos = serverworld1.getForcedSpawnPoint();
+             d0 = (double)blockpos.getX();
+@@ -628,7 +631,7 @@
+ 
+             this.refreshPositionAndAngles((double)i, (double)j, (double)k, f1, 0.0F);
+             this.setVelocity(Vec3d.ZERO);
+-         } else if (!serverworld1.getPortalForcer().usePortal(this, f2)) {
++         } else if (spawnPortal && !serverworld1.getPortalForcer().usePortal(this, f2)) {
+             serverworld1.getPortalForcer().createPortal(this);
+             serverworld1.getPortalForcer().usePortal(this, f2);
+          }
+@@ -638,6 +641,9 @@
+          serverworld1.onPlayerChangeDimension(this);
+          this.dimensionChanged(serverworld);
+          this.networkHandler.requestTeleport(this.getX(), this.getY(), this.getZ(), f1, f);
++         return this;//forge: this is part of the ITeleporter patch
++         });//Forge: End vanilla logic
++         if (e != this) throw new java.lang.IllegalArgumentException(String.format("Teleporter %s returned not the player entity but instead %s, expected PlayerEntity %s", teleporter, e, this));
+          this.interactionManager.setWorld(serverworld1);
+          this.networkHandler.sendPacket(new PlayerAbilitiesS2CPacket(this.abilities));
+          playerlist.sendWorldInfo(this, serverworld1);
+@@ -651,6 +657,7 @@
+          this.syncedExperience = -1;
+          this.syncedHealth = -1.0F;
+          this.syncedFoodLevel = -1;
++         net.minecraftforge.fml.hooks.BasicEventHooks.firePlayerChangedDimensionEvent(this, dimensiontype, destination);
+          return this;
+       }
+    }
+@@ -786,6 +793,7 @@
+             this.networkHandler.sendPacket(new OpenContainerS2CPacket(container.syncId, container.getType(), p_213829_1_.getDisplayName()));
+             container.addListener(this);
+             this.container = container;
++            net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.entity.player.PlayerContainerEvent.Open(this, this.container));
+             return OptionalInt.of(this.containerSyncId);
+          }
+       }
+@@ -804,6 +812,7 @@
+       this.networkHandler.sendPacket(new OpenHorseContainerS2CPacket(this.containerSyncId, inventoryIn.getInvSize(), horse.getEntityId()));
+       this.container = new HorseContainer(this.containerSyncId, this.inventory, inventoryIn, horse);
+       this.container.addListener(this);
++      net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.entity.player.PlayerContainerEvent.Open(this, this.container));
+    }
+ 
+    public void openEditBookScreen(ItemStack stack, Hand hand) {
+@@ -861,6 +870,7 @@
+ 
+    public void closeCurrentScreen() {
+       this.container.close(this);
++      net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.entity.player.PlayerContainerEvent.Close(this, this.container));
+       this.container = this.playerContainer;
+    }
+ 
+@@ -987,6 +997,20 @@
+       this.enteredNetherPos = that.enteredNetherPos;
+       this.setShoulderEntityLeft(that.getShoulderEntityLeft());
+       this.setShoulderEntityRight(that.getShoulderEntityRight());
++
++      this.spawnPosMap = that.spawnPosMap;
++      this.spawnForcedMap = that.spawnForcedMap;
++      if(that.dimension != DimensionType.OVERWORLD) {
++          this.spawnPosition = that.spawnPosition;
++          this.spawnForced = that.spawnForced;
++      }
++
++      //Copy over a section of the Entity Data from the old player.
++      //Allows mods to specify data that persists after players respawn.
++      CompoundTag old = that.getPersistentData();
++      if (old.contains(PERSISTED_NBT_TAG))
++          getPersistentData().put(PERSISTED_NBT_TAG, old.get(PERSISTED_NBT_TAG));
++      net.minecraftforge.event.ForgeEventFactory.onPlayerClone(this, that, !keepEverything);
+    }
+ 
+    protected void onStatusEffectApplied(StatusEffectInstance id) {
+@@ -1205,15 +1229,17 @@
+       this.stopRiding();
+       if (newWorld == this.world) {
+          this.networkHandler.requestTeleport(x, y, z, yaw, pitch);
+-      } else {
++      } else if (net.minecraftforge.common.ForgeHooks.onTravelToDimension(this, newWorld.dimension.getType())) {
++         DimensionType oldDimension = this.dimension;
+          ServerWorld serverworld = this.getServerWorld();
+          this.dimension = newWorld.dimension.getType();
+          LevelProperties worldinfo = newWorld.getLevelProperties();
++         net.minecraftforge.fml.network.NetworkHooks.sendDimensionDataPacket(this.networkHandler.connection, this);
+          this.networkHandler.sendPacket(new PlayerRespawnS2CPacket(this.dimension, LevelProperties.sha256Hash(worldinfo.getSeed()), worldinfo.getGeneratorType(), this.interactionManager.getGameMode()));
+          this.networkHandler.sendPacket(new DifficultyS2CPacket(worldinfo.getDifficulty(), worldinfo.isDifficultyLocked()));
+          this.server.getPlayerManager().sendCommandTree(this);
+-         serverworld.removePlayer(this);
+-         this.removed = false;
++         serverworld.removePlayer(this, true); //Forge: The player entity itself is moved, and not cloned. So we need to keep the data alive with no matching invalidate call later.
++         this.revive();
+          this.refreshPositionAndAngles(x, y, z, yaw, pitch);
+          this.setWorld(newWorld);
+          newWorld.onPlayerTeleport(this);
+@@ -1222,6 +1248,7 @@
+          this.interactionManager.setWorld(newWorld);
+          this.server.getPlayerManager().sendWorldInfo(this, newWorld);
+          this.server.getPlayerManager().method_14594(this);
++         net.minecraftforge.fml.hooks.BasicEventHooks.firePlayerChangedDimensionEvent(this, oldDimension, this.dimension);
+       }
+ 
+    }
+@@ -1259,6 +1286,8 @@
+       if (itementity == null) {
+          return null;
+       } else {
++         if (captureDrops() != null) captureDrops().add(itementity);
++         else
+          this.world.spawnEntity(itementity);
+          ItemStack itemstack = itementity.getStack();
+          if (traceItem) {

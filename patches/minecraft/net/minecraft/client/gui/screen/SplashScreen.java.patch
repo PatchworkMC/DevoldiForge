@@ -1,0 +1,10 @@
+--- a/net/minecraft/client/gui/screen/SplashScreen.java
++++ b/net/minecraft/client/gui/screen/SplashScreen.java
+@@ -83,6 +83,7 @@
+       this.blit(k1, i1, 0, 0, 256, 256);
+       float f3 = this.reloadMonitor.getProgress();
+       this.progress = MathHelper.clamp(this.progress * 0.95F + f3 * 0.050000012F, 0.0F, 1.0F);
++      net.minecraftforge.fml.client.ClientModLoader.renderProgressText();
+       if (f < 1.0F) {
+          this.renderProgressBar(i / 2 - 150, j / 4 * 3, i / 2 + 150, j / 4 * 3 + 10, 1.0F - MathHelper.clamp(f, 0.0F, 1.0F));
+       }

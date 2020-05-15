@@ -1,0 +1,69 @@
+--- a/net/minecraft/world/WorldSaveHandler.java
++++ b/net/minecraft/world/WorldSaveHandler.java
+@@ -52,6 +52,8 @@
+       CompoundTag compoundnbt1 = new CompoundTag();
+       compoundnbt1.put("Data", compoundnbt);
+ 
++      net.minecraftforge.fml.WorldPersistenceHooks.handleWorldDataSave(this, worldInformation, compoundnbt1);
++
+       try {
+          File file1 = new File(this.worldDir, "level.dat_new");
+          File file2 = new File(this.worldDir, "level.dat_old");
+@@ -119,14 +121,14 @@
+    public LevelProperties readProperties() {
+       File file1 = new File(this.worldDir, "level.dat");
+       if (file1.exists()) {
+-         LevelProperties worldinfo = LevelStorage.readLevelProperties(file1, this.dataFixer);
++         LevelProperties worldinfo = LevelStorage.getWorldData(file1, this.dataFixer, this);
+          if (worldinfo != null) {
+             return worldinfo;
+          }
+       }
+ 
+       file1 = new File(this.worldDir, "level.dat_old");
+-      return file1.exists() ? LevelStorage.readLevelProperties(file1, this.dataFixer) : null;
++      return file1.exists() ? LevelStorage.getWorldData(file1, this.dataFixer, this) : null;
+    }
+ 
+    public void saveWorld(LevelProperties worldInformation) {
+@@ -144,6 +146,7 @@
+          }
+ 
+          file1.renameTo(file2);
++         net.minecraftforge.event.ForgeEventFactory.firePlayerSavingEvent(player, playerDataDir, player.getUuid().toString());
+       } catch (Exception var5) {
+          LOGGER.warn("Failed to save player data for {}", (Object)player.getName().getString());
+       }
+@@ -167,6 +170,7 @@
+          int i = compoundnbt.contains("DataVersion", 3) ? compoundnbt.getInt("DataVersion") : -1;
+          player.fromTag(NbtHelper.update(this.dataFixer, DataFixTypes.PLAYER, compoundnbt, i));
+       }
++      net.minecraftforge.event.ForgeEventFactory.firePlayerLoadingEvent(player, playerDataDir, player.getUuid().toString());
+ 
+       return compoundnbt;
+    }
+@@ -193,4 +197,24 @@
+    public DataFixer getDataFixer() {
+       return this.dataFixer;
+    }
++
++   public CompoundTag getPlayerNBT(net.minecraft.server.network.ServerPlayerEntity player) {
++      try {
++         File file1 = new File(this.playerDataDir, player.getUuidAsString() + ".dat");
++         if (file1.exists() && file1.isFile()) {
++            CompoundTag nbt = NbtIo.readCompressed(new FileInputStream(file1));
++            if (nbt != null) {
++               nbt = NbtHelper.update(this.dataFixer, DataFixTypes.PLAYER, nbt, nbt.contains("DataVersion", 3) ? nbt.getInt("DataVersion") : -1);
++            }
++            return nbt;
++         }
++      } catch (Exception exception) {
++         LOGGER.warn("Failed to load player data for " + player.getName());
++      }
++      return null;
++   }
++
++   public File getPlayerFolder() {
++      return playerDataDir;
++   }
+ }

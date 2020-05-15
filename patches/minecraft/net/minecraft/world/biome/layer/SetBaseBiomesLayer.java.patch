@@ -1,0 +1,81 @@
+--- a/net/minecraft/world/biome/layer/SetBaseBiomesLayer.java
++++ b/net/minecraft/world/biome/layer/SetBaseBiomesLayer.java
+@@ -23,17 +23,33 @@
+    private static final int SWAMP_ID = Registry.BIOME.getRawId(Biomes.SWAMP);
+    private static final int TAIGA_ID = Registry.BIOME.getRawId(Biomes.TAIGA);
+    private static final int SNOWY_TAIGA_ID = Registry.BIOME.getRawId(Biomes.SNOWY_TAIGA);
+-   private static final int[] OLD_GROUP_1 = new int[]{DESERT_ID, FOREST_ID, MOUNTAINS_ID, SWAMP_ID, PLAINS_ID, TAIGA_ID};
+-   private static final int[] DRY_BIOMES = new int[]{DESERT_ID, DESERT_ID, DESERT_ID, SAVANNA_ID, SAVANNA_ID, PLAINS_ID};
+-   private static final int[] TEMPERATE_BIOMES = new int[]{FOREST_ID, DARK_FOREST_ID, MOUNTAINS_ID, PLAINS_ID, BIRCH_FOREST_ID, SWAMP_ID};
+-   private static final int[] COOL_BIOMES = new int[]{FOREST_ID, MOUNTAINS_ID, TAIGA_ID, PLAINS_ID};
+-   private static final int[] SNOWY_BIOMES = new int[]{SNOWY_TUNDRA_ID, SNOWY_TUNDRA_ID, SNOWY_TUNDRA_ID, SNOWY_TAIGA_ID};
+    private final int field_20621;
+-   private int[] chosenGroup1 = DRY_BIOMES;
++   @SuppressWarnings("unchecked")
++   private java.util.List<net.minecraftforge.common.BiomeManager.BiomeEntry>[] biomes = new java.util.ArrayList[net.minecraftforge.common.BiomeManager.BiomeType.values().length];
+ 
+    public SetBaseBiomesLayer(LevelGeneratorType p_i225882_1_, int p_i225882_2_) {
++     for (net.minecraftforge.common.BiomeManager.BiomeType type : net.minecraftforge.common.BiomeManager.BiomeType.values()) {
++         com.google.common.collect.ImmutableList<net.minecraftforge.common.BiomeManager.BiomeEntry> biomesToAdd = net.minecraftforge.common.BiomeManager.getBiomes(type);
++         int idx = type.ordinal();
++
++         if (biomes[idx] == null) biomes[idx] = new java.util.ArrayList<net.minecraftforge.common.BiomeManager.BiomeEntry>();
++         if (biomesToAdd != null) biomes[idx].addAll(biomesToAdd);
++      }
++
++      int desertIdx = net.minecraftforge.common.BiomeManager.BiomeType.DESERT.ordinal();
++
++      biomes[desertIdx].add(new net.minecraftforge.common.BiomeManager.BiomeEntry(Biomes.DESERT, 30));
++      biomes[desertIdx].add(new net.minecraftforge.common.BiomeManager.BiomeEntry(Biomes.SAVANNA, 20));
++      biomes[desertIdx].add(new net.minecraftforge.common.BiomeManager.BiomeEntry(Biomes.PLAINS, 10));
++
+       if (p_i225882_1_ == LevelGeneratorType.DEFAULT_1_1) {
+-         this.chosenGroup1 = OLD_GROUP_1;
++         biomes[desertIdx].clear();
++         biomes[desertIdx].add(new net.minecraftforge.common.BiomeManager.BiomeEntry(Biomes.DESERT, 10));
++         biomes[desertIdx].add(new net.minecraftforge.common.BiomeManager.BiomeEntry(Biomes.FOREST, 10));
++         biomes[desertIdx].add(new net.minecraftforge.common.BiomeManager.BiomeEntry(Biomes.MOUNTAINS, 10));
++         biomes[desertIdx].add(new net.minecraftforge.common.BiomeManager.BiomeEntry(Biomes.SWAMP, 10));
++         biomes[desertIdx].add(new net.minecraftforge.common.BiomeManager.BiomeEntry(Biomes.PLAINS, 10));
++         biomes[desertIdx].add(new net.minecraftforge.common.BiomeManager.BiomeEntry(Biomes.TAIGA, 10));
+          this.field_20621 = -1;
+       } else {
+          this.field_20621 = p_i225882_2_;
+@@ -54,21 +70,21 @@
+                   return context.nextInt(3) == 0 ? BADLANDS_PLATEAU_ID : WOODED_BADLANDS_PLATEAU_ID;
+                }
+ 
+-               return this.chosenGroup1[context.nextInt(this.chosenGroup1.length)];
++               return Registry.BIOME.getRawId(getWeightedBiomeEntry(net.minecraftforge.common.BiomeManager.BiomeType.DESERT, context).biome);
+             case 2:
+                if (i > 0) {
+                   return JUNGLE_ID;
+                }
+ 
+-               return TEMPERATE_BIOMES[context.nextInt(TEMPERATE_BIOMES.length)];
++               return Registry.BIOME.getRawId(getWeightedBiomeEntry(net.minecraftforge.common.BiomeManager.BiomeType.WARM, context).biome);
+             case 3:
+                if (i > 0) {
+                   return GIANT_TREE_TAIGA_ID;
+                }
+ 
+-               return COOL_BIOMES[context.nextInt(COOL_BIOMES.length)];
++               return Registry.BIOME.getRawId(getWeightedBiomeEntry(net.minecraftforge.common.BiomeManager.BiomeType.COOL, context).biome);
+             case 4:
+-               return SNOWY_BIOMES[context.nextInt(SNOWY_BIOMES.length)];
++               return Registry.BIOME.getRawId(getWeightedBiomeEntry(net.minecraftforge.common.BiomeManager.BiomeType.ICY, context).biome);
+             default:
+                return MUSHROOM_FIELDS_ID;
+             }
+@@ -77,4 +93,11 @@
+          }
+       }
+    }
++
++   protected net.minecraftforge.common.BiomeManager.BiomeEntry getWeightedBiomeEntry(net.minecraftforge.common.BiomeManager.BiomeType type, LayerRandomnessSource context) {
++      java.util.List<net.minecraftforge.common.BiomeManager.BiomeEntry> biomeList = biomes[type.ordinal()];
++      int totalWeight = net.minecraft.util.WeightedPicker.getWeightSum(biomeList);
++      int weight = net.minecraftforge.common.BiomeManager.isTypeListModded(type)?context.nextInt(totalWeight):context.nextInt(totalWeight / 10) * 10;
++      return (net.minecraftforge.common.BiomeManager.BiomeEntry)net.minecraft.util.WeightedPicker.getAt(biomeList, weight);
++   }
+ }

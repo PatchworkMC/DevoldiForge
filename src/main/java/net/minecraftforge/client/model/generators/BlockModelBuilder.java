@@ -19,7 +19,7 @@
 
 package net.minecraftforge.client.model.generators;
 
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Identifier;
 
 /**
  * Builder for block models, does not currently provide any additional
@@ -31,7 +31,7 @@ import net.minecraft.util.ResourceLocation;
  */
 public class BlockModelBuilder extends ModelBuilder<BlockModelBuilder> {
 
-    public BlockModelBuilder(ResourceLocation outputLocation, ExistingFileHelper existingFileHelper) {
+    public BlockModelBuilder(Identifier outputLocation, ExistingFileHelper existingFileHelper) {
         super(outputLocation, existingFileHelper);
     }
 }

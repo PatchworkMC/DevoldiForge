@@ -1,0 +1,11 @@
+--- a/net/minecraft/data/DataCache.java
++++ b/net/minecraft/data/DataCache.java
+@@ -23,7 +23,7 @@
+    private final Path recordFile;
+    private int unchanged;
+    private final Map<Path, String> oldSha1 = Maps.newHashMap();
+-   private final Map<Path, String> newSha1 = Maps.newHashMap();
++   private final Map<Path, String> newSha1 = Maps.newTreeMap(); //Forge: TreeMap, makes the file output predictable/sorted.
+    private final Set<Path> ignores = Sets.newHashSet();
+ 
+    public DataCache(Path folder, String fileName) throws IOException {

@@ -1,0 +1,14 @@
+--- a/net/minecraft/block/entity/ShulkerBoxBlockEntity.java
++++ b/net/minecraft/block/entity/ShulkerBoxBlockEntity.java
+@@ -283,6 +283,11 @@
+       return new ShulkerBoxContainer(id, player, this);
+    }
+ 
++   @Override
++   protected net.minecraftforge.items.IItemHandler createUnSidedHandler() {
++      return new net.minecraftforge.items.wrapper.SidedInvWrapper(this, Direction.UP);
++   }
++
+    public static enum AnimationStage {
+       CLOSED,
+       OPENING,

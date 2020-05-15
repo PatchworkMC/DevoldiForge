@@ -23,10 +23,10 @@ import com.google.common.base.Preconditions;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Direction;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraftforge.common.MinecraftForge;
@@ -51,7 +51,7 @@ public class PlayerInteractEvent extends PlayerEvent
     private final BlockPos pos;
     @Nullable
     private final Direction face;
-    private ActionResultType cancellationResult = ActionResultType.PASS;
+    private ActionResult cancellationResult = ActionResult.PASS;
 
     private PlayerInteractEvent(PlayerEntity player, Hand hand, BlockPos pos, @Nullable Direction face)
     {
@@ -316,7 +316,7 @@ public class PlayerInteractEvent extends PlayerEvent
     @Nonnull
     public ItemStack getItemStack()
     {
-        return getPlayer().getHeldItem(hand);
+        return getPlayer().getStackInHand(hand);
     }
 
     /**
@@ -354,7 +354,7 @@ public class PlayerInteractEvent extends PlayerEvent
      */
     public LogicalSide getSide()
     {
-        return getWorld().isRemote ? LogicalSide.CLIENT : LogicalSide.SERVER;
+        return getWorld().isClient ? LogicalSide.CLIENT : LogicalSide.SERVER;
     }
 
     /**
@@ -362,7 +362,7 @@ public class PlayerInteractEvent extends PlayerEvent
      * method of the event. By default, this is {@link EnumActionResult#PASS}, meaning cancelled events will cause
      * the client to keep trying more interactions until something works.
      */
-    public ActionResultType getCancellationResult()
+    public ActionResult getCancellationResult()
     {
         return cancellationResult;
     }
@@ -372,7 +372,7 @@ public class PlayerInteractEvent extends PlayerEvent
      * method of the event.
      * Note that this only has an effect on {@link RightClickBlock}, {@link RightClickItem}, {@link EntityInteract}, and {@link EntityInteractSpecific}.
      */
-    public void setCancellationResult(ActionResultType result)
+    public void setCancellationResult(ActionResult result)
     {
         this.cancellationResult = result;
     }

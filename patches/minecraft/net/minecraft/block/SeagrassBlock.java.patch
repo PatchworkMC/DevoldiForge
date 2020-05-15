@@ -1,0 +1,11 @@
+--- a/net/minecraft/block/SeagrassBlock.java
++++ b/net/minecraft/block/SeagrassBlock.java
+@@ -17,7 +17,7 @@
+ import net.minecraft.world.IWorld;
+ import net.minecraft.world.World;
+ 
+-public class SeagrassBlock extends PlantBlock implements Fertilizable, FluidFillable {
++public class SeagrassBlock extends PlantBlock implements Fertilizable, FluidFillable, net.minecraftforge.common.IShearable {
+    protected static final VoxelShape SHAPE = Block.createCuboidShape(2.0D, 0.0D, 2.0D, 14.0D, 12.0D, 14.0D);
+ 
+    protected SeagrassBlock(Block.Settings properties) {

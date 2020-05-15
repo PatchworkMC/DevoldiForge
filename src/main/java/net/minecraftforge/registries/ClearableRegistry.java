@@ -40,9 +40,8 @@ import org.apache.logging.log4j.MarkerManager;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-
-import net.minecraft.util.IntIdentityHashBiMap;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.Int2ObjectBiMap;
 import net.minecraft.util.registry.MutableRegistry;
 
 /**
@@ -54,17 +53,17 @@ public class ClearableRegistry<T> extends MutableRegistry<T>
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Marker REGISTRY = MarkerManager.getMarker("REGISTRY");
 
-    private final IntIdentityHashBiMap<T> ids = new IntIdentityHashBiMap<>(256);
-    private final BiMap<ResourceLocation, T> map = HashBiMap.create();
-    private final Set<ResourceLocation> keys = Collections.unmodifiableSet(map.keySet());
+    private final Int2ObjectBiMap<T> ids = new Int2ObjectBiMap<>(256);
+    private final BiMap<Identifier, T> map = HashBiMap.create();
+    private final Set<Identifier> keys = Collections.unmodifiableSet(map.keySet());
     private List<T> values = new ArrayList<>();
-    private Map<ResourceLocation, Set<T>> known = new HashMap<>();
-    private final ResourceLocation name;
+    private Map<Identifier, Set<T>> known = new HashMap<>();
+    private final Identifier name;
     private final boolean isDelegated;
     private int nextId = 0;
 
-    public ClearableRegistry(ResourceLocation name) { this(name, null); }
-    public ClearableRegistry(ResourceLocation name, Class<T> superType)
+    public ClearableRegistry(Identifier name) { this(name, null); }
+    public ClearableRegistry(Identifier name, Class<T> superType)
     {
         this.name = name;
         this.isDelegated =  superType != null && ForgeRegistryEntry.class.isAssignableFrom(superType); //TODO: Make this IDelegatedRegistryEntry?
@@ -72,23 +71,23 @@ public class ClearableRegistry<T> extends MutableRegistry<T>
 
     @Override
     @Nullable
-    public ResourceLocation getKey(T value)
+    public Identifier getId(T value)
     {
         return map.inverse().get(value);
     }
 
     @Override
     @Nullable
-    public int getId(T value)
+    public int getRawId(T value)
     {
         return ids.getId(value);
     }
 
     @Override
     @Nullable
-    public T getByValue(int id)
+    public T get(int id)
     {
-        return ids.getByValue(id);
+        return ids.get(id);
     }
 
     @Override
@@ -99,13 +98,13 @@ public class ClearableRegistry<T> extends MutableRegistry<T>
 
     @Override
     @Nullable
-    public T getOrDefault(ResourceLocation key)
+    public T get(Identifier key)
     {
         return map.get(key);
     }
 
     @Override
-    public <V extends T> V register(int id, ResourceLocation key, V value)
+    public <V extends T> V set(int id, Identifier key, V value)
     {
         Validate.isTrue(id >= 0, "Invalid ID, can not be < 0");
         Validate.notNull(key);
@@ -114,7 +113,7 @@ public class ClearableRegistry<T> extends MutableRegistry<T>
         T old = map.get(key);
         if (old != null)
         {
-            LOGGER.debug(REGISTRY, "{}: Adding duplicate key '{}' to registry. Old: {} New: {}", name, key, old, value);
+            LOGGER.debug(REGISTRIES, "{}: Adding duplicate key '{}' to registry. Old: {} New: {}", name, key, old, value);
             values.remove(old);
             if (isDelegated)
             {
@@ -146,13 +145,13 @@ public class ClearableRegistry<T> extends MutableRegistry<T>
     }
 
     @Override
-    public <V extends T> V register(ResourceLocation key, V value)
+    public <V extends T> V add(Identifier key, V value)
     {
-        return register(nextId, key, value);
+        return set(nextId, key, value);
     }
 
     @Override
-    public Set<ResourceLocation> keySet()
+    public Set<Identifier> getIds()
     {
         return keys;
     }
@@ -171,14 +170,14 @@ public class ClearableRegistry<T> extends MutableRegistry<T>
     }
 
     @Override
-    public boolean containsKey(ResourceLocation key)
+    public boolean containsId(Identifier key)
     {
         return map.containsKey(key);
     }
 
     public void clear()
     {
-        LOGGER.debug(REGISTRY, "{}: Clearing registry", name);
+        LOGGER.debug(REGISTRIES, "{}: Clearing registry", name);
         if (isDelegated)
         {
             known.values().forEach(s -> {
@@ -199,7 +198,7 @@ public class ClearableRegistry<T> extends MutableRegistry<T>
     }
 
     @Override
-    public Optional<T> getValue(ResourceLocation key)
+    public Optional<T> getOrEmpty(Identifier key)
     {
         return Optional.ofNullable(map.get(key));
     }

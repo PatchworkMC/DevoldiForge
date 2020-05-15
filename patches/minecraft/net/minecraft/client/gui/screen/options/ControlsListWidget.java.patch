@@ -1,0 +1,60 @@
+--- a/net/minecraft/client/gui/screen/options/ControlsListWidget.java
++++ b/net/minecraft/client/gui/screen/options/ControlsListWidget.java
+@@ -47,7 +47,7 @@
+    }
+ 
+    protected int getScrollbarPosition() {
+-      return super.getScrollbarPosition() + 15;
++      return super.getScrollbarPosition() + 15 + 20;
+    }
+ 
+    public int getRowWidth() {
+@@ -91,7 +91,7 @@
+       private KeyBindingEntry(final KeyBinding name) {
+          this.binding = name;
+          this.bindingName = I18n.translate(name.getId());
+-         this.editButton = new ButtonWidget(0, 0, 75, 20, this.bindingName, (p_214386_2_) -> {
++         this.editButton = new ButtonWidget(0, 0, 75 + 20 /*Forge: add space*/, 20, this.bindingName, (p_214386_2_) -> {
+             ControlsListWidget.this.gui.focusedBinding = name;
+          }) {
+             protected String getNarrationMessage() {
+@@ -99,6 +99,7 @@
+             }
+          };
+          this.resetButton = new ButtonWidget(0, 0, 50, 20, I18n.translate("controls.reset"), (p_214387_2_) -> {
++            binding.setToDefault();
+             ControlsListWidget.this.minecraft.options.setKeyCode(name, name.getDefaultKeyCode());
+             KeyBinding.updateKeysByCode();
+          }) {
+@@ -111,7 +112,7 @@
+       public void render(int p_render_1_, int p_render_2_, int p_render_3_, int p_render_4_, int p_render_5_, int p_render_6_, int p_render_7_, boolean p_render_8_, float p_render_9_) {
+          boolean flag = ControlsListWidget.this.gui.focusedBinding == this.binding;
+          ControlsListWidget.this.minecraft.textRenderer.draw(this.bindingName, (float)(p_render_3_ + 90 - ControlsListWidget.this.maxKeyNameLength), (float)(p_render_2_ + p_render_5_ / 2 - 9 / 2), 16777215);
+-         this.resetButton.x = p_render_3_ + 190;
++         this.resetButton.x = p_render_3_ + 190 + 20;
+          this.resetButton.y = p_render_2_;
+          this.resetButton.active = !this.binding.isDefault();
+          this.resetButton.render(p_render_6_, p_render_7_, p_render_9_);
+@@ -119,11 +120,12 @@
+          this.editButton.y = p_render_2_;
+          this.editButton.setMessage(this.binding.getLocalizedName());
+          boolean flag1 = false;
++         boolean keyCodeModifierConflict = true; // less severe form of conflict, like SHIFT conflicting with SHIFT+G
+          if (!this.binding.isNotBound()) {
+             for(KeyBinding keybinding : ControlsListWidget.this.minecraft.options.keysAll) {
+                if (keybinding != this.binding && this.binding.equals(keybinding)) {
+                   flag1 = true;
+-                  break;
++                  keyCodeModifierConflict &= keybinding.hasKeyCodeModifierConflict(this.binding);
+                }
+             }
+          }
+@@ -131,7 +133,7 @@
+          if (flag) {
+             this.editButton.setMessage(Formatting.WHITE + "> " + Formatting.YELLOW + this.editButton.getMessage() + Formatting.WHITE + " <");
+          } else if (flag1) {
+-            this.editButton.setMessage(Formatting.RED + this.editButton.getMessage());
++            this.editButton.setMessage((keyCodeModifierConflict ? Formatting.GOLD : Formatting.RED) + this.editButton.getMessage());
+          }
+ 
+          this.editButton.render(p_render_6_, p_render_7_, p_render_9_);

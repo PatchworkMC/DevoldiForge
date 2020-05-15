@@ -19,9 +19,9 @@
 
 package net.minecraftforge.fml.hooks;
 
-import net.minecraft.entity.item.ItemEntity;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
@@ -58,7 +58,7 @@ public class BasicEventHooks
         MinecraftForge.EVENT_BUS.post(new PlayerEvent.ItemPickupEvent(player, item, clone));
     }
 
-    public static void firePlayerCraftingEvent(PlayerEntity player, ItemStack crafted, IInventory craftMatrix)
+    public static void firePlayerCraftingEvent(PlayerEntity player, ItemStack crafted, Inventory craftMatrix)
     {
         MinecraftForge.EVENT_BUS.post(new PlayerEvent.ItemCraftedEvent(player, crafted, craftMatrix));
     }

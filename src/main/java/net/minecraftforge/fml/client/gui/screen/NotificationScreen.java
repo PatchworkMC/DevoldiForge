@@ -19,25 +19,25 @@
 
 package net.minecraftforge.fml.client.gui.screen;
 
-import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.text.TranslatableText;
 import net.minecraftforge.fml.StartupQuery;
 
 public class NotificationScreen extends Screen
 {
     public NotificationScreen(StartupQuery query)
     {
-        super(new TranslationTextComponent("fml.menu.notification.title"));
+        super(new TranslatableText("fml.menu.notification.title"));
         this.query = query;
     }
 
     @Override
     public void init()
     {
-        this.buttons.add(new Button(this.width / 2 - 100, this.height - 38, 200, 20, I18n.format("gui.done"), b -> {
-            NotificationScreen.this.minecraft.displayGuiScreen(null);
+        this.buttons.add(new ButtonWidget(this.width / 2 - 100, this.height - 38, 200, 20, I18n.translate("gui.done"), b -> {
+            NotificationScreen.this.minecraft.openScreen(null);
             query.finish();
         }));
     }

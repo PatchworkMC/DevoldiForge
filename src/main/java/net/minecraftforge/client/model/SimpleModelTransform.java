@@ -19,46 +19,45 @@
 
 package net.minecraftforge.client.model;
 
-import net.minecraft.client.renderer.TransformationMatrix;
-import net.minecraft.client.renderer.model.IModelTransform;
-
 import com.google.common.collect.ImmutableMap;
+import net.minecraft.client.render.model.ModelBakeSettings;
+import net.minecraft.client.util.math.Rotation3;
 
 /**
  * Simple implementation of IModelState via a map and a default value.
  */
-public final class SimpleModelTransform implements IModelTransform
+public final class SimpleModelTransform implements ModelBakeSettings
 {
-    public static final SimpleModelTransform IDENTITY = new SimpleModelTransform(TransformationMatrix.identity());
+    public static final SimpleModelTransform IDENTITY = new SimpleModelTransform(Rotation3.identity());
 
-    private final ImmutableMap<?, TransformationMatrix> map;
-    private final TransformationMatrix base;
+    private final ImmutableMap<?, Rotation3> map;
+    private final Rotation3 base;
 
-    public SimpleModelTransform(ImmutableMap<?, TransformationMatrix> map)
+    public SimpleModelTransform(ImmutableMap<?, Rotation3> map)
     {
-        this(map, TransformationMatrix.identity());
+        this(map, Rotation3.identity());
     }
 
-    public SimpleModelTransform(TransformationMatrix base)
+    public SimpleModelTransform(Rotation3 base)
     {
         this(ImmutableMap.of(), base);
     }
 
-    public SimpleModelTransform(ImmutableMap<?, TransformationMatrix> map, TransformationMatrix base)
+    public SimpleModelTransform(ImmutableMap<?, Rotation3> map, Rotation3 base)
     {
         this.map = map;
         this.base = base;
     }
 
     @Override
-    public TransformationMatrix getRotation()
+    public Rotation3 getRotation()
     {
         return base;
     }
 
     @Override
-    public TransformationMatrix getPartTransformation(Object part)
+    public Rotation3 getPartTransformation(Object part)
     {
-        return map.getOrDefault(part, TransformationMatrix.identity());
+        return map.getOrDefault(part, Rotation3.identity());
     }
 }

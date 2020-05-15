@@ -19,7 +19,7 @@
 
 package net.minecraftforge.fml.event.lifecycle;
 
-import net.minecraft.server.dedicated.DedicatedServer;
+import net.minecraft.server.dedicated.MinecraftDedicatedServer;
 import net.minecraftforge.fml.ModContainer;
 
 import java.util.function.Supplier;
@@ -40,15 +40,15 @@ import java.util.function.Supplier;
  */
 public class FMLDedicatedServerSetupEvent extends ModLifecycleEvent
 {
-    private final Supplier<DedicatedServer> serverSupplier;
+    private final Supplier<MinecraftDedicatedServer> serverSupplier;
 
-    public FMLDedicatedServerSetupEvent(Supplier<DedicatedServer> server, ModContainer container)
+    public FMLDedicatedServerSetupEvent(Supplier<MinecraftDedicatedServer> server, ModContainer container)
     {
         super(container);
         this.serverSupplier = server;
     }
 
-    public Supplier<DedicatedServer> getServerSupplier()
+    public Supplier<MinecraftDedicatedServer> getServerSupplier()
     {
         return serverSupplier;
     }

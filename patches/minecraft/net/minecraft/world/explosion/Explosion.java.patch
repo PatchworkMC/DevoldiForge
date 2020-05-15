@@ -1,0 +1,73 @@
+--- a/net/minecraft/world/explosion/Explosion.java
++++ b/net/minecraft/world/explosion/Explosion.java
+@@ -57,6 +57,7 @@
+    private DamageSource damageSource;
+    private final List<BlockPos> affectedBlocks = Lists.newArrayList();
+    private final Map<PlayerEntity, Vec3d> affectedPlayers = Maps.newHashMap();
++   private final Vec3d position;
+ 
+    @Environment(EnvType.CLIENT)
+    public Explosion(World worldIn, @Nullable Entity entityIn, double x, double y, double z, float size, List<BlockPos> affectedPositions) {
+@@ -79,6 +80,7 @@
+       this.createFire = causesFireIn;
+       this.blockDestructionType = modeIn;
+       this.damageSource = DamageSource.explosion(this);
++      this.position = new Vec3d(this.x, this.y, this.z);
+    }
+ 
+    public static float getExposure(Vec3d p_222259_0_, Entity p_222259_1_) {
+@@ -138,8 +140,8 @@
+                      BlockPos blockpos = new BlockPos(d4, d6, d8);
+                      BlockState blockstate = this.world.getBlockState(blockpos);
+                      FluidState ifluidstate = this.world.getFluidState(blockpos);
+-                     if (!blockstate.isAir() || !ifluidstate.isEmpty()) {
+-                        float f2 = Math.max(blockstate.getBlock().getBlastResistance(), ifluidstate.getBlastResistance());
++                     if (!blockstate.isAir(this.world, blockpos) || !ifluidstate.isEmpty()) {
++                        float f2 = Math.max(blockstate.getExplosionResistance(this.world, blockpos, entity, this), ifluidstate.getExplosionResistance(this.world, blockpos, entity, this));
+                         if (this.entity != null) {
+                            f2 = this.entity.getEffectiveExplosionResistance(this, this.world, blockpos, blockstate, ifluidstate, f2);
+                         }
+@@ -169,6 +171,7 @@
+       int j2 = MathHelper.floor(this.z - (double)f3 - 1.0D);
+       int j1 = MathHelper.floor(this.z + (double)f3 + 1.0D);
+       List<Entity> list = this.world.getEntities(this.entity, new Box((double)k1, (double)i2, (double)j2, (double)l1, (double)i1, (double)j1));
++      net.minecraftforge.event.ForgeEventFactory.onExplosionDetonate(this.world, this, list, f3);
+       Vec3d vec3d = new Vec3d(this.x, this.y, this.z);
+ 
+       for(int k2 = 0; k2 < list.size(); ++k2) {
+@@ -227,11 +230,11 @@
+          for(BlockPos blockpos : this.affectedBlocks) {
+             BlockState blockstate = this.world.getBlockState(blockpos);
+             Block block = blockstate.getBlock();
+-            if (!blockstate.isAir()) {
++            if (!blockstate.isAir(this.world, blockpos)) {
+                BlockPos blockpos1 = blockpos.toImmutable();
+                this.world.getProfiler().push("explosion_blocks");
+-               if (block.shouldDropItemsOnExplosion(this) && this.world instanceof ServerWorld) {
+-                  BlockEntity tileentity = block.hasBlockEntity() ? this.world.getBlockEntity(blockpos) : null;
++               if (blockstate.canDropFromExplosion(this.world, blockpos, this) && this.world instanceof ServerWorld) {
++                  BlockEntity tileentity = blockstate.hasTileEntity() ? this.world.getBlockEntity(blockpos) : null;
+                   LootContext.Builder lootcontext$builder = (new LootContext.Builder((ServerWorld)this.world)).setRandom(this.world.random).put(LootContextParameters.POSITION, blockpos).put(LootContextParameters.TOOL, ItemStack.EMPTY).putNullable(LootContextParameters.BLOCK_ENTITY, tileentity).putNullable(LootContextParameters.THIS_ENTITY, this.entity);
+                   if (this.blockDestructionType == Explosion.DestructionType.DESTROY) {
+                      lootcontext$builder.put(LootContextParameters.EXPLOSION_RADIUS, this.power);
+@@ -242,8 +245,7 @@
+                   });
+                }
+ 
+-               this.world.setBlockState(blockpos, Blocks.AIR.getDefaultState(), 3);
+-               block.onDestroyedByExplosion(this.world, blockpos, this);
++               blockstate.onBlockExploded(this.world, blockpos, this);
+                this.world.getProfiler().pop();
+             }
+          }
+@@ -314,6 +316,10 @@
+       return this.affectedBlocks;
+    }
+ 
++   public Vec3d getPosition() {
++      return this.position;
++   }
++
+    public static enum DestructionType {
+       NONE,
+       BREAK,

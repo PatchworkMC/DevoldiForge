@@ -1,0 +1,11 @@
+--- a/net/minecraft/client/toast/RecipeToast.java
++++ b/net/minecraft/client/toast/RecipeToast.java
+@@ -36,7 +36,7 @@
+          toastGui.blit(0, 0, 0, 32, 160, 32);
+          toastGui.getGame().textRenderer.draw(I18n.translate("recipe.toast.title"), 30.0F, 7.0F, -11534256);
+          toastGui.getGame().textRenderer.draw(I18n.translate("recipe.toast.description"), 30.0F, 18.0F, -16777216);
+-         Recipe<?> irecipe = this.recipes.get((int)(delta / (5000L / (long)this.recipes.size()) % (long)this.recipes.size()));
++         Recipe<?> irecipe = this.recipes.get((int)((delta * (long)this.recipes.size() / 5000L) % (long)this.recipes.size())); //Forge: fix math so that it doesn't divide by 0 when there are more than 5000 recipes
+          ItemStack itemstack = irecipe.getRecipeKindIcon();
+          RenderSystem.pushMatrix();
+          RenderSystem.scalef(0.6F, 0.6F, 1.0F);

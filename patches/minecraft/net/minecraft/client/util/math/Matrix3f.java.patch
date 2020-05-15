@@ -1,0 +1,14 @@
+--- a/net/minecraft/client/util/math/Matrix3f.java
++++ b/net/minecraft/client/util/math/Matrix3f.java
+@@ -409,4 +409,11 @@
+    public Matrix3f copy() {
+       return new Matrix3f(this);
+    }
++
++   // Forge start
++   public void multiplyBackward(Matrix3f other) {
++      Matrix3f copy = other.copy();
++      copy.multiply(this);
++      this.load(copy);
++   }
+ }

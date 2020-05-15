@@ -1,0 +1,26 @@
+--- a/net/minecraft/container/ContainerType.java
++++ b/net/minecraft/container/ContainerType.java
+@@ -7,7 +7,7 @@
+ import net.minecraftforge.api.distmarker.Dist;
+ import net.minecraftforge.api.distmarker.OnlyIn;
+ 
+-public class ContainerType<T extends Container> {
++public class ContainerType<T extends Container> extends net.minecraftforge.registries.ForgeRegistryEntry<ContainerType<?>> implements net.minecraftforge.common.extensions.IForgeContainerType<T> {
+    public static final ContainerType<GenericContainer> GENERIC_9X1 = register("generic_9x1", GenericContainer::createGeneric9x1);
+    public static final ContainerType<GenericContainer> GENERIC_9X2 = register("generic_9x2", GenericContainer::createGeneric9x2);
+    public static final ContainerType<GenericContainer> GENERIC_9X3 = register("generic_9x3", GenericContainer::createGeneric9x3);
+@@ -47,6 +47,14 @@
+    public T create(int windowId, PlayerInventory player) {
+       return this.factory.create(windowId, player);
+    }
++   
++   @Override
++   public T create(int windowId, PlayerInventory playerInv, net.minecraft.util.PacketByteBuf extraData) {
++      if (this.factory instanceof net.minecraftforge.fml.network.IContainerFactory) {
++         return ((net.minecraftforge.fml.network.IContainerFactory<T>) this.factory).create(windowId, playerInv, extraData);
++      }
++      return create(windowId, playerInv);
++   }
+ 
+    public interface Factory<T extends Container> {
+       @Environment(EnvType.CLIENT)

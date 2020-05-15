@@ -27,9 +27,7 @@ import javax.annotation.Nullable;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import net.minecraft.world.biome.Biomes;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Identifier;
 import net.minecraft.world.biome.*;
 import static net.minecraftforge.common.BiomeDictionary.Type.*;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -174,7 +172,7 @@ public class BiomeDictionary
         }
     }
 
-    private static final Map<ResourceLocation, BiomeInfo> biomeInfoMap = new HashMap<ResourceLocation, BiomeInfo>();
+    private static final Map<Identifier, BiomeInfo> biomeInfoMap = new HashMap<Identifier, BiomeInfo>();
 
     private static class BiomeInfo
     {
@@ -281,27 +279,27 @@ public class BiomeDictionary
             BiomeDictionary.addTypes(biome, type);
         }
 
-        if (biome.getDownfall() > 0.85f)
+        if (biome.getRainfall() > 0.85f)
         {
             BiomeDictionary.addTypes(biome, WET);
         }
 
-        if (biome.getDownfall() < 0.15f)
+        if (biome.getRainfall() < 0.15f)
         {
             BiomeDictionary.addTypes(biome, DRY);
         }
 
-        if (biome.getDefaultTemperature() > 0.85f)
+        if (biome.getTemperature() > 0.85f)
         {
             BiomeDictionary.addTypes(biome, HOT);
         }
 
-        if (biome.getDefaultTemperature() < 0.15f)
+        if (biome.getTemperature() < 0.15f)
         {
             BiomeDictionary.addTypes(biome, COLD);
         }
 
-        if (biome.isHighHumidity() && biome.getDepth() < 0.0F && (biome.getScale() <= 0.3F && biome.getScale() >= 0.0F))
+        if (biome.hasHighHumidity() && biome.getDepth() < 0.0F && (biome.getScale() <= 0.3F && biome.getScale() >= 0.0F))
         {
             BiomeDictionary.addTypes(biome, SWAMP);
         }

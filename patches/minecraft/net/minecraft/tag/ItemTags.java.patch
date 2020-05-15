@@ -1,0 +1,13 @@
+--- a/net/minecraft/tag/ItemTags.java
++++ b/net/minecraft/tag/ItemTags.java
+@@ -62,6 +62,10 @@
+       return container;
+    }
+ 
++   public static int getGeneration() {
++      return latestVersion;
++   }
++
+    private static Tag<Item> register(String p_199901_0_) {
+       return new ItemTags.CachingTag(new Identifier(p_199901_0_));
+    }

@@ -1,0 +1,20 @@
+--- a/net/minecraft/entity/ai/goal/AnimalMateGoal.java
++++ b/net/minecraft/entity/ai/goal/AnimalMateGoal.java
+@@ -80,6 +80,17 @@
+ 
+    protected void breed() {
+       PassiveEntity ageableentity = this.animal.createChild(this.mate);
++      final net.minecraftforge.event.entity.living.BabyEntitySpawnEvent event = new net.minecraftforge.event.entity.living.BabyEntitySpawnEvent(animal, mate, ageableentity);
++      final boolean cancelled = net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(event);
++      ageableentity = event.getChild();
++      if (cancelled) {
++         //Reset the "inLove" state for the animals
++         this.animal.setBreedingAge(6000);
++         this.mate.setBreedingAge(6000);
++         this.animal.resetLoveTicks();
++         this.mate.resetLoveTicks();
++         return;
++      }
+       if (ageableentity != null) {
+          ServerPlayerEntity serverplayerentity = this.animal.getLovingPlayer();
+          if (serverplayerentity == null && this.mate.getLovingPlayer() != null) {

@@ -19,7 +19,7 @@
 
 package net.minecraftforge.event;
 
-import net.minecraft.tags.NetworkTagManager;
+import net.minecraft.tag.RegistryTagManager;
 import net.minecraftforge.eventbus.api.Event;
 
 /**
@@ -32,9 +32,9 @@ import net.minecraftforge.eventbus.api.Event;
 public class TagsUpdatedEvent extends Event
 {
     
-    private final NetworkTagManager manager;
+    private final RegistryTagManager manager;
     
-    public TagsUpdatedEvent(NetworkTagManager manager)
+    public TagsUpdatedEvent(RegistryTagManager manager)
     {
         this.manager = manager;
     }
@@ -42,7 +42,7 @@ public class TagsUpdatedEvent extends Event
     /**
      * @return The network tag manager that has been updated with newly received tags.
      */
-    public NetworkTagManager getTagManager()
+    public RegistryTagManager getTagManager()
     {
         return manager;
     }

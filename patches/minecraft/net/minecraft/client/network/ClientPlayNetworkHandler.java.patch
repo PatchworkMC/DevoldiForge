@@ -1,0 +1,110 @@
+--- a/net/minecraft/client/network/ClientPlayNetworkHandler.java
++++ b/net/minecraft/client/network/ClientPlayNetworkHandler.java
+@@ -357,6 +357,7 @@
+ 
+       this.client.debugRenderer.reset();
+       this.client.player.afterSpawn();
++      net.minecraftforge.fml.client.ClientHooks.firePlayerLogin(this.client.interactionManager, this.client.player, this.client.getNetworkHandler().getConnection());
+       int i = packetIn.getEntityId();
+       this.world.addPlayer(i, this.client.player);
+       this.client.player.input = new KeyboardInput(this.client.options);
+@@ -368,6 +369,7 @@
+       this.client.player.setReducedDebugInfo(packetIn.hasReducedDebugInfo());
+       this.client.player.setShowsDeathScreen(packetIn.showsDeathScreen());
+       this.client.interactionManager.setGameMode(packetIn.getGameMode());
++      net.minecraftforge.fml.network.NetworkHooks.sendMCRegistryPackets(connection, "PLAY_TO_SERVER");
+       this.client.options.onPlayerModelPartChange();
+       this.connection.send(new CustomPayloadC2SPacket(CustomPayloadC2SPacket.BRAND, (new PacketByteBuf(Unpooled.buffer())).writeString(ClientBrandRetriever.getClientModName())));
+       this.client.getGame().onStartGameSession();
+@@ -723,7 +725,7 @@
+          BlockPos blockpos = new BlockPos(compoundnbt.getInt("x"), compoundnbt.getInt("y"), compoundnbt.getInt("z"));
+          BlockEntity tileentity = this.world.getBlockEntity(blockpos);
+          if (tileentity != null) {
+-            tileentity.fromTag(compoundnbt);
++            tileentity.handleUpdateTag(compoundnbt);
+          }
+       }
+ 
+@@ -799,7 +801,9 @@
+ 
+    public void onChatMessage(ChatMessageS2CPacket packetIn) {
+       NetworkThreadUtils.forceMainThread(packetIn, this, this.client);
+-      this.client.inGameHud.addChatMessage(packetIn.getLocation(), packetIn.getMessage());
++      net.minecraft.text.Text message = net.minecraftforge.event.ForgeEventFactory.onClientChat(packetIn.getLocation(), packetIn.getMessage());
++      if (message == null) return;
++      this.client.inGameHud.addChatMessage(packetIn.getLocation(), message);
+    }
+ 
+    public void onEntityAnimation(EntityAnimationS2CPacket packetIn) {
+@@ -979,8 +983,10 @@
+       this.client.cameraEntity = clientplayerentity1;
+       clientplayerentity1.getDataTracker().writeUpdatedEntries(clientplayerentity.getDataTracker().getAllEntries());
+       clientplayerentity1.getAttributes().copyFrom(clientplayerentity.getAttributes());
++      clientplayerentity1.updateSyncFields(clientplayerentity); // Forge: fix MC-10657
+       clientplayerentity1.afterSpawn();
+       clientplayerentity1.setServerBrand(s);
++      net.minecraftforge.fml.client.ClientHooks.firePlayerRespawn(this.client.interactionManager, clientplayerentity, clientplayerentity1, clientplayerentity1.networkHandler.getConnection());
+       this.world.addPlayer(i, clientplayerentity1);
+       clientplayerentity1.yaw = -180.0F;
+       clientplayerentity1.input = new KeyboardInput(this.client.options);
+@@ -1101,6 +1107,12 @@
+          boolean flag = i == 2 && tileentity instanceof CommandBlockBlockEntity;
+          if (i == 1 && tileentity instanceof MobSpawnerBlockEntity || flag || i == 3 && tileentity instanceof BeaconBlockEntity || i == 4 && tileentity instanceof SkullBlockEntity || i == 6 && tileentity instanceof BannerBlockEntity || i == 7 && tileentity instanceof StructureBlockBlockEntity || i == 8 && tileentity instanceof EndGatewayBlockEntity || i == 9 && tileentity instanceof SignBlockEntity || i == 11 && tileentity instanceof BedBlockEntity || i == 5 && tileentity instanceof ConduitBlockEntity || i == 12 && tileentity instanceof JigsawBlockEntity || i == 13 && tileentity instanceof CampfireBlockEntity || i == 14 && tileentity instanceof BeehiveBlockEntity) {
+             tileentity.fromTag(packetIn.getCompoundTag());
++         } else {
++            if(tileentity == null) {
++               LOGGER.error("Received invalid update packet for null tile entity at {} with data: {}", packetIn.getPos(), packetIn.getCompoundTag());
++               return;
++            }
++            tileentity.onDataPacket(connection, packetIn);
+          }
+ 
+          if (flag && this.client.currentScreen instanceof CommandBlockScreen) {
+@@ -1272,6 +1284,7 @@
+       clientrecipebook.reload();
+       clientrecipebook.getOrderedResults().forEach(imutablesearchtree::add);
+       imutablesearchtree.reload();
++      net.minecraftforge.client.ForgeHooksClient.onRecipesUpdated(this.recipeManager);
+    }
+ 
+    public void onLookAt(LookAtS2CPacket packetIn) {
+@@ -1352,7 +1365,7 @@
+       NetworkThreadUtils.forceMainThread(packetIn, this, this.client);
+       Entity entity = this.world.getEntityById(packetIn.getEntityId());
+       if (entity instanceof LivingEntity) {
+-         StatusEffect effect = StatusEffect.byRawId(packetIn.getEffectId());
++         StatusEffect effect = StatusEffect.byRawId(packetIn.getEffectId() & 0xFF);
+          if (effect != null) {
+             StatusEffectInstance effectinstance = new StatusEffectInstance(effect, packetIn.getDuration(), packetIn.getAmplifier(), packetIn.isAmbient(), packetIn.shouldShowParticles(), packetIn.shouldShowIcon());
+             effectinstance.setPermanent(packetIn.isPermanent());
+@@ -1372,6 +1385,7 @@
+       }
+ 
+       this.client.getSearchableContainer(SearchManager.ITEM_TAG).reload();
++      net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.TagsUpdatedEvent(this.tagManager));
+    }
+ 
+    public void onCombatEvent(CombatEventS2CPacket packetIn) {
+@@ -1847,10 +1861,12 @@
+             int l5 = packetbuffer.readInt();
+             this.client.debugRenderer.gameTestDebugRenderer.addMarker(blockpos7, l3, s10, l5);
+          } else {
+-            LOGGER.warn("Unknown custom packed identifier: {}", (Object)resourcelocation);
++            if (!net.minecraftforge.fml.network.NetworkHooks.onCustomPayload(packetIn, this.connection))
++            LOGGER.warn("Unknown custom packet identifier: {}", (Object)resourcelocation);
+          }
+       } finally {
+          if (packetbuffer != null) {
++            if (false) // Forge: let packet handle releasing buffer
+             packetbuffer.release();
+          }
+ 
+@@ -1990,7 +2006,7 @@
+             for(EntityAttributesS2CPacket.Entry sentitypropertiespacket$snapshot : packetIn.getEntries()) {
+                EntityAttributeInstance iattributeinstance = abstractattributemap.get(sentitypropertiespacket$snapshot.getId());
+                if (iattributeinstance == null) {
+-                  iattributeinstance = abstractattributemap.register(new ClampedEntityAttribute((EntityAttribute)null, sentitypropertiespacket$snapshot.getId(), 0.0D, Double.MIN_NORMAL, Double.MAX_VALUE));
++                  iattributeinstance = abstractattributemap.register(new ClampedEntityAttribute((EntityAttribute)null, sentitypropertiespacket$snapshot.getId(), 0.0D, -Double.MAX_VALUE, Double.MAX_VALUE)); // FORGE: fix invalid value range (MC-150405)
+                }
+ 
+                iattributeinstance.setBaseValue(sentitypropertiespacket$snapshot.getBaseValue());

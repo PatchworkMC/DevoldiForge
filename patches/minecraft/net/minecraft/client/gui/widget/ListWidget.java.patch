@@ -1,0 +1,38 @@
+--- a/net/minecraft/client/gui/widget/ListWidget.java
++++ b/net/minecraft/client/gui/widget/ListWidget.java
+@@ -159,15 +159,8 @@
+          this.capYPosition();
+          Tessellator tessellator = Tessellator.getInstance();
+          BufferBuilder bufferbuilder = tessellator.getBuffer();
+-         this.minecraft.getTextureManager().bindTexture(DrawableHelper.BACKGROUND_LOCATION);
+-         RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+-         float f = 32.0F;
+-         bufferbuilder.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
+-         bufferbuilder.vertex((double)this.left, (double)this.bottom, 0.0D).texture((float)this.left / 32.0F, (float)(this.bottom + (int)this.scroll) / 32.0F).color(32, 32, 32, 255).next();
+-         bufferbuilder.vertex((double)this.right, (double)this.bottom, 0.0D).texture((float)this.right / 32.0F, (float)(this.bottom + (int)this.scroll) / 32.0F).color(32, 32, 32, 255).next();
+-         bufferbuilder.vertex((double)this.right, (double)this.top, 0.0D).texture((float)this.right / 32.0F, (float)(this.top + (int)this.scroll) / 32.0F).color(32, 32, 32, 255).next();
+-         bufferbuilder.vertex((double)this.left, (double)this.top, 0.0D).texture((float)this.left / 32.0F, (float)(this.top + (int)this.scroll) / 32.0F).color(32, 32, 32, 255).next();
+-         tessellator.draw();
++         // Forge: background rendering moved into separate method.
++         this.drawContainerBackground(tessellator);
+          int k = this.left + this.width / 2 - this.getRowWidth() / 2 + 2;
+          int l = this.top + 4 - (int)this.scroll;
+          if (this.renderHeader) {
+@@ -407,4 +400,17 @@
+    public int getItemHeight() {
+       return this.itemHeight;
+    }
++
++   protected void drawContainerBackground(Tessellator tessellator) {
++      BufferBuilder buffer = tessellator.getBuffer();
++      this.minecraft.getTextureManager().bindTexture(DrawableHelper.BACKGROUND_LOCATION);
++      RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
++      float scale = 32.0F;
++      buffer.begin(7, VertexFormats.POSITION_TEXTURE_COLOR);
++      buffer.vertex((double)this.left, (double)this.bottom, 0.0D).texture(this.left / scale, (this.bottom + (int)this.scroll) / scale).color(32, 32, 32, 255).next();
++      buffer.vertex((double)this.right, (double)this.bottom, 0.0D).texture(this.right / scale, (this.bottom + (int)this.scroll) / scale).color(32, 32, 32, 255).next();
++      buffer.vertex((double)this.right, (double)this.top, 0.0D).texture(this.right / scale, (this.top + (int)this.scroll) / scale).color(32, 32, 32, 255).next();
++      buffer.vertex((double)this.left, (double)this.top, 0.0D).texture(this.left / scale, (this.top + (int)this.scroll) / scale).color(32, 32, 32, 255).next();
++      tessellator.draw();
++   }
+ }

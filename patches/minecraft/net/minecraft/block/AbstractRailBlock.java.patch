@@ -3,36 +3,36 @@
 @@ -36,7 +36,7 @@
     }
  
-    public VoxelShape func_220053_a(BlockState p_220053_1_, IBlockReader p_220053_2_, BlockPos p_220053_3_, ISelectionContext p_220053_4_) {
--      RailShape railshape = p_220053_1_.func_177230_c() == this ? p_220053_1_.func_177229_b(this.func_176560_l()) : null;
-+      RailShape railshape = p_220053_1_.func_177230_c() == this ? getRailDirection(p_220053_1_, p_220053_2_, p_220053_3_, null) : null;
-       return railshape != null && railshape.func_208092_c() ? field_190959_b : field_185590_a;
+    public VoxelShape getOutlineShape(BlockState state, BlockView worldIn, BlockPos pos, EntityContext context) {
+-      RailShape railshape = state.getBlock() == this ? state.get(this.getShapeProperty()) : null;
++      RailShape railshape = state.getBlock() == this ? getRailDirection(state, worldIn, pos, null) : null;
+       return railshape != null && railshape.isAscending() ? ASCENDING_SHAPE : STRAIGHT_SHAPE;
     }
  
 @@ -56,7 +56,7 @@
  
-    public void func_220069_a(BlockState p_220069_1_, World p_220069_2_, BlockPos p_220069_3_, Block p_220069_4_, BlockPos p_220069_5_, boolean p_220069_6_) {
-       if (!p_220069_2_.field_72995_K) {
--         RailShape railshape = p_220069_1_.func_177229_b(this.func_176560_l());
-+         RailShape railshape = getRailDirection(p_220069_1_, p_220069_2_, p_220069_3_, null);
+    public void neighborUpdate(BlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos, boolean isMoving) {
+       if (!worldIn.isClient) {
+-         RailShape railshape = state.get(this.getShapeProperty());
++         RailShape railshape = getRailDirection(state, worldIn, pos, null);
           boolean flag = false;
-          BlockPos blockpos = p_220069_3_.func_177977_b();
-          if (!func_220064_c(p_220069_2_, blockpos)) {
+          BlockPos blockpos = pos.down();
+          if (!topCoversMediumSquare(worldIn, blockpos)) {
 @@ -115,7 +115,7 @@
-    public void func_196243_a(BlockState p_196243_1_, World p_196243_2_, BlockPos p_196243_3_, BlockState p_196243_4_, boolean p_196243_5_) {
-       if (!p_196243_5_) {
-          super.func_196243_a(p_196243_1_, p_196243_2_, p_196243_3_, p_196243_4_, p_196243_5_);
--         if (p_196243_1_.func_177229_b(this.func_176560_l()).func_208092_c()) {
-+         if (getRailDirection(p_196243_1_, p_196243_2_, p_196243_3_, null).func_208092_c()) {
-             p_196243_2_.func_195593_d(p_196243_3_.func_177984_a(), this);
+    public void onBlockRemoved(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
+       if (!isMoving) {
+          super.onBlockRemoved(state, worldIn, pos, newState, isMoving);
+-         if (state.get(this.getShapeProperty()).isAscending()) {
++         if (getRailDirection(state, worldIn, pos, null).isAscending()) {
+             worldIn.updateNeighborsAlways(pos.up(), this);
           }
  
 @@ -134,5 +134,66 @@
-       return blockstate.func_206870_a(this.func_176560_l(), flag ? RailShape.EAST_WEST : RailShape.NORTH_SOUTH);
+       return blockstate.with(this.getShapeProperty(), flag ? RailShape.EAST_WEST : RailShape.NORTH_SOUTH);
     }
  
 +   //Forge: Use getRailDirection(IBlockAccess, BlockPos, IBlockState, EntityMinecart) for enhanced ability
-    public abstract IProperty<RailShape> func_176560_l();
+    public abstract Property<RailShape> getShapeProperty();
 +
 +   /* ======================================== FORGE START =====================================*/
 +   /**
@@ -42,9 +42,9 @@
 +    * @param pos Block's position in world
 +    * @return True if the rail can make corners.
 +    */
-+   public boolean isFlexibleRail(BlockState state, IBlockReader world, BlockPos pos)
++   public boolean isFlexibleRail(BlockState state, BlockView world, BlockPos pos)
 +   {
-+       return !this.field_196277_c;
++       return !this.allowCurves;
 +   }
 +
 +   /**
@@ -54,7 +54,7 @@
 +    * @param pos Block's position in world
 +    * @return True if the rail can make slopes.
 +    */
-+   public boolean canMakeSlopes(BlockState state, IBlockReader world, BlockPos pos) {
++   public boolean canMakeSlopes(BlockState state, BlockView world, BlockPos pos) {
 +       return true;
 +   }
 +
@@ -70,8 +70,8 @@
 +    * @param cart The cart asking for the metadata, null if it is not called by EntityMinecart.
 +    * @return The direction.
 +    */
-+   public RailShape getRailDirection(BlockState state, IBlockReader world, BlockPos pos, @javax.annotation.Nullable net.minecraft.entity.item.minecart.AbstractMinecartEntity cart) {
-+       return state.func_177229_b(func_176560_l());
++   public RailShape getRailDirection(BlockState state, BlockView world, BlockPos pos, @javax.annotation.Nullable net.minecraft.entity.vehicle.AbstractMinecartEntity cart) {
++       return state.get(getShapeProperty());
 +   }
 +
 +   /**
@@ -81,7 +81,7 @@
 +    * @param pos Block's position in world
 +    * @return The max speed of the current rail.
 +    */
-+   public float getRailMaxSpeed(BlockState state, World world, BlockPos pos, net.minecraft.entity.item.minecart.AbstractMinecartEntity cart) {
++   public float getRailMaxSpeed(BlockState state, World world, BlockPos pos, net.minecraft.entity.vehicle.AbstractMinecartEntity cart) {
 +       return 0.4f;
 +   }
 +
@@ -92,5 +92,5 @@
 +    * @param cart The cart on the rail.
 +    * @param pos Block's position in world
 +    */
-+   public void onMinecartPass(BlockState state, World world, BlockPos pos, net.minecraft.entity.item.minecart.AbstractMinecartEntity cart) { }
++   public void onMinecartPass(BlockState state, World world, BlockPos pos, net.minecraft.entity.vehicle.AbstractMinecartEntity cart) { }
  }

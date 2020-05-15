@@ -1,0 +1,12 @@
+--- a/net/minecraft/client/gl/ShaderEffect.java
++++ b/net/minecraft/client/gl/ShaderEffect.java
+@@ -144,7 +144,8 @@
+                   String s3 = JsonHelper.getString(jsonobject1, "id");
+                   Framebuffer framebuffer2 = this.getTarget(s3);
+                   if (framebuffer2 == null) {
+-                     Identifier resourcelocation = new Identifier("textures/effect/" + s3 + ".png");
++                     Identifier rl = Identifier.tryParse(s3);
++                     Identifier resourcelocation = new Identifier(rl.getNamespace(), "textures/effect/" + rl.getPath() + ".png");
+                      Resource iresource = null;
+ 
+                      try {

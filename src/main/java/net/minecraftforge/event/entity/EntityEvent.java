@@ -20,10 +20,9 @@
 package net.minecraftforge.event.entity;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntitySize;
-import net.minecraft.entity.Pose;
+import net.minecraft.entity.EntityDimensions;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.Cancelable;
 import net.minecraftforge.eventbus.api.Event;
@@ -150,12 +149,12 @@ public class EntityEvent extends Event
      **/
     public static class EyeHeight extends EntityEvent
     {
-        private final Pose pose;
-        private final EntitySize size;
+        private final EntityPose pose;
+        private final EntityDimensions size;
         private final float oldHeight;
         private float newHeight;
      
-        public EyeHeight(Entity entity, Pose pose, EntitySize size, float defaultHeight)
+        public EyeHeight(Entity entity, EntityPose pose, EntityDimensions size, float defaultHeight)
         {
             super(entity);
             this.pose = pose;
@@ -164,8 +163,8 @@ public class EntityEvent extends Event
             this.newHeight = defaultHeight;
         }
         
-        public Pose getPose() { return pose; }
-        public EntitySize getSize() { return size; }
+        public EntityPose getPose() { return pose; }
+        public EntityDimensions getSize() { return size; }
         public float getOldHeight() { return oldHeight; }
         public float getNewHeight() { return newHeight; }
         public void setNewHeight(float newSize) { this.newHeight = newSize; }

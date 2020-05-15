@@ -1,0 +1,112 @@
+--- a/net/minecraft/tag/Tag.java
++++ b/net/minecraft/tag/Tag.java
+@@ -22,6 +22,7 @@
+    private final Identifier id;
+    private final Set<T> values;
+    private final Collection<Tag.Entry<T>> entries;
++   private boolean replace = false;
+ 
+    public Tag(Identifier resourceLocationIn) {
+       this.id = resourceLocationIn;
+@@ -30,6 +31,9 @@
+    }
+ 
+    public Tag(Identifier resourceLocationIn, Collection<Tag.Entry<T>> entriesIn, boolean preserveOrder) {
++      this(resourceLocationIn, entriesIn, preserveOrder, false);
++   }
++   private Tag(Identifier resourceLocationIn, Collection<Tag.Entry<T>> entriesIn, boolean preserveOrder, boolean replace) {
+       this.id = resourceLocationIn;
+       this.values = (Set<T>)(preserveOrder ? Sets.newLinkedHashSet() : Sets.newHashSet());
+       this.entries = entriesIn;
+@@ -45,11 +49,18 @@
+       JsonArray jsonarray = new JsonArray();
+ 
+       for(Tag.Entry<T> itagentry : this.entries) {
++         if (!(itagentry instanceof net.minecraftforge.common.data.IOptionalTagEntry))
+          itagentry.toJson(jsonarray, getNameForObject);
+       }
++      JsonArray optional = new JsonArray();
++      for(Tag.Entry<T> itagentry : this.entries) {
++         if (itagentry instanceof net.minecraftforge.common.data.IOptionalTagEntry)
++            itagentry.toJson(optional, getNameForObject);
++      }
+ 
+-      jsonobject.addProperty("replace", false);
++      jsonobject.addProperty("replace", replace);
+       jsonobject.add("values", jsonarray);
++      if (optional.size() > 0) jsonobject.add("optional", optional);
+       return jsonobject;
+    }
+ 
+@@ -74,9 +85,10 @@
+       return this.id;
+    }
+ 
+-   public static class Builder<T> {
++   public static class Builder<T> implements net.minecraftforge.common.extensions.IForgeTagBuilder<T> {
+       private final Set<Tag.Entry<T>> entries = Sets.newLinkedHashSet();
+       private boolean ordered;
++      private boolean replace = false;
+ 
+       public static <T> Tag.Builder<T> create() {
+          return new Tag.Builder<>();
+@@ -103,6 +115,22 @@
+          return this;
+       }
+ 
++      @SafeVarargs
++      public final Tag.Builder<T> add(Tag<T>... tags) {
++         for (Tag<T> tag : tags)
++            add(tag);
++         return this;
++      }
++
++      public Tag.Builder<T> replace(boolean value) {
++         this.replace = value;
++         return this;
++      }
++
++      public Tag.Builder<T> replace() {
++         return replace(true);
++      }
++
+       public Tag.Builder<T> ordered(boolean preserveOrderIn) {
+          this.ordered = preserveOrderIn;
+          return this;
+@@ -119,7 +147,7 @@
+       }
+ 
+       public Tag<T> build(Identifier resourceLocationIn) {
+-         return new Tag<>(resourceLocationIn, this.entries, this.ordered);
++         return new Tag<>(resourceLocationIn, this.entries, this.ordered, this.replace);
+       }
+ 
+       public Tag.Builder<T> fromJson(Function<Identifier, Optional<T>> p_219783_1_, JsonObject p_219783_2_) {
+@@ -143,8 +171,10 @@
+          }
+ 
+          this.entries.addAll(list);
++         net.minecraftforge.common.ForgeHooks.deserializeTagAdditions(this, p_219783_1_, p_219783_2_);
+          return this;
+       }
++      public Tag.Builder<T> remove(Tag.Entry<T> e) { this.entries.remove(e); return this; }
+    }
+ 
+    public interface Entry<T> {
+@@ -183,6 +213,8 @@
+       public Collection<T> getValues() {
+          return this.values;
+       }
++      @Override public int hashCode() { return this.values.hashCode(); }
++      @Override public boolean equals(Object o) { return o == this || (o instanceof Tag.CollectionEntry && this.values.equals(((Tag.CollectionEntry) o).values)); }
+    }
+ 
+    public static class TagEntry<T> implements Tag.Entry<T> {
+@@ -229,5 +261,7 @@
+       public void toJson(JsonArray array, Function<T, Identifier> getNameForObject) {
+          array.add("#" + this.getId());
+       }
++      @Override public int hashCode() { return java.util.Objects.hashCode(this.id); }
++      @Override public boolean equals(Object o) { return o == this || (o instanceof Tag.TagEntry && java.util.Objects.equals(this.id, ((Tag.TagEntry) o).id)); }
+    }
+ }

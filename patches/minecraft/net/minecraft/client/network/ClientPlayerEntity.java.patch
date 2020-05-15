@@ -1,0 +1,65 @@
+--- a/net/minecraft/client/network/ClientPlayerEntity.java
++++ b/net/minecraft/client/network/ClientPlayerEntity.java
+@@ -135,6 +135,7 @@
+    }
+ 
+    public boolean damage(DamageSource source, float amount) {
++      net.minecraftforge.common.ForgeHooks.onPlayerAttack(this, source, amount);
+       return false;
+    }
+ 
+@@ -459,6 +460,11 @@
+    }
+ 
+    public void playSound(SoundEvent soundIn, float volume, float pitch) {
++      net.minecraftforge.event.entity.PlaySoundAtEntityEvent event = net.minecraftforge.event.ForgeEventFactory.onPlaySoundAtEntity(this, soundIn, this.getSoundCategory(), volume, pitch);
++      if (event.isCanceled() || event.getSound() == null) return;
++      soundIn = event.getSound();
++      volume = event.getVolume();
++      pitch = event.getPitch();
+       this.world.playSound(this.getX(), this.getY(), this.getZ(), soundIn, this.getSoundCategory(), volume, pitch, false);
+    }
+ 
+@@ -600,6 +606,7 @@
+       boolean flag1 = this.input.sneaking;
+       boolean flag2 = this.method_20623();
+       this.input.tick(this.isHoldingSneakKey());
++      net.minecraftforge.client.ForgeHooksClient.onInputUpdate(this, this.input);
+       this.client.getTutorialManager().onMovement(this.input);
+       if (this.isUsingItem() && !this.hasVehicle()) {
+          this.input.movementSideways *= 0.2F;
+@@ -614,11 +621,12 @@
+          this.input.jumping = true;
+       }
+ 
+-      if (!this.noClip) {
+-         this.pushOutOfBlocks(this.getX() - (double)this.getWidth() * 0.35D, this.getY() + 0.5D, this.getZ() + (double)this.getWidth() * 0.35D);
+-         this.pushOutOfBlocks(this.getX() - (double)this.getWidth() * 0.35D, this.getY() + 0.5D, this.getZ() - (double)this.getWidth() * 0.35D);
+-         this.pushOutOfBlocks(this.getX() + (double)this.getWidth() * 0.35D, this.getY() + 0.5D, this.getZ() - (double)this.getWidth() * 0.35D);
+-         this.pushOutOfBlocks(this.getX() + (double)this.getWidth() * 0.35D, this.getY() + 0.5D, this.getZ() + (double)this.getWidth() * 0.35D);
++      net.minecraftforge.client.event.PlayerSPPushOutOfBlocksEvent event = new net.minecraftforge.client.event.PlayerSPPushOutOfBlocksEvent(this);
++      if (!this.noClip && !net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(event)) {
++         this.pushOutOfBlocks(this.getX() - (double)this.getWidth() * 0.35D, event.getMinY(), this.getZ() + (double)this.getWidth() * 0.35D);
++         this.pushOutOfBlocks(this.getX() - (double)this.getWidth() * 0.35D, event.getMinY(), this.getZ() - (double)this.getWidth() * 0.35D);
++         this.pushOutOfBlocks(this.getX() + (double)this.getWidth() * 0.35D, event.getMinY(), this.getZ() - (double)this.getWidth() * 0.35D);
++         this.pushOutOfBlocks(this.getX() + (double)this.getWidth() * 0.35D, event.getMinY(), this.getZ() + (double)this.getWidth() * 0.35D);
+       }
+ 
+       boolean flag4 = (float)this.getHungerManager().getFoodLevel() > 6.0F || this.abilities.allowFlying;
+@@ -962,4 +970,16 @@
+          return this.isSubmergedInWater;
+       }
+    }
++
++   public void updateSyncFields(ClientPlayerEntity old) {
++      this.lastX = old.lastX;
++      this.lastBaseY = old.lastBaseY;
++      this.lastZ = old.lastZ;
++      this.lastYaw = old.lastYaw;
++      this.lastPitch = old.lastPitch;
++      this.lastOnGround = old.lastOnGround;
++      this.lastIsHoldingSneakKey = old.lastIsHoldingSneakKey;
++      this.lastSprinting = old.lastSprinting;
++      this.field_3923 = old.field_3923;
++   }
+ }

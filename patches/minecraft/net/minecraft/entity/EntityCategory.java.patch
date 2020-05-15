@@ -1,0 +1,20 @@
+--- a/net/minecraft/entity/EntityCategory.java
++++ b/net/minecraft/entity/EntityCategory.java
+@@ -4,7 +4,7 @@
+ import java.util.Map;
+ import java.util.stream.Collectors;
+ 
+-public enum EntityCategory {
++public enum EntityCategory implements net.minecraftforge.common.IExtensibleEnum {
+    MONSTER("monster", 70, false, false),
+    CREATURE("creature", 10, true, true),
+    AMBIENT("ambient", 15, true, false),
+@@ -41,4 +41,8 @@
+    public boolean isAnimal() {
+       return this.animal;
+    }
++
++   public static EntityCategory create(String name, String id, int maxNumberOfCreatureIn, boolean isPeacefulCreatureIn, boolean isAnimalIn) {
++      throw new IllegalStateException("Enum not extended");
++   }
+ }

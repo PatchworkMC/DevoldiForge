@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/gen/feature/JungleGroundBushFeature.java
++++ b/net/minecraft/world/gen/feature/JungleGroundBushFeature.java
+@@ -16,7 +16,7 @@
+ 
+    public boolean generate(ModifiableTestableWorld generationReader, Random rand, BlockPos positionIn, Set<BlockPos> p_225557_4_, Set<BlockPos> p_225557_5_, BlockBox boundingBoxIn, TreeFeatureConfig configIn) {
+       positionIn = generationReader.getTopPosition(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, positionIn).down();
+-      if (isNaturalDirtOrGrass(generationReader, positionIn)) {
++      if (isSoil(generationReader, positionIn, configIn.getSapling())) {
+          positionIn = positionIn.up();
+          this.setLogBlockState(generationReader, rand, positionIn, p_225557_4_, boundingBoxIn, configIn);
+ 

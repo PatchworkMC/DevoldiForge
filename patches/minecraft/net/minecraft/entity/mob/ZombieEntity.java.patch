@@ -1,0 +1,47 @@
+--- a/net/minecraft/entity/mob/ZombieEntity.java
++++ b/net/minecraft/entity/mob/ZombieEntity.java
+@@ -109,7 +109,7 @@
+       this.getAttributeInstance(EntityAttributes.MOVEMENT_SPEED).setBaseValue((double)0.23F);
+       this.getAttributeInstance(EntityAttributes.ATTACK_DAMAGE).setBaseValue(3.0D);
+       this.getAttributeInstance(EntityAttributes.ARMOR).setBaseValue(2.0D);
+-      this.getAttributes().register(SPAWN_REINFORCEMENTS).setBaseValue(this.random.nextDouble() * (double)0.1F);
++      this.getAttributes().register(SPAWN_REINFORCEMENTS).setBaseValue(this.random.nextDouble() * net.minecraftforge.common.ForgeConfig.SERVER.zombieBaseSummonChance.get());
+    }
+ 
+    protected void initDataTracker() {
+@@ -314,12 +314,16 @@
+             livingentity = (LivingEntity)source.getAttacker();
+          }
+ 
+-         if (livingentity != null && this.world.getDifficulty() == Difficulty.HARD && (double)this.random.nextFloat() < this.getAttributeInstance(SPAWN_REINFORCEMENTS).getValue() && this.world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING)) {
+             int i = MathHelper.floor(this.getX());
+             int j = MathHelper.floor(this.getY());
+             int k = MathHelper.floor(this.getZ());
+-            ZombieEntity zombieentity = new ZombieEntity(this.world);
+ 
++         net.minecraftforge.event.entity.living.ZombieEvent.SummonAidEvent event = net.minecraftforge.event.ForgeEventFactory.fireZombieSummonAid(this, world, i, j, k, livingentity, this.getAttributeInstance(SPAWN_REINFORCEMENTS).getValue());
++         if (event.getResult() == net.minecraftforge.eventbus.api.Event.Result.DENY) return true;
++         if (event.getResult() == net.minecraftforge.eventbus.api.Event.Result.ALLOW  ||
++            livingentity != null && this.world.getDifficulty() == Difficulty.HARD && (double)this.random.nextFloat() < this.getAttributeInstance(SPAWN_REINFORCEMENTS).getValue() && this.world.getGameRules().getBoolean(GameRules.DO_MOB_SPAWNING)) {
++            ZombieEntity zombieentity = event.getCustomSummonedAid() != null && event.getResult() == net.minecraftforge.eventbus.api.Event.Result.ALLOW ? event.getCustomSummonedAid() : EntityType.ZOMBIE.create(this.world);
++
+             for(int l = 0; l < 50; ++l) {
+                int i1 = i + MathHelper.nextInt(this.random, 7, 40) * MathHelper.nextInt(this.random, -1, 1);
+                int j1 = j + MathHelper.nextInt(this.random, 7, 40) * MathHelper.nextInt(this.random, -1, 1);
+@@ -329,6 +333,7 @@
+                   zombieentity.updatePosition((double)i1, (double)j1, (double)k1);
+                   if (!this.world.isPlayerInRange((double)i1, (double)j1, (double)k1, 7.0D) && this.world.intersectsEntities(zombieentity) && this.world.doesNotCollide(zombieentity) && !this.world.containsFluid(zombieentity.getBoundingBox())) {
+                      this.world.spawnEntity(zombieentity);
++                     if (livingentity != null)
+                      zombieentity.setTarget(livingentity);
+                      zombieentity.initialize(this.world, this.world.getLocalDifficulty(new BlockPos(zombieentity)), SpawnType.REINFORCEMENT, (EntityData)null, (CompoundTag)null);
+                      this.getAttributeInstance(SPAWN_REINFORCEMENTS).addModifier(new EntityAttributeModifier("Zombie reinforcement caller charge", (double)-0.05F, EntityAttributeModifier.Operation.ADDITION));
+@@ -467,7 +472,7 @@
+       float f = difficultyIn.getClampedLocalDifficulty();
+       this.setCanPickUpLoot(this.random.nextFloat() < 0.55F * f);
+       if (spawnDataIn == null) {
+-         spawnDataIn = new ZombieEntity.Data(worldIn.getRandom().nextFloat() < 0.05F);
++         spawnDataIn = new ZombieEntity.Data(worldIn.getRandom().nextFloat() < net.minecraftforge.common.ForgeConfig.SERVER.zombieBabyChance.get());
+       }
+ 
+       if (spawnDataIn instanceof ZombieEntity.Data) {

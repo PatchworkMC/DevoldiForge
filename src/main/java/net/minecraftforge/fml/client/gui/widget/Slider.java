@@ -19,7 +19,7 @@
 
 package net.minecraftforge.fml.client.gui.widget;
 
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.MinecraftClient;
 import net.minecraftforge.fml.client.gui.GuiUtils;
 
 import javax.annotation.Nullable;
@@ -51,12 +51,12 @@ public class Slider extends ExtendedButton
 
     public boolean drawString = true;
 
-    public Slider(int xPos, int yPos, int width, int height, String prefix, String suf, double minVal, double maxVal, double currentVal, boolean showDec, boolean drawStr, IPressable handler)
+    public Slider(int xPos, int yPos, int width, int height, String prefix, String suf, double minVal, double maxVal, double currentVal, boolean showDec, boolean drawStr, PressAction handler)
     {
         this(xPos, yPos, width, height, prefix, suf, minVal, maxVal, currentVal, showDec, drawStr, handler, null);
     }
 
-    public Slider(int xPos, int yPos, int width, int height, String prefix, String suf, double minVal, double maxVal, double currentVal, boolean showDec, boolean drawStr, IPressable handler, @Nullable ISlider par)
+    public Slider(int xPos, int yPos, int width, int height, String prefix, String suf, double minVal, double maxVal, double currentVal, boolean showDec, boolean drawStr, PressAction handler, @Nullable ISlider par)
     {
         super(xPos, yPos, width, height, prefix, handler);
         minValue = minVal;
@@ -86,7 +86,7 @@ public class Slider extends ExtendedButton
             setMessage("");
     }
 
-    public Slider(int xPos, int yPos, String displayStr, double minVal, double maxVal, double currentVal, IPressable handler, ISlider par)
+    public Slider(int xPos, int yPos, String displayStr, double minVal, double maxVal, double currentVal, PressAction handler, ISlider par)
     {
         this(xPos, yPos, 150, 20, displayStr, "", minVal, maxVal, currentVal, true, true, handler, par);
     }
@@ -105,7 +105,7 @@ public class Slider extends ExtendedButton
      * Fired when the mouse button is dragged. Equivalent of MouseListener.mouseDragged(MouseEvent e).
      */
     @Override
-    protected void renderBg(Minecraft par1Minecraft, int par2, int par3)
+    protected void renderBg(MinecraftClient par1Minecraft, int par2, int par3)
     {
         if (this.visible)
         {

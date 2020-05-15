@@ -1,0 +1,36 @@
+--- a/net/minecraft/client/gui/screen/world/CreateWorldScreen.java
++++ b/net/minecraft/client/gui/screen/world/CreateWorldScreen.java
+@@ -6,8 +6,6 @@
+ import javax.annotation.Nullable;
+ import net.fabricmc.api.EnvType;
+ import net.fabricmc.api.Environment;
+-import net.minecraft.client.gui.screen.CustomizeBuffetLevelScreen;
+-import net.minecraft.client.gui.screen.CustomizeFlatLevelScreen;
+ import net.minecraft.client.gui.screen.Screen;
+ import net.minecraft.client.gui.widget.ButtonWidget;
+ import net.minecraft.client.gui.widget.TextFieldWidget;
+@@ -150,14 +148,7 @@
+       });
+       this.mapTypeSwitchButton.visible = false;
+       this.customizeTypeButton = this.addButton(new ButtonWidget(this.width / 2 + 5, 120, 150, 20, I18n.translate("selectWorld.customizeType"), (p_214314_1_) -> {
+-         if (LevelGeneratorType.TYPES[this.generatorType] == LevelGeneratorType.FLAT) {
+-            this.minecraft.openScreen(new CustomizeFlatLevelScreen(this, this.generatorOptionsTag));
+-         }
+-
+-         if (LevelGeneratorType.TYPES[this.generatorType] == LevelGeneratorType.BUFFET) {
+-            this.minecraft.openScreen(new CustomizeBuffetLevelScreen(this, this.generatorOptionsTag));
+-         }
+-
++         LevelGeneratorType.TYPES[this.generatorType].onCustomizeButton(this.minecraft, CreateWorldScreen.this);
+       }));
+       this.customizeTypeButton.visible = false;
+       this.enableCheatsButton = this.addButton(new ButtonWidget(this.width / 2 - 155, 151, 150, 20, I18n.translate("selectWorld.allowCommands"), (p_214315_1_) -> {
+@@ -245,6 +236,8 @@
+             }
+          }
+ 
++         LevelGeneratorType.TYPES[this.generatorType].onGUICreateWorldPress();
++
+          LevelInfo worldsettings = new LevelInfo(i, this.currentMode.defaultGameMode, this.structures, this.hardcore, LevelGeneratorType.TYPES[this.generatorType]);
+          worldsettings.setGeneratorOptions(Dynamic.convert(NbtOps.INSTANCE, JsonOps.INSTANCE, this.generatorOptionsTag));
+          if (this.bonusChest && !this.hardcore) {

@@ -1,0 +1,11 @@
+--- a/net/minecraft/block/entity/BlockEntityType.java
++++ b/net/minecraft/block/entity/BlockEntityType.java
+@@ -18,7 +18,7 @@
+ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+ 
+-public class BlockEntityType<T extends BlockEntity> {
++public class BlockEntityType<T extends BlockEntity> extends net.minecraftforge.registries.ForgeRegistryEntry<BlockEntityType<?>> {
+    private static final Logger LOGGER = LogManager.getLogger();
+    public static final BlockEntityType<FurnaceBlockEntity> FURNACE = create("furnace", BlockEntityType.Builder.create(FurnaceBlockEntity::new, Blocks.FURNACE));
+    public static final BlockEntityType<ChestBlockEntity> CHEST = create("chest", BlockEntityType.Builder.create(ChestBlockEntity::new, Blocks.CHEST));

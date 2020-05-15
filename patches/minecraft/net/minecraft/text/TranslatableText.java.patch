@@ -1,0 +1,13 @@
+--- a/net/minecraft/text/TranslatableText.java
++++ b/net/minecraft/text/TranslatableText.java
+@@ -101,6 +101,10 @@
+             }
+          }
+ 
++         if (j == 0) {
++            // if we failed to match above, lets try the messageformat handler instead.
++            j = net.minecraftforge.fml.TextComponentMessageFormatHandler.handle(this, this.translations, this.args, format);
++         }
+          if (j < format.length()) {
+             Text itextcomponent1 = new LiteralText(String.format(format.substring(j)));
+             itextcomponent1.getStyle().setParent(this.getStyle());

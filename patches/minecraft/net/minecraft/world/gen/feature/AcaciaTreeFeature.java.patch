@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/gen/feature/AcaciaTreeFeature.java
++++ b/net/minecraft/world/gen/feature/AcaciaTreeFeature.java
+@@ -24,7 +24,7 @@
+          return false;
+       } else {
+          BlockPos blockpos = optional.get();
+-         this.setToDirt(generationReader, blockpos.down());
++         this.setDirtAt(generationReader, blockpos.down(), blockpos);
+          Direction direction = Direction.Type.HORIZONTAL.random(rand);
+          int l = i - rand.nextInt(4) - 1;
+          int i1 = 3 - rand.nextInt(3);

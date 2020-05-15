@@ -1,0 +1,29 @@
+--- a/net/minecraft/world/gen/feature/BranchedTreeFeature.java
++++ b/net/minecraft/world/gen/feature/BranchedTreeFeature.java
+@@ -35,7 +35,7 @@
+          blockpos = p_227212_5_;
+       }
+ 
+-      if (blockpos.getY() >= 1 && blockpos.getY() + p_227212_2_ + 1 <= 256) {
++      if (blockpos.getY() >= 1 && blockpos.getY() + p_227212_2_ + 1 <= p_227212_1_.getMaxHeight()) {
+          for(int i1 = 0; i1 <= p_227212_2_ + 1; ++i1) {
+             int j1 = treeFeatureConfigIn.foliagePlacer.method_23447(p_227212_3_, p_227212_2_, p_227212_4_, i1);
+             BlockPos.Mutable blockpos$mutable = new BlockPos.Mutable();
+@@ -44,7 +44,7 @@
+                int l = -j1;
+ 
+                while(l <= j1) {
+-                  if (i1 + blockpos.getY() >= 0 && i1 + blockpos.getY() < 256) {
++                  if (i1 + blockpos.getY() >= 0 && i1 + blockpos.getY() < p_227212_1_.getMaxHeight()) {
+                      blockpos$mutable.set(k + blockpos.getX(), i1 + blockpos.getY(), l + blockpos.getZ());
+                      if (canTreeReplace(p_227212_1_, blockpos$mutable) && (treeFeatureConfigIn.noVines || !isLeaves(p_227212_1_, blockpos$mutable))) {
+                         ++l;
+@@ -59,7 +59,7 @@
+             }
+          }
+ 
+-         return isDirtOrGrass(p_227212_1_, blockpos.down()) && blockpos.getY() < 256 - p_227212_2_ - 1 ? Optional.of(blockpos) : Optional.empty();
++         return isSoilOrFarm(p_227212_1_, blockpos.down(), treeFeatureConfigIn.getSapling()) && blockpos.getY() < p_227212_1_.getMaxHeight() - p_227212_2_ - 1 ? Optional.of(blockpos) : Optional.empty();
+       } else {
+          return Optional.empty();
+       }

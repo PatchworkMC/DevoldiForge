@@ -1,0 +1,70 @@
+--- a/net/minecraft/world/ChunkRegion.java
++++ b/net/minecraft/world/ChunkRegion.java
+@@ -8,7 +8,6 @@
+ import net.fabricmc.api.EnvType;
+ import net.fabricmc.api.Environment;
+ import net.minecraft.block.Block;
+-import net.minecraft.block.BlockEntityProvider;
+ import net.minecraft.block.BlockState;
+ import net.minecraft.block.Blocks;
+ import net.minecraft.block.entity.BlockEntity;
+@@ -164,11 +163,11 @@
+ 
+    public boolean breakBlock(BlockPos p_225521_1_, boolean p_225521_2_, @Nullable Entity p_225521_3_) {
+       BlockState blockstate = this.getBlockState(p_225521_1_);
+-      if (blockstate.isAir()) {
++      if (blockstate.isAir(this, p_225521_1_)) {
+          return false;
+       } else {
+          if (p_225521_2_) {
+-            BlockEntity tileentity = blockstate.getBlock().hasBlockEntity() ? this.getBlockEntity(p_225521_1_) : null;
++            BlockEntity tileentity = blockstate.hasTileEntity() ? this.getBlockEntity(p_225521_1_) : null;
+             Block.dropStacks(blockstate, this.world, p_225521_1_, tileentity, p_225521_3_, ItemStack.EMPTY);
+          }
+ 
+@@ -186,12 +185,12 @@
+          CompoundTag compoundnbt = ichunk.getBlockEntityTagAt(pos);
+          if (compoundnbt != null) {
+             if ("DUMMY".equals(compoundnbt.getString("id"))) {
+-               Block block = this.getBlockState(pos).getBlock();
+-               if (!(block instanceof BlockEntityProvider)) {
++               BlockState state = this.getBlockState(pos);
++               if (!state.hasTileEntity()) {
+                   return null;
+                }
+ 
+-               tileentity = ((BlockEntityProvider)block).createBlockEntity(this.world);
++               tileentity = state.createTileEntity(this.world);
+             } else {
+                tileentity = BlockEntity.createFromTag(compoundnbt);
+             }
+@@ -202,7 +201,7 @@
+             }
+          }
+ 
+-         if (ichunk.getBlockState(pos).getBlock() instanceof BlockEntityProvider) {
++         if (ichunk.getBlockState(pos).hasTileEntity()) {
+             LOGGER.warn("Tried to access a block entity before it was created. {}", (Object)pos);
+          }
+ 
+@@ -218,9 +217,9 @@
+       }
+ 
+       Block block = newState.getBlock();
+-      if (block.hasBlockEntity()) {
++      if (newState.hasTileEntity()) {
+          if (ichunk.getStatus().getChunkType() == ChunkStatus.ChunkType.LEVELCHUNK) {
+-            ichunk.setBlockEntity(pos, ((BlockEntityProvider)block).createBlockEntity(this));
++            ichunk.setBlockEntity(pos, newState.createTileEntity(this));
+          } else {
+             CompoundTag compoundnbt = new CompoundTag();
+             compoundnbt.putInt("x", pos.getX());
+@@ -229,7 +228,7 @@
+             compoundnbt.putString("id", "DUMMY");
+             ichunk.addPendingBlockEntityTag(compoundnbt);
+          }
+-      } else if (blockstate != null && blockstate.getBlock().hasBlockEntity()) {
++      } else if (blockstate != null && blockstate.hasTileEntity()) {
+          ichunk.removeBlockEntity(pos);
+       }
+ 

@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/gen/chunk/ChunkGenerator.java
++++ b/net/minecraft/world/gen/chunk/ChunkGenerator.java
+@@ -199,7 +199,7 @@
+    public abstract void populateNoise(IWorld worldIn, Chunk chunkIn);
+ 
+    public int getSeaLevel() {
+-      return 63;
++      return world.getDimension().getSeaLevel();
+    }
+ 
+    public abstract int getHeightOnGround(int p_222529_1_, int p_222529_2_, Heightmap.Type heightmapType);

@@ -19,7 +19,7 @@
 
 package net.minecraftforge.client.event;
 
-import net.minecraft.client.gui.screen.inventory.ContainerScreen;
+import net.minecraft.client.gui.screen.ingame.ContainerScreen;
 import net.minecraftforge.eventbus.api.Event;
 
 /**

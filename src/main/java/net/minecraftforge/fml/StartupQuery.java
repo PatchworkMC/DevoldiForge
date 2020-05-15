@@ -24,11 +24,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.dedicated.DedicatedServer;
-import net.minecraft.server.dedicated.PendingCommand;
+import net.minecraft.server.dedicated.MinecraftDedicatedServer;
+import net.minecraft.server.dedicated.PendingServerCommand;
 import net.minecraftforge.fml.client.gui.screen.ConfirmationScreen;
 import net.minecraftforge.fml.client.gui.screen.NotificationScreen;
 import net.minecraftforge.fml.common.thread.EffectiveSide;
@@ -64,7 +63,7 @@ public class StartupQuery {
     public static void abort()
     {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (server != null) server.initiateShutdown(false);
+        if (server != null) server.stop(false);
 
         aborted = true; // to abort loading and go back to the main menu
         throw new AbortedException(); // to halt the server
@@ -216,13 +215,13 @@ public class StartupQuery {
 
 
     public static class QueryWrapperClient {
-        public static Consumer<StartupQuery> clientQuery(Supplier<Minecraft> clientSupplier) {
+        public static Consumer<StartupQuery> clientQuery(Supplier<MinecraftClient> clientSupplier) {
             return (query) -> {
-                Minecraft client = clientSupplier.get();
+                MinecraftClient client = clientSupplier.get();
                 if (query.getResult() == null) {
-                    client.displayGuiScreen(new NotificationScreen(query));
+                    client.openScreen(new NotificationScreen(query));
                 } else {
-                    client.displayGuiScreen(new ConfirmationScreen(query));
+                    client.openScreen(new ConfirmationScreen(query));
                 }
 
                 if (query.isSynchronous()) {
@@ -244,10 +243,10 @@ public class StartupQuery {
     }
 
     public static class QueryWrapperServer {
-        public static Consumer<StartupQuery> dedicatedServerQuery(Supplier<DedicatedServer> serverSupplier)
+        public static Consumer<StartupQuery> dedicatedServerQuery(Supplier<MinecraftDedicatedServer> serverSupplier)
         {
             return (query) -> {
-                DedicatedServer server = serverSupplier.get();
+                MinecraftDedicatedServer server = serverSupplier.get();
                 if (query.getResult() == null)
                 {
                     LOGGER.warn(SQ, query.getText());
@@ -264,7 +263,7 @@ public class StartupQuery {
 
                     boolean done = false;
 
-                    while (!done && server.isServerRunning())
+                    while (!done && server.isRunning())
                     {
                         if (Thread.interrupted())
                         {
@@ -272,12 +271,12 @@ public class StartupQuery {
                             throw new RuntimeException();
                         }
 
-                        DedicatedServer dedServer = (DedicatedServer)server;
+                        MinecraftDedicatedServer dedServer = (MinecraftDedicatedServer)server;
 
                         // rudimentary command processing, check for fml confirm/cancel and stop commands
-                        synchronized (dedServer.pendingCommandList)
+                        synchronized (dedServer.commandQueue)
                         {
-                            for (Iterator<PendingCommand> it = dedServer.pendingCommandList.iterator(); it.hasNext(); )
+                            for (Iterator<PendingServerCommand> it = dedServer.commandQueue.iterator(); it.hasNext(); )
                             {
                                 String cmd = it.next().command.trim().toLowerCase();
                                 cmd = cmd.charAt(0) == '/' ? cmd.substring(1) : cmd; // strip the forward slash to make it optional

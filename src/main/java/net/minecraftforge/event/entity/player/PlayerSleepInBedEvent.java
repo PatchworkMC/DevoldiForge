@@ -20,7 +20,7 @@
 package net.minecraftforge.event.entity.player;
 
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.PlayerEntity.SleepResult;
+import net.minecraft.entity.player.PlayerEntity.SleepFailureReason;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.Cancelable;
@@ -43,7 +43,7 @@ import java.util.Optional;
  **/
 public class PlayerSleepInBedEvent extends PlayerEvent
 {
-    private SleepResult result = null;
+    private SleepFailureReason result = null;
     private final Optional<BlockPos> pos;
 
     public PlayerSleepInBedEvent(PlayerEntity player, Optional<BlockPos> pos)
@@ -52,12 +52,12 @@ public class PlayerSleepInBedEvent extends PlayerEvent
         this.pos = pos;
     }
 
-    public SleepResult getResultStatus()
+    public SleepFailureReason getResultStatus()
     {
         return result;
     }
 
-    public void setResult(SleepResult result)
+    public void setResult(SleepFailureReason result)
     {
         this.result = result;
     }

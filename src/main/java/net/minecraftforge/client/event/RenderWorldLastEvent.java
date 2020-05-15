@@ -19,10 +19,9 @@
 
 package net.minecraftforge.client.event;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
-
-import net.minecraft.client.renderer.Matrix4f;
-import net.minecraft.client.renderer.WorldRenderer;
+import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.client.util.math.MatrixStack;
 
 public class RenderWorldLastEvent extends net.minecraftforge.eventbus.api.Event
 {

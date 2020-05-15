@@ -1,0 +1,32 @@
+--- a/net/minecraft/nbt/CompoundTag.java
++++ b/net/minecraft/nbt/CompoundTag.java
+@@ -39,6 +39,7 @@
+             while((b0 = CompoundTag.readByte(p_225649_1_, p_225649_3_)) != 0) {
+                String s = CompoundTag.readString(p_225649_1_, p_225649_3_);
+                p_225649_3_.add((long)(224 + 16 * s.length()));
++               p_225649_3_.add(32); //Forge: 4 extra bytes for the object allocation.
+                Tag inbt = CompoundTag.read(TagReaders.of(b0), s, p_225649_1_, p_225649_2_ + 1, p_225649_3_);
+                if (map.put(s, inbt) != null) {
+                   p_225649_3_.add(288L);
+@@ -94,6 +95,7 @@
+ 
+    @Nullable
+    public Tag put(String key, Tag value) {
++      if (value == null) throw new IllegalArgumentException("Invalid null NBT value with key " + key);
+       return this.tags.put(key, value);
+    }
+ 
+@@ -410,11 +412,12 @@
+    }
+ 
+    private static byte readByte(DataInput input, PositionTracker sizeTracker) throws IOException {
++      sizeTracker.add(8);
+       return input.readByte();
+    }
+ 
+    private static String readString(DataInput input, PositionTracker sizeTracker) throws IOException {
+-      return input.readUTF();
++      return sizeTracker.readUTF(input.readUTF());
+    }
+ 
+    private static Tag read(TagReader<?> p_229680_0_, String p_229680_1_, DataInput p_229680_2_, int p_229680_3_, PositionTracker p_229680_4_) {

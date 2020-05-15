@@ -1,0 +1,46 @@
+--- a/net/minecraft/world/gen/feature/MegaTreeFeatureConfig.java
++++ b/net/minecraft/world/gen/feature/MegaTreeFeatureConfig.java
+@@ -23,11 +23,27 @@
+       return dynamic.merge(super.serialize(ops));
+    }
+ 
++   @Override
++   protected MegaTreeFeatureConfig setSapling(net.minecraftforge.common.IPlantable value) {
++      super.setSapling(value);
++      return this;
++   }
++
+    public static <T> MegaTreeFeatureConfig deserialize(Dynamic<T> p_227277_0_) {
+       TreeFeatureConfig basetreefeatureconfig = TreeFeatureConfig.deserialize(p_227277_0_);
+       return new MegaTreeFeatureConfig(basetreefeatureconfig.trunkProvider, basetreefeatureconfig.leavesProvider, basetreefeatureconfig.decorators, basetreefeatureconfig.baseHeight, p_227277_0_.get("height_interval").asInt(0), p_227277_0_.get("crown_height").asInt(0));
+    }
+ 
++   public static <T> MegaTreeFeatureConfig deserializeDarkOak(Dynamic<T> data) {
++      return deserialize(data).setSapling((net.minecraftforge.common.IPlantable)net.minecraft.block.Blocks.DARK_OAK_SAPLING);
++   }
++   public static <T> MegaTreeFeatureConfig deserializeSpruce(Dynamic<T> data) {
++      return deserialize(data).setSapling((net.minecraftforge.common.IPlantable)net.minecraft.block.Blocks.SPRUCE_SAPLING);
++   }
++   public static <T> MegaTreeFeatureConfig deserializeJungle(Dynamic<T> data) {
++      return deserialize(data).setSapling((net.minecraftforge.common.IPlantable)net.minecraft.block.Blocks.JUNGLE_SAPLING);
++   }
++
+    public static class Builder extends TreeFeatureConfig.Builder {
+       private List<TreeDecorator> field_21234 = ImmutableList.of();
+       private int field_21235;
+@@ -58,8 +74,14 @@
+          return this;
+       }
+ 
++      @Override
++      public MegaTreeFeatureConfig.Builder setSapling(net.minecraftforge.common.IPlantable value) {
++         super.setSapling(value);
++         return this;
++      }
++
+       public MegaTreeFeatureConfig build() {
+-         return new MegaTreeFeatureConfig(this.trunkProvider, this.leavesProvider, this.field_21234, this.field_21235, this.heightInterval, this.crownHeight);
++         return new MegaTreeFeatureConfig(this.trunkProvider, this.leavesProvider, this.field_21234, this.field_21235, this.heightInterval, this.crownHeight).setSapling(this.sapling);
+       }
+    }
+ }

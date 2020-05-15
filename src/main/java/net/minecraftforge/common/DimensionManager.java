@@ -43,20 +43,19 @@ import com.google.common.collect.MapMaker;
 import com.google.common.collect.Multiset;
 
 import io.netty.buffer.Unpooled;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.management.PlayerList;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.server.PlayerManager;
+import net.minecraft.server.WorldGenerationProgressListener;
+import net.minecraft.server.world.SecondaryServerWorld;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.registry.MutableRegistry;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.IBiomeMagnifier;
 import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.chunk.listener.IChunkStatusListener;
-import net.minecraft.world.server.ServerMultiWorld;
-import net.minecraft.world.server.ServerWorld;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.event.world.RegisterDimensionsEvent;
 import net.minecraftforge.event.world.WorldEvent;
@@ -78,13 +77,13 @@ public class DimensionManager
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Marker DIMMGR = MarkerManager.getMarker("DIMS");
 
-    private static final ClearableRegistry<DimensionType> REGISTRY = new ClearableRegistry<>(new ResourceLocation("dimension_type"), DimensionType.class);
+    private static final ClearableRegistry<DimensionType> REGISTRY = new ClearableRegistry<>(new Identifier("dimension_type"), DimensionType.class);
 
     private static final Int2ObjectMap<Data> dimensions = Int2ObjectMaps.synchronize(new Int2ObjectLinkedOpenHashMap<>());
     private static final IntSet unloadQueue = IntSets.synchronize(new IntLinkedOpenHashSet());
     private static final ConcurrentMap<World, World> weakWorldMap = new MapMaker().weakKeys().weakValues().makeMap();
     private static final Multiset<Integer> leakedWorlds = HashMultiset.create();
-    private static final Map<ResourceLocation, SavedEntry> savedEntries = new HashMap<>();
+    private static final Map<Identifier, SavedEntry> savedEntries = new HashMap<>();
     private static volatile Set<World> playerWorlds = new HashSet<>();
 
     /**
@@ -100,8 +99,8 @@ public class DimensionManager
      * @param magnifier The biome generation processor
      * @return the DimensionType for the dimension.
      */
-    public static DimensionType registerOrGetDimension(ResourceLocation name, ModDimension type, PacketBuffer data, boolean hasSkyLight) {
-        return REGISTRY.getValue(name).orElseGet(()->registerDimension(name, type, data, hasSkyLight));
+    public static DimensionType registerOrGetDimension(Identifier name, ModDimension type, PacketByteBuf data, boolean hasSkyLight) {
+        return REGISTRY.getOrEmpty(name).orElseGet(()->registerDimension(name, type, data, hasSkyLight));
     }
     /**
      * Registers a real unique dimension, Should be called on server init, or when the dimension is created.
@@ -116,10 +115,10 @@ public class DimensionManager
      * @param magnifier The biome generation processor
      * @return the DimensionType for the dimension.
      */
-    public static DimensionType registerDimension(ResourceLocation name, ModDimension type, PacketBuffer data, boolean hasSkyLight)
+    public static DimensionType registerDimension(Identifier name, ModDimension type, PacketByteBuf data, boolean hasSkyLight)
     {
         Validate.notNull(name, "Can not register a dimension with null name");
-        Validate.isTrue(!REGISTRY.containsKey(name), "Dimension: " + name + " Already registered");
+        Validate.isTrue(!REGISTRY.containsId(name), "Dimension: " + name + " Already registered");
         Validate.notNull(type, "Can not register a null dimension type");
 
         int id = REGISTRY.getNextId();
@@ -133,7 +132,7 @@ public class DimensionManager
         }
         @SuppressWarnings("deprecation")
         DimensionType instance = new DimensionType(id, "", name.getNamespace() + "/" + name.getPath(), type.getFactory(), hasSkyLight, type.getMagnifier(), type, data);
-        REGISTRY.register(id, name, instance);
+        REGISTRY.set(id, name, instance);
         LOGGER.info(DIMMGR, "Registered dimension {} of type {} and id {}", name.toString(), type.getRegistryName().toString(), id);
         return instance;
     }
@@ -162,7 +161,7 @@ public class DimensionManager
     public static boolean keepLoaded(DimensionType dim)
     {
         Validate.notNull(dim, "Dimension type must not be null");
-        Data data = dimensions.get(dim.getId());
+        Data data = dimensions.get(dim.getRawId());
         return data == null ? false : data.keepLoaded;
     }
 
@@ -189,7 +188,7 @@ public class DimensionManager
             return null;
         }
 
-        if (resetUnloadDelay && unloadQueue.contains(dim.getId()))
+        if (resetUnloadDelay && unloadQueue.contains(dim.getRawId()))
             getData(dim).ticksWaited = 0;
 
         @SuppressWarnings("deprecation")
@@ -209,16 +208,16 @@ public class DimensionManager
         dimensions.remove(id);
     }
 
-    public static DimensionType registerDimensionInternal(int id, ResourceLocation name, ModDimension type, PacketBuffer data, boolean hasSkyLight)
+    public static DimensionType registerDimensionInternal(int id, Identifier name, ModDimension type, PacketByteBuf data, boolean hasSkyLight)
     {
         Validate.notNull(name, "Can not register a dimension with null name");
         Validate.notNull(type, "Can not register a null dimension type");
-        Validate.isTrue(!REGISTRY.containsKey(name), "Dimension: " + name + " Already registered");
-        Validate.isTrue(REGISTRY.getByValue(id) == null, "Dimension with id " + id + " already registered as name " + REGISTRY.getKey(REGISTRY.getByValue(id)));
+        Validate.isTrue(!REGISTRY.containsId(name), "Dimension: " + name + " Already registered");
+        Validate.isTrue(REGISTRY.get(id) == null, "Dimension with id " + id + " already registered as name " + REGISTRY.getId(REGISTRY.get(id)));
 
         @SuppressWarnings("deprecation")
         DimensionType instance = new DimensionType(id, "", name.getNamespace() + "/" + name.getPath(), type.getFactory(), hasSkyLight, type.getMagnifier(), type, data);
-        REGISTRY.register(id, name, instance);
+        REGISTRY.set(id, name, instance);
         LOGGER.info(DIMMGR, "Registered dimension {} of type {} and id {}", name.toString(), type.getRegistryName().toString(), id);
         return instance;
     }
@@ -234,9 +233,9 @@ public class DimensionManager
         Validate.notNull(overworld, "Cannot Hotload Dim: Overworld is not Loaded!");
 
         @SuppressWarnings("resource")
-        ServerWorld world = new ServerMultiWorld(overworld, server, server.getBackgroundExecutor(), overworld.getSaveHandler(), dim, server.getProfiler(), new NoopChunkStatusListener());
+        ServerWorld world = new SecondaryServerWorld(overworld, server, server.getWorkerExecutor(), overworld.getSaveHandler(), dim, server.getProfiler(), new NoopChunkStatusListener());
         if (!server.isSinglePlayer())
-            world.getWorldInfo().setGameType(server.getGameType());
+            world.getLevelProperties().setGameMode(server.getDefaultGameMode());
         server.forgeGetWorldMap().put(dim, world);
         server.markWorldsDirty();
 
@@ -263,7 +262,7 @@ public class DimensionManager
         if (world == null || !canUnloadWorld(world))
             return;
 
-        int id = world.getDimension().getType().getId();
+        int id = world.getDimension().getType().getRawId();
         if (unloadQueue.add(id))
             LOGGER.debug(DIMMGR,"Queueing dimension {} to unload", id);
     }
@@ -275,7 +274,7 @@ public class DimensionManager
         while (queueIterator.hasNext())
         {
             int id = queueIterator.nextInt();
-            DimensionType dim = DimensionType.getById(id);
+            DimensionType dim = DimensionType.byRawId(id);
 
             if (dim == null)
             {
@@ -335,14 +334,14 @@ public class DimensionManager
                 int hash = System.identityHashCode(w);
                 int leakCount = leakedWorlds.count(hash);
                 if (leakCount == 5)
-                    LOGGER.debug(DIMMGR,"The world {} ({}) may have leaked: first encounter (5 occurrences).\n", Integer.toHexString(hash), w.getWorldInfo().getWorldName());
+                    LOGGER.debug(DIMMGR,"The world {} ({}) may have leaked: first encounter (5 occurrences).\n", Integer.toHexString(hash), w.getLevelProperties().getLevelName());
                 else if (leakCount % 5 == 0)
-                    LOGGER.debug(DIMMGR,"The world {} ({}) may have leaked: seen {} times.\n", Integer.toHexString(hash), w.getWorldInfo().getWorldName(), leakCount);
+                    LOGGER.debug(DIMMGR,"The world {} ({}) may have leaked: seen {} times.\n", Integer.toHexString(hash), w.getLevelProperties().getLevelName(), leakCount);
             }
         }
     }
 
-    public static void writeRegistry(CompoundNBT data)
+    public static void writeRegistry(CompoundTag data)
     {
         data.putInt("version", 1);
         List<SavedEntry> list = new ArrayList<>();
@@ -351,44 +350,44 @@ public class DimensionManager
         savedEntries.values().forEach(list::add);
 
         Collections.sort(list, (a, b) -> a.id - b.id);
-        ListNBT lst = new ListNBT();
+        ListTag lst = new ListTag();
         list.forEach(e -> lst.add(e.write()));
 
         data.put("entries", lst);
     }
 
-    public static void readRegistry(CompoundNBT data)
+    public static void readRegistry(CompoundTag data)
     {
         int version = data.getInt("version");
         if (version != 1)
             throw new IllegalStateException("Attempted to load world with unknown Dimension data format: " + version);
 
         LOGGER.debug(DIMMGR, "Reading Dimension Entries.");
-        Map<ResourceLocation, DimensionType> vanilla = REGISTRY.stream().filter(DimensionType::isVanilla).collect(Collectors.toMap(REGISTRY::getKey, v -> v));
+        Map<Identifier, DimensionType> vanilla = REGISTRY.stream().filter(DimensionType::isVanilla).collect(Collectors.toMap(REGISTRY::getId, v -> v));
         REGISTRY.clear();
         vanilla.forEach((key, value) -> {
-            LOGGER.debug(DIMMGR, "Registering vanilla entry ID: {} Name: {} Value: {}", value.getId() + 1, key.toString(), value.toString());
-            REGISTRY.register(value.getId() + 1, key, value);
+            LOGGER.debug(DIMMGR, "Registering vanilla entry ID: {} Name: {} Value: {}", value.getRawId() + 1, key.toString(), value.toString());
+            REGISTRY.set(value.getRawId() + 1, key, value);
         });
 
         savedEntries.clear();
 
         @SuppressWarnings("unused")
         boolean error = false;
-        ListNBT list = data.getList("entries", 10);
+        ListTag list = data.getList("entries", 10);
         for (int x = 0; x < list.size(); x++)
         {
             SavedEntry entry = new SavedEntry(list.getCompound(x));
             if (entry.type == null)
             {
-                DimensionType type = REGISTRY.getOrDefault(entry.name);
+                DimensionType type = REGISTRY.get(entry.name);
                 if (type == null)
                 {
                     LOGGER.error(DIMMGR, "Vanilla entry '{}' id {} in save file not found in registry.", entry.name.toString(), entry.id);
                     error = true;
                     continue;
                 }
-                int id = REGISTRY.getId(type);
+                int id = REGISTRY.getRawId(type);
                 if (id != entry.id)
                 {
                     LOGGER.error(DIMMGR, "Vanilla entry '{}' id {} in save file has incorrect in {} in registry.", entry.name.toString(), entry.id, id);
@@ -405,7 +404,7 @@ public class DimensionManager
                     savedEntries.put(entry.name, entry);
                     continue;
                 }
-                registerDimensionInternal(entry.id, entry.name, mod, entry.data == null ? null : new PacketBuffer(Unpooled.wrappedBuffer(entry.data)), entry.skyLight());
+                registerDimensionInternal(entry.id, entry.name, mod, entry.data == null ? null : new PacketByteBuf(Unpooled.wrappedBuffer(entry.data)), entry.skyLight());
             }
         }
     }
@@ -429,7 +428,7 @@ public class DimensionManager
 
     private static Data getData(DimensionType dim)
     {
-        return dimensions.computeIfAbsent(dim.getId(), k -> new Data());
+        return dimensions.computeIfAbsent(dim.getRawId(), k -> new Data());
     }
 
     private static class Data
@@ -441,8 +440,8 @@ public class DimensionManager
     public static class SavedEntry
     {
         int id;
-        ResourceLocation name;
-        ResourceLocation type;
+        Identifier name;
+        Identifier type;
         byte[] data;
         boolean skyLight;
 
@@ -451,13 +450,13 @@ public class DimensionManager
             return id;
         }
 
-        public ResourceLocation getName()
+        public Identifier getName()
         {
             return name;
         }
 
         @Nullable
-        public ResourceLocation getType()
+        public Identifier getType()
         {
             return type;
         }
@@ -473,19 +472,19 @@ public class DimensionManager
             return this.skyLight;
         }
 
-        private SavedEntry(CompoundNBT data)
+        private SavedEntry(CompoundTag data)
         {
             this.id = data.getInt("id");
-            this.name = new ResourceLocation(data.getString("name"));
-            this.type = data.contains("type", 8) ? new ResourceLocation(data.getString("type")) : null;
+            this.name = new Identifier(data.getString("name"));
+            this.type = data.contains("type", 8) ? new Identifier(data.getString("type")) : null;
             this.data = data.contains("data", 7) ? data.getByteArray("data") : null;
             this.skyLight = data.contains("sky_light", 99) ? data.getBoolean("sky_light") : true;
         }
 
         private SavedEntry(DimensionType data)
         {
-            this.id = REGISTRY.getId(data);
-            this.name = REGISTRY.getKey(data);
+            this.id = REGISTRY.getRawId(data);
+            this.name = REGISTRY.getId(data);
             if (data.getModType() != null)
                 this.type = data.getModType().getRegistryName();
             if (data.getData() != null)
@@ -493,9 +492,9 @@ public class DimensionManager
             this.skyLight = data.hasSkyLight();
         }
 
-        private CompoundNBT write()
+        private CompoundTag write()
         {
-            CompoundNBT ret = new CompoundNBT();
+            CompoundTag ret = new CompoundTag();
             ret.putInt("id", id);
             ret.putString("name", name.toString());
             if (type != null)
@@ -507,16 +506,16 @@ public class DimensionManager
         }
     }
 
-    private static class NoopChunkStatusListener implements IChunkStatusListener
+    private static class NoopChunkStatusListener implements WorldGenerationProgressListener
     {
         @Override public void start(ChunkPos center) { }
-        @Override public void statusChanged(ChunkPos p_219508_1_, ChunkStatus p_219508_2_) { }
+        @Override public void setChunkStatus(ChunkPos chunkPosition, ChunkStatus newStatus) { }
         @Override public void stop() { }
     }
 
-    public static boolean rebuildPlayerMap(PlayerList players, boolean changed)
+    public static boolean rebuildPlayerMap(PlayerManager players, boolean changed)
     {
-        playerWorlds = players.getPlayers().stream().map(e -> e.world).collect(Collectors.toSet());
+        playerWorlds = players.getPlayerList().stream().map(e -> e.world).collect(Collectors.toSet());
         return changed;
     }
 }

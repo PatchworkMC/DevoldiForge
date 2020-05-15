@@ -1,0 +1,15 @@
+--- a/net/minecraft/util/crash/CrashReportSection.java
++++ b/net/minecraft/util/crash/CrashReportSection.java
+@@ -102,8 +102,10 @@
+       if (astacktraceelement.length <= 0) {
+          return 0;
+       } else {
+-         this.stackTrace = new StackTraceElement[astacktraceelement.length - 3 - size];
+-         System.arraycopy(astacktraceelement, 3 + size, this.stackTrace, 0, this.stackTrace.length);
++         int len = astacktraceelement.length - 3 - size;
++         if (len <= 0) len = astacktraceelement.length;
++         this.stackTrace = new StackTraceElement[len];
++         System.arraycopy(astacktraceelement, astacktraceelement.length - len, this.stackTrace, 0, this.stackTrace.length);
+          return this.stackTrace.length;
+       }
+    }

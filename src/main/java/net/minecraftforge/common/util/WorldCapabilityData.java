@@ -20,31 +20,30 @@
 package net.minecraftforge.common.util;
 
 import javax.annotation.Nullable;
-
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.PersistentState;
 import net.minecraft.world.dimension.Dimension;
-import net.minecraft.world.storage.WorldSavedData;
 
-public class WorldCapabilityData extends WorldSavedData
+public class WorldCapabilityData extends PersistentState
 {
     public static final String ID = "capabilities";
 
-    private INBTSerializable<CompoundNBT> serializable;
-    private CompoundNBT capNBT = null;
+    private INBTSerializable<CompoundTag> serializable;
+    private CompoundTag capNBT = null;
 
     public WorldCapabilityData(String name)
     {
         super(name);
     }
 
-    public WorldCapabilityData(@Nullable INBTSerializable<CompoundNBT> serializable)
+    public WorldCapabilityData(@Nullable INBTSerializable<CompoundTag> serializable)
     {
         super(ID);
         this.serializable = serializable;
     }
 
     @Override
-    public void read(CompoundNBT nbt)
+    public void fromTag(CompoundTag nbt)
     {
         this.capNBT = nbt;
         if (serializable != null)
@@ -55,7 +54,7 @@ public class WorldCapabilityData extends WorldSavedData
     }
 
     @Override
-    public CompoundNBT write(CompoundNBT nbt)
+    public CompoundTag toTag(CompoundTag nbt)
     {
         if (serializable != null)
             nbt = serializable.serializeNBT();
@@ -68,7 +67,7 @@ public class WorldCapabilityData extends WorldSavedData
         return true;
     }
 
-    public void setCapabilities(Dimension provider, INBTSerializable<CompoundNBT> capabilities)
+    public void setCapabilities(Dimension provider, INBTSerializable<CompoundTag> capabilities)
     {
         this.serializable = capabilities;
         if (this.capNBT != null && serializable != null)

@@ -19,8 +19,8 @@
 
 package net.minecraftforge.fml.network;
 
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.PacketByteBuf;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 import net.minecraftforge.registries.ForgeRegistry;
@@ -63,8 +63,8 @@ public class FMLHandshakeMessages
     public static class S2CModList extends LoginIndexedMessage
     {
         private List<String> mods;
-        private Map<ResourceLocation, String> channels;
-        private List<ResourceLocation> registries;
+        private Map<Identifier, String> channels;
+        private List<Identifier> registries;
 
         public S2CModList()
         {
@@ -73,57 +73,57 @@ public class FMLHandshakeMessages
             this.registries = RegistryManager.getRegistryNamesForSyncToClient();
         }
 
-        private S2CModList(List<String> mods, Map<ResourceLocation, String> channels, List<ResourceLocation> registries)
+        private S2CModList(List<String> mods, Map<Identifier, String> channels, List<Identifier> registries)
         {
             this.mods = mods;
             this.channels = channels;
             this.registries = registries;
         }
 
-        public static S2CModList decode(PacketBuffer input)
+        public static S2CModList decode(PacketByteBuf input)
         {
             List<String> mods = new ArrayList<>();
             int len = input.readVarInt();
             for (int x = 0; x < len; x++)
                 mods.add(input.readString(0x100));
 
-            Map<ResourceLocation, String> channels = new HashMap<>();
+            Map<Identifier, String> channels = new HashMap<>();
             len = input.readVarInt();
             for (int x = 0; x < len; x++)
-                channels.put(input.readResourceLocation(), input.readString(0x100));
+                channels.put(input.readIdentifier(), input.readString(0x100));
 
-            List<ResourceLocation> registries = new ArrayList<>();
+            List<Identifier> registries = new ArrayList<>();
             len = input.readVarInt();
             for (int x = 0; x < len; x++)
-                registries.add(input.readResourceLocation());
+                registries.add(input.readIdentifier());
 
             return new S2CModList(mods, channels, registries);
         }
 
-        public void encode(PacketBuffer output)
+        public void encode(PacketByteBuf output)
         {
             output.writeVarInt(mods.size());
             mods.forEach(m -> output.writeString(m, 0x100));
 
             output.writeVarInt(channels.size());
             channels.forEach((k, v) -> {
-                output.writeResourceLocation(k);
+                output.writeIdentifier(k);
                 output.writeString(v, 0x100);
             });
 
             output.writeVarInt(registries.size());
-            registries.forEach(output::writeResourceLocation);
+            registries.forEach(output::writeIdentifier);
         }
 
         public List<String> getModList() {
             return mods;
         }
 
-        public List<ResourceLocation> getRegistries() {
+        public List<Identifier> getRegistries() {
             return this.registries;
         }
 
-        public Map<ResourceLocation, String> getChannels() {
+        public Map<Identifier, String> getChannels() {
             return this.channels;
         }
     }
@@ -131,8 +131,8 @@ public class FMLHandshakeMessages
     public static class C2SModListReply extends LoginIndexedMessage
     {
         private List<String> mods;
-        private Map<ResourceLocation, String> channels;
-        private Map<ResourceLocation, String> registries;
+        private Map<Identifier, String> channels;
+        private Map<Identifier, String> registries;
 
         public C2SModListReply()
         {
@@ -141,47 +141,47 @@ public class FMLHandshakeMessages
             this.registries = Maps.newHashMap(); //TODO: Fill with known hashes, which requires keeping a file cache
         }
 
-        private C2SModListReply(List<String> mods, Map<ResourceLocation, String> channels, Map<ResourceLocation, String> registries)
+        private C2SModListReply(List<String> mods, Map<Identifier, String> channels, Map<Identifier, String> registries)
         {
             this.mods = mods;
             this.channels = channels;
             this.registries = registries;
         }
 
-        public static C2SModListReply decode(PacketBuffer input)
+        public static C2SModListReply decode(PacketByteBuf input)
         {
             List<String> mods = new ArrayList<>();
             int len = input.readVarInt();
             for (int x = 0; x < len; x++)
                 mods.add(input.readString(0x100));
 
-            Map<ResourceLocation, String> channels = new HashMap<>();
+            Map<Identifier, String> channels = new HashMap<>();
             len = input.readVarInt();
             for (int x = 0; x < len; x++)
-                channels.put(input.readResourceLocation(), input.readString(0x100));
+                channels.put(input.readIdentifier(), input.readString(0x100));
 
-            Map<ResourceLocation, String> registries = new HashMap<>();
+            Map<Identifier, String> registries = new HashMap<>();
             len = input.readVarInt();
             for (int x = 0; x < len; x++)
-                registries.put(input.readResourceLocation(), input.readString(0x100));
+                registries.put(input.readIdentifier(), input.readString(0x100));
 
             return new C2SModListReply(mods, channels, registries);
         }
 
-        public void encode(PacketBuffer output)
+        public void encode(PacketByteBuf output)
         {
             output.writeVarInt(mods.size());
             mods.forEach(m -> output.writeString(m, 0x100));
 
             output.writeVarInt(channels.size());
             channels.forEach((k, v) -> {
-                output.writeResourceLocation(k);
+                output.writeIdentifier(k);
                 output.writeString(v, 0x100);
             });
 
             output.writeVarInt(registries.size());
             registries.forEach((k, v) -> {
-                output.writeResourceLocation(k);
+                output.writeIdentifier(k);
                 output.writeString(v, 0x100);
             });
         }
@@ -190,51 +190,51 @@ public class FMLHandshakeMessages
             return mods;
         }
 
-        public Map<ResourceLocation, String> getRegistries() {
+        public Map<Identifier, String> getRegistries() {
             return this.registries;
         }
 
-        public Map<ResourceLocation, String> getChannels() {
+        public Map<Identifier, String> getChannels() {
             return this.channels;
         }
     }
 
     public static class C2SAcknowledge extends LoginIndexedMessage {
-        public void encode(PacketBuffer buf) {
+        public void encode(PacketByteBuf buf) {
 
         }
 
-        public static C2SAcknowledge decode(PacketBuffer buf) {
+        public static C2SAcknowledge decode(PacketByteBuf buf) {
             return new C2SAcknowledge();
         }
     }
 
     public static class S2CRegistry extends LoginIndexedMessage {
-        private ResourceLocation registryName;
+        private Identifier registryName;
         @Nullable
         private ForgeRegistry.Snapshot snapshot;
 
-        public S2CRegistry(final ResourceLocation name, @Nullable ForgeRegistry.Snapshot snapshot) {
+        public S2CRegistry(final Identifier name, @Nullable ForgeRegistry.Snapshot snapshot) {
             this.registryName = name;
             this.snapshot = snapshot;
         }
 
-        void encode(final PacketBuffer buffer) {
-            buffer.writeResourceLocation(registryName);
+        void encode(final PacketByteBuf buffer) {
+            buffer.writeIdentifier(registryName);
             buffer.writeBoolean(hasSnapshot());
             if (hasSnapshot())
                 buffer.writeBytes(snapshot.getPacketData());
         }
 
-        public static S2CRegistry decode(final PacketBuffer buffer) {
-            ResourceLocation name = buffer.readResourceLocation();
+        public static S2CRegistry decode(final PacketByteBuf buffer) {
+            Identifier name = buffer.readIdentifier();
             ForgeRegistry.Snapshot snapshot = null;
             if (buffer.readBoolean())
                 snapshot = ForgeRegistry.Snapshot.read(buffer);
             return new S2CRegistry(name, snapshot);
         }
 
-        public ResourceLocation getRegistryName() {
+        public Identifier getRegistryName() {
             return registryName;
         }
 
@@ -258,12 +258,12 @@ public class FMLHandshakeMessages
             this.fileData = configFileData;
         }
 
-        void encode(final PacketBuffer buffer) {
+        void encode(final PacketByteBuf buffer) {
             buffer.writeString(this.fileName);
             buffer.writeByteArray(this.fileData);
         }
 
-        public static S2CConfigData decode(final PacketBuffer buffer) {
+        public static S2CConfigData decode(final PacketByteBuf buffer) {
             return new S2CConfigData(buffer.readString(128), buffer.readByteArray());
         }
 

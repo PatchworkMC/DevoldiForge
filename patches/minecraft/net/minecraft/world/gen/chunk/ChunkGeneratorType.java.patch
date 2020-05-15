@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/gen/chunk/ChunkGeneratorType.java
++++ b/net/minecraft/world/gen/chunk/ChunkGeneratorType.java
+@@ -9,7 +9,7 @@
+ import net.minecraftforge.api.distmarker.Dist;
+ import net.minecraftforge.api.distmarker.OnlyIn;
+ 
+-public class ChunkGeneratorType<C extends ChunkGeneratorConfig, T extends ChunkGenerator<C>> implements ChunkGeneratorFactory<C, T> {
++public class ChunkGeneratorType<C extends ChunkGeneratorConfig, T extends ChunkGenerator<C>> extends net.minecraftforge.registries.ForgeRegistryEntry<ChunkGeneratorType<?, ?>> implements ChunkGeneratorFactory<C, T> {
+    public static final ChunkGeneratorType<OverworldChunkGeneratorConfig, OverworldChunkGenerator> SURFACE = register("surface", OverworldChunkGenerator::new, OverworldChunkGeneratorConfig::new, true);
+    public static final ChunkGeneratorType<CavesChunkGeneratorConfig, CavesChunkGenerator> CAVES = register("caves", CavesChunkGenerator::new, CavesChunkGeneratorConfig::new, true);
+    public static final ChunkGeneratorType<FloatingIslandsChunkGeneratorConfig, FloatingIslandsChunkGenerator> FLOATING_ISLANDS = register("floating_islands", FloatingIslandsChunkGenerator::new, FloatingIslandsChunkGeneratorConfig::new, true);

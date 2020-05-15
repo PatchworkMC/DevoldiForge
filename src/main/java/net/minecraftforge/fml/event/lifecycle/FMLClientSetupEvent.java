@@ -19,7 +19,7 @@
 
 package net.minecraftforge.fml.event.lifecycle;
 
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.MinecraftClient;
 import net.minecraftforge.fml.ModContainer;
 
 import java.util.function.Supplier;
@@ -40,15 +40,15 @@ import java.util.function.Supplier;
  */
 public class FMLClientSetupEvent extends ModLifecycleEvent
 {
-    private final Supplier<Minecraft> minecraftSupplier;
+    private final Supplier<MinecraftClient> minecraftSupplier;
 
-    public FMLClientSetupEvent(Supplier<Minecraft> mc, ModContainer container)
+    public FMLClientSetupEvent(Supplier<MinecraftClient> mc, ModContainer container)
     {
         super(container);
         this.minecraftSupplier = mc;
     }
 
-    public Supplier<Minecraft> getMinecraftSupplier()
+    public Supplier<MinecraftClient> getMinecraftSupplier()
     {
         return minecraftSupplier;
     }

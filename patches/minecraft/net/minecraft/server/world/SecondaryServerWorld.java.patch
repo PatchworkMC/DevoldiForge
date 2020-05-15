@@ -1,0 +1,24 @@
+--- a/net/minecraft/server/world/SecondaryServerWorld.java
++++ b/net/minecraft/server/world/SecondaryServerWorld.java
+@@ -10,11 +10,19 @@
+ import net.minecraft.world.level.UnmodifiableLevelProperties;
+ 
+ public class SecondaryServerWorld extends ServerWorld {
++   private final ServerWorld delegate;
++   private final WorldBorderListener borderListener;
++
+    public SecondaryServerWorld(ServerWorld p_i50708_1_, MinecraftServer serverIn, Executor p_i50708_3_, WorldSaveHandler p_i50708_4_, DimensionType dimType, Profiler p_i50708_6_, WorldGenerationProgressListener p_i50708_7_) {
+       super(serverIn, p_i50708_3_, p_i50708_4_, new UnmodifiableLevelProperties(p_i50708_1_.getLevelProperties()), dimType, p_i50708_6_, p_i50708_7_);
+-      p_i50708_1_.getWorldBorder().addListener(new WorldBorderListener.WorldBorderSyncer(this.getWorldBorder()));
++      this.delegate = p_i50708_1_;
++      this.borderListener = new WorldBorderListener.WorldBorderSyncer(this.getWorldBorder());
++      p_i50708_1_.getWorldBorder().addListener(this.borderListener);
+    }
+ 
+-   protected void tickTime() {
++   @Override
++   public void close() throws java.io.IOException {
++      super.close();
++      this.delegate.getWorldBorder().removeListener(this.borderListener); // Unlink ourselves, to prevent world leak.
+    }
+ }

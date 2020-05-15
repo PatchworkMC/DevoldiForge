@@ -21,10 +21,10 @@ package net.minecraftforge.common;
 
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.ItemTags;
-import net.minecraft.tags.Tag;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.tag.BlockTags;
+import net.minecraft.tag.ItemTags;
+import net.minecraft.tag.Tag;
+import net.minecraft.util.Identifier;
 
 public class Tags
 {
@@ -114,7 +114,7 @@ public class Tags
 
         private static Tag<Block> tag(String name)
         {
-            return new BlockTags.Wrapper(new ResourceLocation("forge", name));
+            return new BlockTags.CachingTag(new Identifier("forge", name));
         }
     }
 
@@ -269,7 +269,7 @@ public class Tags
 
         private static Tag<Item> tag(String name)
         {
-            return new ItemTags.Wrapper(new ResourceLocation("forge", name));
+            return new ItemTags.CachingTag(new Identifier("forge", name));
         }
     }
 }

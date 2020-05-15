@@ -1,0 +1,10 @@
+--- a/net/minecraft/tag/RegistryTagManager.java
++++ b/net/minecraft/tag/RegistryTagManager.java
+@@ -69,6 +69,7 @@
+          ItemTags.setContainer(this.items);
+          FluidTags.setContainer(this.fluids);
+          EntityTypeTags.setContainer(this.entityTypes);
++         net.minecraftforge.common.MinecraftForge.EVENT_BUS.post(new net.minecraftforge.event.TagsUpdatedEvent(this));
+       }, gameExecutor);
+    }
+ 

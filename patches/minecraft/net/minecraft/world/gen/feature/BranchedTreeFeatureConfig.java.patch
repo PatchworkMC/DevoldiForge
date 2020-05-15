@@ -1,0 +1,45 @@
+--- a/net/minecraft/world/gen/feature/BranchedTreeFeatureConfig.java
++++ b/net/minecraft/world/gen/feature/BranchedTreeFeatureConfig.java
+@@ -47,12 +47,26 @@
+       return dynamic.merge(super.serialize(ops));
+    }
+ 
++   @Override
++   protected BranchedTreeFeatureConfig setSapling(net.minecraftforge.common.IPlantable value) {
++      super.setSapling(value);
++      return this;
++   }
++
+    public static <T> BranchedTreeFeatureConfig deserialize(Dynamic<T> dynamic) {
+       TreeFeatureConfig basetreefeatureconfig = TreeFeatureConfig.deserialize(dynamic);
+       FoliagePlacerType<?> foliageplacertype = Registry.FOLIAGE_PLACER_TYPE.get(new Identifier(dynamic.get("foliage_placer").get("type").asString().orElseThrow(RuntimeException::new)));
+       return new BranchedTreeFeatureConfig(basetreefeatureconfig.trunkProvider, basetreefeatureconfig.leavesProvider, foliageplacertype.deserialize(dynamic.get("foliage_placer").orElseEmptyMap()), basetreefeatureconfig.decorators, basetreefeatureconfig.baseHeight, dynamic.get("height_rand_a").asInt(0), dynamic.get("height_rand_b").asInt(0), dynamic.get("trunk_height").asInt(-1), dynamic.get("trunk_height_random").asInt(0), dynamic.get("trunk_top_offset").asInt(0), dynamic.get("trunk_top_offset_random").asInt(0), dynamic.get("foliage_height").asInt(-1), dynamic.get("foliage_height_random").asInt(0), dynamic.get("max_water_depth").asInt(0), dynamic.get("ignore_vines").asBoolean(false));
+    }
+ 
++   public static <T> BranchedTreeFeatureConfig deserializeJungle(Dynamic<T> data) {
++      return deserialize(data).setSapling((net.minecraftforge.common.IPlantable)net.minecraft.block.Blocks.JUNGLE_SAPLING);
++   }
++
++   public static <T> BranchedTreeFeatureConfig deserializeAcacia(Dynamic<T> data) {
++      return deserialize(data).setSapling((net.minecraftforge.common.IPlantable)net.minecraft.block.Blocks.ACACIA_SAPLING);
++   }
++
+    public static class Builder extends TreeFeatureConfig.Builder {
+       private final FoliagePlacer foliagePlacer;
+       private List<TreeDecorator> treeDecorators = ImmutableList.of();
+@@ -133,8 +147,14 @@
+          return this;
+       }
+ 
++      @Override
++      public BranchedTreeFeatureConfig.Builder setSapling(net.minecraftforge.common.IPlantable value) {
++         super.setSapling(value);
++         return this;
++      }
++
+       public BranchedTreeFeatureConfig build() {
+-         return new BranchedTreeFeatureConfig(this.trunkProvider, this.leavesProvider, this.foliagePlacer, this.treeDecorators, this.field_21272, this.heightRandA, this.heightRandB, this.trunkHeight, this.trunkHeightRandom, this.trunkTopOffset, this.trunkTopOffsetRandom, this.foliageHeight, this.foliageHeightRandom, this.maxWaterDepth, this.noVines);
++         return new BranchedTreeFeatureConfig(this.trunkProvider, this.leavesProvider, this.foliagePlacer, this.treeDecorators, this.field_21272, this.heightRandA, this.heightRandB, this.trunkHeight, this.trunkHeightRandom, this.trunkTopOffset, this.trunkTopOffsetRandom, this.foliageHeight, this.foliageHeightRandom, this.maxWaterDepth, this.noVines).setSapling(this.sapling);
+       }
+    }
+ }

@@ -25,20 +25,19 @@ import java.util.List;
 import org.lwjgl.opengl.GL11;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.AbstractGui;
-import net.minecraft.client.gui.FocusableGui;
-import net.minecraft.client.gui.IGuiEventListener;
-import net.minecraft.client.gui.IRenderable;
-import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.AbstractParentElement;
+import net.minecraft.client.gui.Drawable;
+import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.gui.Element;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexFormats;
 import net.minecraftforge.fml.client.gui.GuiUtils;
 
-public abstract class ScrollPanel extends FocusableGui implements IRenderable
+public abstract class ScrollPanel extends AbstractParentElement implements Drawable
 {
-    private final Minecraft client;
+    private final MinecraftClient client;
     protected final int width;
     protected final int height;
     protected final int top;
@@ -53,7 +52,7 @@ public abstract class ScrollPanel extends FocusableGui implements IRenderable
     private final int barWidth = 6;
     private final int barLeft;
 
-    public ScrollPanel(Minecraft client, int width, int height, int top, int left)
+    public ScrollPanel(MinecraftClient client, int width, int height, int top, int left)
     {
         this.client = client;
         this.width = width;
@@ -189,9 +188,9 @@ public abstract class ScrollPanel extends FocusableGui implements IRenderable
         Tessellator tess = Tessellator.getInstance();
         BufferBuilder worldr = tess.getBuffer();
 
-        double scale = client.getMainWindow().getGuiScaleFactor();
+        double scale = client.getWindow().getScaleFactor();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor((int)(left  * scale), (int)(client.getMainWindow().getFramebufferHeight() - (bottom * scale)),
+        GL11.glScissor((int)(left  * scale), (int)(client.getWindow().getFramebufferHeight() - (bottom * scale)),
                        (int)(width * scale), (int)(height * scale));
 
         if (this.client.world != null)
@@ -202,14 +201,14 @@ public abstract class ScrollPanel extends FocusableGui implements IRenderable
         {
             RenderSystem.disableLighting();
             RenderSystem.disableFog();
-            this.client.getTextureManager().bindTexture(AbstractGui.BACKGROUND_LOCATION);
+            this.client.getTextureManager().bindTexture(DrawableHelper.BACKGROUND_LOCATION);
             RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
             final float texScale = 32.0F;
-            worldr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
-            worldr.pos(this.left,  this.bottom, 0.0D).tex(this.left  / texScale, (this.bottom + (int)this.scrollDistance) / texScale).color(0x20, 0x20, 0x20, 0xFF).endVertex();
-            worldr.pos(this.right, this.bottom, 0.0D).tex(this.right / texScale, (this.bottom + (int)this.scrollDistance) / texScale).color(0x20, 0x20, 0x20, 0xFF).endVertex();
-            worldr.pos(this.right, this.top,    0.0D).tex(this.right / texScale, (this.top    + (int)this.scrollDistance) / texScale).color(0x20, 0x20, 0x20, 0xFF).endVertex();
-            worldr.pos(this.left,  this.top,    0.0D).tex(this.left  / texScale, (this.top    + (int)this.scrollDistance) / texScale).color(0x20, 0x20, 0x20, 0xFF).endVertex();
+            worldr.begin(GL11.GL_QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
+            worldr.vertex(this.left,  this.bottom, 0.0D).texture(this.left  / texScale, (this.bottom + (int)this.scrollDistance) / texScale).color(0x20, 0x20, 0x20, 0xFF).next();
+            worldr.vertex(this.right, this.bottom, 0.0D).texture(this.right / texScale, (this.bottom + (int)this.scrollDistance) / texScale).color(0x20, 0x20, 0x20, 0xFF).next();
+            worldr.vertex(this.right, this.top,    0.0D).texture(this.right / texScale, (this.top    + (int)this.scrollDistance) / texScale).color(0x20, 0x20, 0x20, 0xFF).next();
+            worldr.vertex(this.left,  this.top,    0.0D).texture(this.left  / texScale, (this.top    + (int)this.scrollDistance) / texScale).color(0x20, 0x20, 0x20, 0xFF).next();
             tess.draw();
         }
 
@@ -230,23 +229,23 @@ public abstract class ScrollPanel extends FocusableGui implements IRenderable
             }
 
             RenderSystem.disableTexture();
-            worldr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
-            worldr.pos(barLeft,            this.bottom, 0.0D).tex(0.0F, 1.0F).color(0x00, 0x00, 0x00, 0xFF).endVertex();
-            worldr.pos(barLeft + barWidth, this.bottom, 0.0D).tex(1.0F, 1.0F).color(0x00, 0x00, 0x00, 0xFF).endVertex();
-            worldr.pos(barLeft + barWidth, this.top,    0.0D).tex(1.0F, 0.0F).color(0x00, 0x00, 0x00, 0xFF).endVertex();
-            worldr.pos(barLeft,            this.top,    0.0D).tex(0.0F, 0.0F).color(0x00, 0x00, 0x00, 0xFF).endVertex();
+            worldr.begin(GL11.GL_QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
+            worldr.vertex(barLeft,            this.bottom, 0.0D).texture(0.0F, 1.0F).color(0x00, 0x00, 0x00, 0xFF).next();
+            worldr.vertex(barLeft + barWidth, this.bottom, 0.0D).texture(1.0F, 1.0F).color(0x00, 0x00, 0x00, 0xFF).next();
+            worldr.vertex(barLeft + barWidth, this.top,    0.0D).texture(1.0F, 0.0F).color(0x00, 0x00, 0x00, 0xFF).next();
+            worldr.vertex(barLeft,            this.top,    0.0D).texture(0.0F, 0.0F).color(0x00, 0x00, 0x00, 0xFF).next();
             tess.draw();
-            worldr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
-            worldr.pos(barLeft,            barTop + barHeight, 0.0D).tex(0.0F, 1.0F).color(0x80, 0x80, 0x80, 0xFF).endVertex();
-            worldr.pos(barLeft + barWidth, barTop + barHeight, 0.0D).tex(1.0F, 1.0F).color(0x80, 0x80, 0x80, 0xFF).endVertex();
-            worldr.pos(barLeft + barWidth, barTop,             0.0D).tex(1.0F, 0.0F).color(0x80, 0x80, 0x80, 0xFF).endVertex();
-            worldr.pos(barLeft,            barTop,             0.0D).tex(0.0F, 0.0F).color(0x80, 0x80, 0x80, 0xFF).endVertex();
+            worldr.begin(GL11.GL_QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
+            worldr.vertex(barLeft,            barTop + barHeight, 0.0D).texture(0.0F, 1.0F).color(0x80, 0x80, 0x80, 0xFF).next();
+            worldr.vertex(barLeft + barWidth, barTop + barHeight, 0.0D).texture(1.0F, 1.0F).color(0x80, 0x80, 0x80, 0xFF).next();
+            worldr.vertex(barLeft + barWidth, barTop,             0.0D).texture(1.0F, 0.0F).color(0x80, 0x80, 0x80, 0xFF).next();
+            worldr.vertex(barLeft,            barTop,             0.0D).texture(0.0F, 0.0F).color(0x80, 0x80, 0x80, 0xFF).next();
             tess.draw();
-            worldr.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
-            worldr.pos(barLeft,                barTop + barHeight - 1, 0.0D).tex(0.0F, 1.0F).color(0xC0, 0xC0, 0xC0, 0xFF).endVertex();
-            worldr.pos(barLeft + barWidth - 1, barTop + barHeight - 1, 0.0D).tex(1.0F, 1.0F).color(0xC0, 0xC0, 0xC0, 0xFF).endVertex();
-            worldr.pos(barLeft + barWidth - 1, barTop,                 0.0D).tex(1.0F, 0.0F).color(0xC0, 0xC0, 0xC0, 0xFF).endVertex();
-            worldr.pos(barLeft,                barTop,                 0.0D).tex(0.0F, 0.0F).color(0xC0, 0xC0, 0xC0, 0xFF).endVertex();
+            worldr.begin(GL11.GL_QUADS, VertexFormats.POSITION_TEXTURE_COLOR);
+            worldr.vertex(barLeft,                barTop + barHeight - 1, 0.0D).texture(0.0F, 1.0F).color(0xC0, 0xC0, 0xC0, 0xFF).next();
+            worldr.vertex(barLeft + barWidth - 1, barTop + barHeight - 1, 0.0D).texture(1.0F, 1.0F).color(0xC0, 0xC0, 0xC0, 0xFF).next();
+            worldr.vertex(barLeft + barWidth - 1, barTop,                 0.0D).texture(1.0F, 0.0F).color(0xC0, 0xC0, 0xC0, 0xFF).next();
+            worldr.vertex(barLeft,                barTop,                 0.0D).texture(0.0F, 0.0F).color(0xC0, 0xC0, 0xC0, 0xFF).next();
             tess.draw();
         }
 
@@ -263,7 +262,7 @@ public abstract class ScrollPanel extends FocusableGui implements IRenderable
     }
 
     @Override
-    public List<? extends IGuiEventListener> children()
+    public List<? extends Element> children()
     {
         return Collections.emptyList();
     }

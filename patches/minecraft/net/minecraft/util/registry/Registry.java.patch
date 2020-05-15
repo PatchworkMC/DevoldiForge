@@ -1,6 +1,14 @@
 --- a/net/minecraft/util/registry/Registry.java
 +++ b/net/minecraft/util/registry/Registry.java
-@@ -70,47 +70,51 @@
+@@ -41,7 +41,6 @@
+ import net.minecraft.sound.SoundEvents;
+ import net.minecraft.stat.StatType;
+ import net.minecraft.stat.Stats;
+-import net.minecraft.structure.StructureFeatures;
+ import net.minecraft.structure.StructurePieceType;
+ import net.minecraft.structure.pool.StructurePoolElementType;
+ import net.minecraft.structure.processor.StructureProcessorType;
+@@ -72,47 +71,51 @@
  import org.apache.logging.log4j.LogManager;
  import org.apache.logging.log4j.Logger;
  
@@ -8,164 +16,164 @@
 + * Attention Modders: This SHOULD NOT be used, you should use ForgeRegistries instead. As it has a cleaner modder facing API.
 + * We will be wrapping all of these in our API as necessary for syncing and management.
 + */
- public abstract class Registry<T> implements IObjectIntIterable<T> {
-    protected static final Logger field_212616_e = LogManager.getLogger();
-    private static final Map<ResourceLocation, Supplier<?>> field_218376_a = Maps.newLinkedHashMap();
-    public static final MutableRegistry<MutableRegistry<?>> field_212617_f = new SimpleRegistry<>();
--   public static final Registry<SoundEvent> field_212633_v = func_222935_a("sound_event", () -> {
-+   @Deprecated public static final Registry<SoundEvent> field_212633_v = forge("sound_event", SoundEvent.class, () -> {
-       return SoundEvents.field_187638_cR;
+ public abstract class Registry<T> implements IndexedIterable<T> {
+    protected static final Logger LOGGER = LogManager.getLogger();
+    private static final Map<Identifier, Supplier<?>> DEFAULT_ENTRIES = Maps.newLinkedHashMap();
+    public static final MutableRegistry<MutableRegistry<?>> REGISTRIES = new SimpleRegistry<>();
+-   public static final Registry<SoundEvent> SOUND_EVENT = create("sound_event", () -> {
++   @Deprecated public static final Registry<SoundEvent> SOUND_EVENT = forge("sound_event", SoundEvent.class, () -> {
+       return SoundEvents.ENTITY_ITEM_PICKUP;
     });
--   public static final DefaultedRegistry<Fluid> field_212619_h = func_222933_a("fluid", "empty", () -> {
-+   @Deprecated public static final DefaultedRegistry<Fluid> field_212619_h = forgeDefaulted("fluid", Fluid.class, () -> {
-       return Fluids.field_204541_a;
+-   public static final DefaultedRegistry<Fluid> FLUID = create("fluid", "empty", () -> {
++   @Deprecated public static final DefaultedRegistry<Fluid> FLUID = forgeDefaulted("fluid", Fluid.class, () -> {
+       return Fluids.EMPTY;
     });
--   public static final Registry<Effect> field_212631_t = func_222935_a("mob_effect", () -> {
-+   @Deprecated public static final Registry<Effect> field_212631_t = forge("mob_effect", Effect.class, () -> {
-       return Effects.field_188425_z;
+-   public static final Registry<StatusEffect> STATUS_EFFECT = create("mob_effect", () -> {
++   @Deprecated public static final Registry<StatusEffect> STATUS_EFFECT = forge("mob_effect", StatusEffect.class, () -> {
+       return StatusEffects.LUCK;
     });
--   public static final DefaultedRegistry<Block> field_212618_g = func_222933_a("block", "air", () -> {
-+   @Deprecated public static final DefaultedRegistry<Block> field_212618_g = forgeDefaulted("block", Block.class, () -> {
-       return Blocks.field_150350_a;
+-   public static final DefaultedRegistry<Block> BLOCK = create("block", "air", () -> {
++   @Deprecated public static final DefaultedRegistry<Block> BLOCK = forgeDefaulted("block", Block.class, () -> {
+       return Blocks.AIR;
     });
--   public static final Registry<Enchantment> field_212628_q = func_222935_a("enchantment", () -> {
-+   @Deprecated public static final Registry<Enchantment> field_212628_q = forge("enchantment", Enchantment.class, () -> {
-       return Enchantments.field_185308_t;
+-   public static final Registry<Enchantment> ENCHANTMENT = create("enchantment", () -> {
++   @Deprecated public static final Registry<Enchantment> ENCHANTMENT = forge("enchantment", Enchantment.class, () -> {
+       return Enchantments.FORTUNE;
     });
--   public static final DefaultedRegistry<EntityType<?>> field_212629_r = func_222933_a("entity_type", "pig", () -> {
-+   @Deprecated public static final DefaultedRegistry<EntityType<?>> field_212629_r = forgeDefaulted("entity_type", EntityType.class, () -> {
-       return EntityType.field_200784_X;
+-   public static final DefaultedRegistry<EntityType<?>> ENTITY_TYPE = create("entity_type", "pig", () -> {
++   @Deprecated public static final DefaultedRegistry<EntityType<?>> ENTITY_TYPE = forgeDefaulted("entity_type", EntityType.class, () -> {
+       return EntityType.PIG;
     });
--   public static final DefaultedRegistry<Item> field_212630_s = func_222933_a("item", "air", () -> {
-+   @Deprecated public static final DefaultedRegistry<Item> field_212630_s = forgeDefaulted("item", Item.class, () -> {
-       return Items.field_190931_a;
+-   public static final DefaultedRegistry<Item> ITEM = create("item", "air", () -> {
++   @Deprecated public static final DefaultedRegistry<Item> ITEM = forgeDefaulted("item", Item.class, () -> {
+       return Items.AIR;
     });
--   public static final DefaultedRegistry<Potion> field_212621_j = func_222933_a("potion", "empty", () -> {
-+   @Deprecated public static final DefaultedRegistry<Potion> field_212621_j = forgeDefaulted("potion", Potion.class, () -> {
-       return Potions.field_185229_a;
+-   public static final DefaultedRegistry<Potion> POTION = create("potion", "empty", () -> {
++   @Deprecated public static final DefaultedRegistry<Potion> POTION = forgeDefaulted("potion", Potion.class, () -> {
+       return Potions.EMPTY;
     });
--   public static final Registry<WorldCarver<?>> field_218377_o = func_222935_a("carver", () -> {
-+   @Deprecated public static final Registry<WorldCarver<?>> field_218377_o = forge("carver", WorldCarver.class, () -> {
-       return WorldCarver.field_222709_a;
+-   public static final Registry<Carver<?>> CARVER = create("carver", () -> {
++   @Deprecated public static final Registry<Carver<?>> CARVER = forge("carver", Carver.class, () -> {
+       return Carver.CAVE;
     });
--   public static final Registry<SurfaceBuilder<?>> field_218378_p = func_222935_a("surface_builder", () -> {
-+   @Deprecated public static final Registry<SurfaceBuilder<?>> field_218378_p = forge("surface_builder", SurfaceBuilder.class, () -> {
-       return SurfaceBuilder.field_215396_G;
+-   public static final Registry<SurfaceBuilder<?>> SURFACE_BUILDER = create("surface_builder", () -> {
++   @Deprecated public static final Registry<SurfaceBuilder<?>> SURFACE_BUILDER = forge("surface_builder", SurfaceBuilder.class, () -> {
+       return SurfaceBuilder.DEFAULT;
     });
--   public static final Registry<Feature<?>> field_218379_q = func_222935_a("feature", () -> {
-+   @Deprecated public static final Registry<Feature<?>> field_218379_q = forge("feature", Feature.class, () -> {
-       return Feature.field_202290_aj;
+-   public static final Registry<Feature<?>> FEATURE = create("feature", () -> {
++   @Deprecated public static final Registry<Feature<?>> FEATURE = forge("feature", Feature.class, () -> {
+       return Feature.ORE;
     });
--   public static final Registry<Placement<?>> field_218380_r = func_222935_a("decorator", () -> {
-+   @Deprecated public static final Registry<Placement<?>> field_218380_r = forge("decorator", Placement.class, () -> {
-       return Placement.field_215022_h;
+-   public static final Registry<Decorator<?>> DECORATOR = create("decorator", () -> {
++   @Deprecated public static final Registry<Decorator<?>> DECORATOR = forge("decorator", Decorator.class, () -> {
+       return Decorator.NOPE;
     });
--   public static final Registry<Biome> field_212624_m = func_222935_a("biome", () -> {
-+   @Deprecated public static final Registry<Biome> field_212624_m = forge("biome", Biome.class, () -> {
-       return Biomes.field_180279_ad;
+-   public static final Registry<Biome> BIOME = create("biome", () -> {
++   @Deprecated public static final Registry<Biome> BIOME = forge("biome", Biome.class, () -> {
+       return Biomes.DEFAULT;
     });
-    public static final Registry<BlockStateProviderType<?>> field_229387_t_ = func_222935_a("block_state_provider_type", () -> {
-@@ -125,33 +129,31 @@
-    public static final Registry<TreeDecoratorType<?>> field_229390_w_ = func_222935_a("tree_decorator_type", () -> {
-       return TreeDecoratorType.field_227426_b_;
+    public static final Registry<BlockStateProviderType<?>> BLOCK_STATE_PROVIDER_TYPE = create("block_state_provider_type", () -> {
+@@ -127,33 +130,31 @@
+    public static final Registry<TreeDecoratorType<?>> TREE_DECORATOR_TYPE = create("tree_decorator_type", () -> {
+       return TreeDecoratorType.LEAVE_VINE;
     });
--   public static final Registry<ParticleType<? extends IParticleData>> field_212632_u = func_222935_a("particle_type", () -> {
-+   @Deprecated public static final Registry<ParticleType<? extends IParticleData>> field_212632_u = forge("particle_type", ParticleType.class, () -> {
-       return ParticleTypes.field_197611_d;
+-   public static final Registry<ParticleType<? extends ParticleEffect>> PARTICLE_TYPE = create("particle_type", () -> {
++   @Deprecated public static final Registry<ParticleType<? extends ParticleEffect>> PARTICLE_TYPE = forge("particle_type", ParticleType.class, () -> {
+       return ParticleTypes.BLOCK;
     });
--   public static final Registry<BiomeProviderType<?, ?>> field_212625_n = func_222935_a("biome_source_type", () -> {
-+   @Deprecated public static final Registry<BiomeProviderType<?, ?>> field_212625_n = forge("biome_source_type", BiomeProviderType.class, () -> {
-       return BiomeProviderType.field_206859_d;
+-   public static final Registry<BiomeSourceType<?, ?>> BIOME_SOURCE_TYPE = create("biome_source_type", () -> {
++   @Deprecated public static final Registry<BiomeSourceType<?, ?>> BIOME_SOURCE_TYPE = forge("biome_source_type", BiomeSourceType.class, () -> {
+       return BiomeSourceType.VANILLA_LAYERED;
     });
--   public static final Registry<TileEntityType<?>> field_212626_o = func_222935_a("block_entity_type", () -> {
-+   @Deprecated public static final Registry<TileEntityType<?>> field_212626_o = forge("block_entity_type", TileEntityType.class, () -> {
-       return TileEntityType.field_200971_b;
+-   public static final Registry<BlockEntityType<?>> BLOCK_ENTITY_TYPE = create("block_entity_type", () -> {
++   @Deprecated public static final Registry<BlockEntityType<?>> BLOCK_ENTITY_TYPE = forge("block_entity_type", BlockEntityType.class, () -> {
+       return BlockEntityType.FURNACE;
     });
--   public static final Registry<ChunkGeneratorType<?, ?>> field_212627_p = func_222935_a("chunk_generator_type", () -> {
-+   @Deprecated public static final Registry<ChunkGeneratorType<?, ?>> field_212627_p = forge("chunk_generator_type", ChunkGeneratorType.class, () -> {
-       return ChunkGeneratorType.field_205489_f;
+-   public static final Registry<ChunkGeneratorType<?, ?>> CHUNK_GENERATOR_TYPE = create("chunk_generator_type", () -> {
++   @Deprecated public static final Registry<ChunkGeneratorType<?, ?>> CHUNK_GENERATOR_TYPE = forge("chunk_generator_type", ChunkGeneratorType.class, () -> {
+       return ChunkGeneratorType.FLAT;
     });
--   public static final Registry<DimensionType> field_212622_k = func_222935_a("dimension_type", () -> {
-+   @Deprecated public static final Registry<DimensionType> field_212622_k = func_222939_a("dimension_type", net.minecraftforge.common.DimensionManager.getRegistry(), () -> {
-       return DimensionType.field_223227_a_;
+-   public static final Registry<DimensionType> DIMENSION_TYPE = create("dimension_type", () -> {
++   @Deprecated public static final Registry<DimensionType> DIMENSION_TYPE = putDefaultEntry("dimension_type", net.minecraftforge.common.DimensionManager.getRegistry(), () -> {
+       return DimensionType.OVERWORLD;
     });
--   public static final DefaultedRegistry<PaintingType> field_212620_i = func_222933_a("motive", "kebab", () -> {
-+   @Deprecated public static final DefaultedRegistry<PaintingType> field_212620_i = forgeDefaulted("motive", PaintingType.class, () -> {
-       return PaintingType.field_200843_b;
+-   public static final DefaultedRegistry<PaintingMotive> PAINTING_MOTIVE = create("motive", "kebab", () -> {
++   @Deprecated public static final DefaultedRegistry<PaintingMotive> PAINTING_MOTIVE = forgeDefaulted("motive", PaintingMotive.class, () -> {
+       return PaintingMotive.KEBAB;
     });
-    public static final Registry<ResourceLocation> field_212623_l = func_222935_a("custom_stat", () -> {
-       return Stats.field_75953_u;
+    public static final Registry<Identifier> CUSTOM_STAT = create("custom_stat", () -> {
+       return Stats.JUMP;
     });
--   public static final DefaultedRegistry<ChunkStatus> field_218360_A = func_222933_a("chunk_status", "empty", () -> {
-+   @Deprecated public static final DefaultedRegistry<ChunkStatus> field_218360_A = forgeDefaulted("chunk_status", ChunkStatus.class, () -> {
-       return ChunkStatus.field_223226_a_;
+-   public static final DefaultedRegistry<ChunkStatus> CHUNK_STATUS = create("chunk_status", "empty", () -> {
++   @Deprecated public static final DefaultedRegistry<ChunkStatus> CHUNK_STATUS = forgeDefaulted("chunk_status", ChunkStatus.class, () -> {
+       return ChunkStatus.EMPTY;
     });
--   public static final Registry<Structure<?>> field_218361_B = func_222935_a("structure_feature", () -> {
--      return Structures.field_215143_a;
+-   public static final Registry<StructureFeature<?>> STRUCTURE_FEATURE = create("structure_feature", () -> {
+-      return StructureFeatures.MINESHAFT;
 -   });
-+   @Deprecated public static final Registry<Structure<?>> field_218361_B = net.minecraftforge.registries.GameData.getStructureFeatures();
-    public static final Registry<IStructurePieceType> field_218362_C = func_222935_a("structure_piece", () -> {
-       return IStructurePieceType.field_214782_c;
++   @Deprecated public static final Registry<StructureFeature<?>> STRUCTURE_FEATURE = net.minecraftforge.registries.GameData.getStructureFeatures();
+    public static final Registry<StructurePieceType> STRUCTURE_PIECE = create("structure_piece", () -> {
+       return StructurePieceType.MINESHAFT_ROOM;
     });
-@@ -164,37 +166,37 @@
-    public static final Registry<IJigsawDeserializer> field_218365_F = func_222935_a("structure_pool_element", () -> {
-       return IJigsawDeserializer.field_214931_e;
+@@ -166,37 +167,37 @@
+    public static final Registry<StructurePoolElementType> STRUCTURE_POOL_ELEMENT = create("structure_pool_element", () -> {
+       return StructurePoolElementType.EMPTY_POOL_ELEMENT;
     });
--   public static final Registry<ContainerType<?>> field_218366_G = func_222935_a("menu", () -> {
-+   @Deprecated public static final Registry<ContainerType<?>> field_218366_G = forge("menu", ContainerType.class, () -> {
-       return ContainerType.field_221514_h;
+-   public static final Registry<ContainerType<?>> CONTAINER = create("menu", () -> {
++   @Deprecated public static final Registry<ContainerType<?>> CONTAINER = forge("menu", ContainerType.class, () -> {
+       return ContainerType.ANVIL;
     });
-    public static final Registry<IRecipeType<?>> field_218367_H = func_222935_a("recipe_type", () -> {
-       return IRecipeType.field_222149_a;
+    public static final Registry<RecipeType<?>> RECIPE_TYPE = create("recipe_type", () -> {
+       return RecipeType.CRAFTING;
     });
--   public static final Registry<IRecipeSerializer<?>> field_218368_I = func_222935_a("recipe_serializer", () -> {
-+   @Deprecated public static final Registry<IRecipeSerializer<?>> field_218368_I = forge("recipe_serializer", IRecipeSerializer.class, () -> {
-       return IRecipeSerializer.field_222158_b;
+-   public static final Registry<RecipeSerializer<?>> RECIPE_SERIALIZER = create("recipe_serializer", () -> {
++   @Deprecated public static final Registry<RecipeSerializer<?>> RECIPE_SERIALIZER = forge("recipe_serializer", RecipeSerializer.class, () -> {
+       return RecipeSerializer.SHAPELESS;
     });
--   public static final Registry<StatType<?>> field_212634_w = func_222935_a("stat_type", () -> {
-+   @Deprecated public static final Registry<StatType<?>> field_212634_w = forge("stat_type", StatType.class, () -> {
-       return Stats.field_75929_E;
+-   public static final Registry<StatType<?>> STAT_TYPE = create("stat_type", () -> {
++   @Deprecated public static final Registry<StatType<?>> STAT_TYPE = forge("stat_type", StatType.class, () -> {
+       return Stats.USED;
     });
-    public static final DefaultedRegistry<IVillagerType> field_218369_K = func_222933_a("villager_type", "plains", () -> {
-       return IVillagerType.field_221175_c;
+    public static final DefaultedRegistry<VillagerType> VILLAGER_TYPE = create("villager_type", "plains", () -> {
+       return VillagerType.PLAINS;
     });
--   public static final DefaultedRegistry<VillagerProfession> field_218370_L = func_222933_a("villager_profession", "none", () -> {
-+   @Deprecated public static final DefaultedRegistry<VillagerProfession> field_218370_L = forgeDefaulted("villager_profession", VillagerProfession.class, () -> {
-       return VillagerProfession.field_221151_a;
+-   public static final DefaultedRegistry<VillagerProfession> VILLAGER_PROFESSION = create("villager_profession", "none", () -> {
++   @Deprecated public static final DefaultedRegistry<VillagerProfession> VILLAGER_PROFESSION = forgeDefaulted("villager_profession", VillagerProfession.class, () -> {
+       return VillagerProfession.NONE;
     });
--   public static final DefaultedRegistry<PointOfInterestType> field_218371_M = func_222933_a("point_of_interest_type", "unemployed", () -> {
-+   @Deprecated public static final DefaultedRegistry<PointOfInterestType> field_218371_M = forgeDefaulted("point_of_interest_type", PointOfInterestType.class, () -> {
-       return PointOfInterestType.field_221054_b;
+-   public static final DefaultedRegistry<PointOfInterestType> POINT_OF_INTEREST_TYPE = create("point_of_interest_type", "unemployed", () -> {
++   @Deprecated public static final DefaultedRegistry<PointOfInterestType> POINT_OF_INTEREST_TYPE = forgeDefaulted("point_of_interest_type", PointOfInterestType.class, () -> {
+       return PointOfInterestType.UNEMPLOYED;
     });
--   public static final DefaultedRegistry<MemoryModuleType<?>> field_218372_N = func_222933_a("memory_module_type", "dummy", () -> {
-+   @Deprecated public static final DefaultedRegistry<MemoryModuleType<?>> field_218372_N = forgeDefaulted("memory_module_type", MemoryModuleType.class, () -> {
-       return MemoryModuleType.field_220940_a;
+-   public static final DefaultedRegistry<MemoryModuleType<?>> MEMORY_MODULE_TYPE = create("memory_module_type", "dummy", () -> {
++   @Deprecated public static final DefaultedRegistry<MemoryModuleType<?>> MEMORY_MODULE_TYPE = forgeDefaulted("memory_module_type", MemoryModuleType.class, () -> {
+       return MemoryModuleType.DUMMY;
     });
--   public static final DefaultedRegistry<SensorType<?>> field_218373_O = func_222933_a("sensor_type", "dummy", () -> {
-+   @Deprecated public static final DefaultedRegistry<SensorType<?>> field_218373_O = forgeDefaulted("sensor_type", SensorType.class, () -> {
-       return SensorType.field_220997_a;
+-   public static final DefaultedRegistry<SensorType<?>> SENSOR_TYPE = create("sensor_type", "dummy", () -> {
++   @Deprecated public static final DefaultedRegistry<SensorType<?>> SENSOR_TYPE = forgeDefaulted("sensor_type", SensorType.class, () -> {
+       return SensorType.DUMMY;
     });
--   public static final Registry<Schedule> field_218374_P = func_222935_a("schedule", () -> {
-+   @Deprecated public static final Registry<Schedule> field_218374_P = forge("schedule", Schedule.class, () -> {
-       return Schedule.field_221383_a;
+-   public static final Registry<Schedule> SCHEDULE = create("schedule", () -> {
++   @Deprecated public static final Registry<Schedule> SCHEDULE = forge("schedule", Schedule.class, () -> {
+       return Schedule.EMPTY;
     });
--   public static final Registry<Activity> field_218375_Q = func_222935_a("activity", () -> {
-+   @Deprecated public static final Registry<Activity> field_218375_Q = forge("activity", Activity.class, () -> {
-       return Activity.field_221366_b;
+-   public static final Registry<Activity> ACTIVITY = create("activity", () -> {
++   @Deprecated public static final Registry<Activity> ACTIVITY = forge("activity", Activity.class, () -> {
+       return Activity.IDLE;
     });
  
-@@ -246,6 +248,14 @@
-       return ((MutableRegistry<T>)p_218343_0_).func_218382_a(p_218343_1_, new ResourceLocation(p_218343_2_), p_218343_3_);
+@@ -248,6 +249,14 @@
+       return ((MutableRegistry<T>)p_218343_0_).set(p_218343_1_, new Identifier(p_218343_2_), p_218343_3_);
     }
  
 +   private static <T extends net.minecraftforge.registries.IForgeRegistryEntry<T>> Registry<T> forge(String name, Class<? super T> cls, Supplier<T> def) {
-+      return func_222939_a(name, net.minecraftforge.registries.GameData.<T>getWrapper(cls), def);
++      return putDefaultEntry(name, net.minecraftforge.registries.GameData.<T>getWrapper(cls), def);
 +   }
 +
 +   private static <T extends net.minecraftforge.registries.IForgeRegistryEntry<T>> DefaultedRegistry<T> forgeDefaulted(String name, Class<? super T> cls, Supplier<T> def) {
-+      return Registry.<T, DefaultedRegistry<T>>func_222939_a(name, net.minecraftforge.registries.GameData.<T>getWrapperDefaulted(cls), def);
++      return Registry.<T, DefaultedRegistry<T>>putDefaultEntry(name, net.minecraftforge.registries.GameData.<T>getWrapperDefaulted(cls), def);
 +   }
 +
     static {
-       field_218376_a.entrySet().forEach((p_229397_0_) -> {
+       DEFAULT_ENTRIES.entrySet().forEach((p_229397_0_) -> {
           if (p_229397_0_.getValue().get() == null) {

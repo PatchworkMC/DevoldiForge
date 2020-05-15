@@ -22,10 +22,9 @@ package net.minecraftforge.fml.packs;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import net.minecraft.resource.AbstractFileResourcePack;
 
-import net.minecraft.resources.ResourcePack;
-
-public abstract class DelegatableResourcePack extends ResourcePack
+public abstract class DelegatableResourcePack extends AbstractFileResourcePack
 {
     protected DelegatableResourcePack(File resourcePackFileIn)
     {
@@ -33,8 +32,8 @@ public abstract class DelegatableResourcePack extends ResourcePack
     }
 
     @Override
-    public abstract InputStream getInputStream(String resourcePath) throws IOException;
+    public abstract InputStream openFile(String resourcePath) throws IOException;
 
     @Override
-    public abstract boolean resourceExists(String resourcePath);
+    public abstract boolean containsFile(String resourcePath);
 }

@@ -1,0 +1,181 @@
+--- a/net/minecraft/server/PlayerManager.java
++++ b/net/minecraft/server/PlayerManager.java
+@@ -99,6 +99,7 @@
+    private GameMode gameMode;
+    private boolean cheatsAllowed;
+    private int latencyUpdateTimer;
++   private final List<ServerPlayerEntity> playersView = java.util.Collections.unmodifiableList(players);
+ 
+    public PlayerManager(MinecraftServer p_i50688_1_, int p_i50688_2_) {
+       this.server = p_i50688_1_;
+@@ -114,7 +115,15 @@
+       String s = gameprofile1 == null ? gameprofile.getName() : gameprofile1.getName();
+       playerprofilecache.add(gameprofile);
+       CompoundTag compoundnbt = this.loadPlayerData(playerIn);
+-      ServerWorld serverworld = this.server.getWorld(playerIn.dimension);
++
++      //Forge: Make sure the dimension hasn't been deleted, if so stick them in the overworld.
++      ServerWorld serverworld = playerIn.dimension != null ? this.server.getWorld(playerIn.dimension) : null ;
++      if (serverworld == null) {
++         playerIn.dimension = DimensionType.OVERWORLD;
++         serverworld = this.server.getWorld(playerIn.dimension);
++         playerIn.updatePosition(serverworld.getLevelProperties().getSpawnX(), serverworld.getLevelProperties().getSpawnY(), serverworld.getLevelProperties().getSpawnZ());
++      }
++
+       playerIn.setWorld(serverworld);
+       playerIn.interactionManager.setWorld((ServerWorld)playerIn.world);
+       String s1 = "local";
+@@ -126,6 +135,8 @@
+       LevelProperties worldinfo = serverworld.getLevelProperties();
+       this.setGameMode(playerIn, (ServerPlayerEntity)null, serverworld);
+       ServerPlayNetworkHandler serverplaynethandler = new ServerPlayNetworkHandler(this.server, netManager, playerIn);
++      net.minecraftforge.fml.network.NetworkHooks.sendMCRegistryPackets(netManager, "PLAY_TO_CLIENT");
++      net.minecraftforge.fml.network.NetworkHooks.sendDimensionDataPacket(netManager, playerIn);
+       GameRules gamerules = serverworld.getGameRules();
+       boolean flag = gamerules.getBoolean(GameRules.DO_IMMEDIATE_RESPAWN);
+       boolean flag1 = gamerules.getBoolean(GameRules.REDUCED_DEBUG_INFO);
+@@ -150,7 +161,7 @@
+ 
+       this.sendToAll(itextcomponent.formatted(Formatting.YELLOW));
+       serverplaynethandler.requestTeleport(playerIn.getX(), playerIn.getY(), playerIn.getZ(), playerIn.yaw, playerIn.pitch);
+-      this.players.add(playerIn);
++      this.addPlayer(playerIn);
+       this.playerMap.put(playerIn.getUuid(), playerIn);
+       this.sendToAll(new PlayerListS2CPacket(PlayerListS2CPacket.Action.ADD_PLAYER, playerIn));
+ 
+@@ -171,8 +182,9 @@
+ 
+       if (compoundnbt != null && compoundnbt.contains("RootVehicle", 10)) {
+          CompoundTag compoundnbt1 = compoundnbt.getCompound("RootVehicle");
++         final ServerWorld worldf = serverworld;
+          Entity entity1 = EntityType.loadEntityWithPassengers(compoundnbt1.getCompound("Entity"), serverworld, (p_217885_1_) -> {
+-            return !serverworld.tryLoadEntity(p_217885_1_) ? null : p_217885_1_;
++            return !worldf.tryLoadEntity(p_217885_1_) ? null : p_217885_1_;
+          });
+          if (entity1 != null) {
+             UUID uuid = compoundnbt1.getUuid("Attach");
+@@ -199,6 +211,7 @@
+       }
+ 
+       playerIn.method_14235();
++      net.minecraftforge.fml.hooks.BasicEventHooks.firePlayerLoggedIn( playerIn );
+    }
+ 
+    protected void sendScoreboard(ServerScoreboard scoreboardIn, ServerPlayerEntity playerIn) {
+@@ -260,6 +273,7 @@
+          compoundnbt1 = compoundnbt;
+          playerIn.fromTag(compoundnbt);
+          LOGGER.debug("loading single player");
++         net.minecraftforge.event.ForgeEventFactory.firePlayerLoadingEvent(playerIn, this.saveHandler, playerIn.getUuid().toString());
+       } else {
+          compoundnbt1 = this.saveHandler.loadPlayerData(playerIn);
+       }
+@@ -268,6 +282,7 @@
+    }
+ 
+    protected void savePlayerData(ServerPlayerEntity playerIn) {
++      if (playerIn.networkHandler == null) return;
+       this.saveHandler.savePlayerData(playerIn);
+       ServerStatHandler serverstatisticsmanager = this.statisticsMap.get(playerIn.getUuid());
+       if (serverstatisticsmanager != null) {
+@@ -282,6 +297,7 @@
+    }
+ 
+    public void remove(ServerPlayerEntity playerIn) {
++      net.minecraftforge.fml.hooks.BasicEventHooks.firePlayerLoggedOut(playerIn);
+       ServerWorld serverworld = playerIn.getServerWorld();
+       playerIn.incrementStat(Stats.LEAVE_GAME);
+       this.savePlayerData(playerIn);
+@@ -303,7 +319,7 @@
+       playerIn.detach();
+       serverworld.removePlayer(playerIn);
+       playerIn.getAdvancementTracker().clearCriterions();
+-      this.players.remove(playerIn);
++      this.removePlayer(playerIn);
+       this.server.getBossBarManager().onPlayerDisconnenct(playerIn);
+       UUID uuid = playerIn.getUuid();
+       ServerPlayerEntity serverplayerentity = this.playerMap.get(uuid);
+@@ -372,10 +388,18 @@
+    }
+ 
+    public ServerPlayerEntity respawnPlayer(ServerPlayerEntity playerIn, DimensionType dimension, boolean conqueredEnd) {
+-      this.players.remove(playerIn);
+-      playerIn.getServerWorld().removePlayer(playerIn);
+-      BlockPos blockpos = playerIn.getSpawnPosition();
+-      boolean flag = playerIn.isSpawnForced();
++      ServerWorld world = server.getWorld(dimension);
++      if (world == null)
++         dimension = playerIn.getSpawnDimension();
++      else if (!world.getDimension().canPlayersSleep())
++         dimension = world.getDimension().getRespawnDimension(playerIn);
++      if (server.getWorld(dimension) == null)
++         dimension = DimensionType.OVERWORLD;
++
++      this.removePlayer(playerIn);
++      playerIn.getServerWorld().removePlayer(playerIn, true); // Forge: keep data until copyFrom called
++      BlockPos blockpos = playerIn.getBedLocation(dimension);
++      boolean flag = playerIn.isSpawnForced(dimension);
+       playerIn.dimension = dimension;
+       ServerPlayerInteractionManager playerinteractionmanager;
+       if (this.server.isDemo()) {
+@@ -387,6 +411,8 @@
+       ServerPlayerEntity serverplayerentity = new ServerPlayerEntity(this.server, this.server.getWorld(playerIn.dimension), playerIn.getGameProfile(), playerinteractionmanager);
+       serverplayerentity.networkHandler = playerIn.networkHandler;
+       serverplayerentity.copyFrom(playerIn, conqueredEnd);
++      playerIn.remove(false); // Forge: clone event had a chance to see old data, now discard it
++      serverplayerentity.dimension = dimension;
+       serverplayerentity.setEntityId(playerIn.getEntityId());
+       serverplayerentity.setMainArm(playerIn.getMainArm());
+ 
+@@ -401,7 +427,7 @@
+          if (optional.isPresent()) {
+             Vec3d vec3d = optional.get();
+             serverplayerentity.refreshPositionAndAngles(vec3d.x, vec3d.y, vec3d.z, 0.0F, 0.0F);
+-            serverplayerentity.setPlayerSpawn(blockpos, flag, false);
++            serverplayerentity.setSpawnPoint(blockpos, flag, false, dimension);
+          } else {
+             serverplayerentity.networkHandler.sendPacket(new GameStateChangeS2CPacket(0, 0.0F));
+          }
+@@ -412,6 +438,7 @@
+       }
+ 
+       LevelProperties worldinfo = serverplayerentity.world.getLevelProperties();
++      net.minecraftforge.fml.network.NetworkHooks.sendDimensionDataPacket(serverplayerentity.networkHandler.connection, serverplayerentity);
+       serverplayerentity.networkHandler.sendPacket(new PlayerRespawnS2CPacket(serverplayerentity.dimension, LevelProperties.sha256Hash(worldinfo.getSeed()), worldinfo.getGeneratorType(), serverplayerentity.interactionManager.getGameMode()));
+       BlockPos blockpos1 = serverworld.getSpawnPos();
+       serverplayerentity.networkHandler.requestTeleport(serverplayerentity.getX(), serverplayerentity.getY(), serverplayerentity.getZ(), serverplayerentity.yaw, serverplayerentity.pitch);
+@@ -421,10 +448,11 @@
+       this.sendWorldInfo(serverplayerentity, serverworld);
+       this.sendCommandTree(serverplayerentity);
+       serverworld.onPlayerRespawned(serverplayerentity);
+-      this.players.add(serverplayerentity);
++      this.addPlayer(serverplayerentity);
+       this.playerMap.put(serverplayerentity.getUuid(), serverplayerentity);
+       serverplayerentity.method_14235();
+       serverplayerentity.setHealth(serverplayerentity.getHealth());
++      net.minecraftforge.fml.hooks.BasicEventHooks.firePlayerRespawnEvent(serverplayerentity, conqueredEnd);
+       return serverplayerentity;
+    }
+ 
+@@ -744,7 +772,7 @@
+    }
+ 
+    public List<ServerPlayerEntity> getPlayerList() {
+-      return this.players;
++      return this.playersView; //Unmodifiable view, we don't want people removing things without us knowing.
+    }
+ 
+    @Nullable
+@@ -774,4 +802,12 @@
+    public boolean areCheatsAllowed() {
+       return this.cheatsAllowed;
+    }
++
++   public boolean addPlayer(ServerPlayerEntity player) {
++      return net.minecraftforge.common.DimensionManager.rebuildPlayerMap(this, this.players.add(player));
++   }
++
++   public boolean removePlayer(ServerPlayerEntity player) {
++       return net.minecraftforge.common.DimensionManager.rebuildPlayerMap(this, this.players.remove(player));
++   }
+ }

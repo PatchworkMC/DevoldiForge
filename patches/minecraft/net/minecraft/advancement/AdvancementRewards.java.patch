@@ -1,0 +1,11 @@
+--- a/net/minecraft/advancement/AdvancementRewards.java
++++ b/net/minecraft/advancement/AdvancementRewards.java
+@@ -43,7 +43,7 @@
+ 
+    public void apply(ServerPlayerEntity player) {
+       player.addExperience(this.experience);
+-      LootContext lootcontext = (new LootContext.Builder(player.getServerWorld())).put(LootContextParameters.THIS_ENTITY, player).put(LootContextParameters.POSITION, new BlockPos(player)).setRandom(player.getRandom()).build(LootContextTypes.ADVANCEMENT_REWARD);
++      LootContext lootcontext = (new LootContext.Builder(player.getServerWorld())).put(LootContextParameters.THIS_ENTITY, player).put(LootContextParameters.POSITION, new BlockPos(player)).setRandom(player.getRandom()).setLuck(player.getLuck()).build(LootContextTypes.ADVANCEMENT_REWARD); // FORGE: luck to LootContext
+       boolean flag = false;
+ 
+       for(Identifier resourcelocation : this.loot) {

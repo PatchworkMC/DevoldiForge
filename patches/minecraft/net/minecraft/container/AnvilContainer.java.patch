@@ -1,0 +1,50 @@
+--- a/net/minecraft/container/AnvilContainer.java
++++ b/net/minecraft/container/AnvilContainer.java
+@@ -63,6 +63,8 @@
+                thePlayer.addExperienceLevels(-AnvilContainer.this.levelCost.get());
+             }
+ 
++            float breakChance = net.minecraftforge.common.ForgeHooks.onAnvilRepair(thePlayer, stack, AnvilContainer.this.inventory.getInvStack(0), AnvilContainer.this.inventory.getInvStack(1));
++
+             AnvilContainer.this.inventory.setInvStack(0, ItemStack.EMPTY);
+             if (AnvilContainer.this.repairItemUsage > 0) {
+                ItemStack itemstack = AnvilContainer.this.inventory.getInvStack(1);
+@@ -79,7 +81,7 @@
+             AnvilContainer.this.levelCost.set(0);
+             p_i50102_3_.run((p_216931_1_, p_216931_2_) -> {
+                BlockState blockstate = p_216931_1_.getBlockState(p_216931_2_);
+-               if (!thePlayer.abilities.creativeMode && blockstate.matches(BlockTags.ANVIL) && thePlayer.getRandom().nextFloat() < 0.12F) {
++               if (!thePlayer.abilities.creativeMode && blockstate.matches(BlockTags.ANVIL) && thePlayer.getRandom().nextFloat() < breakChance) {
+                   BlockState blockstate1 = AnvilBlock.getLandingState(blockstate);
+                   if (blockstate1 == null) {
+                      p_216931_1_.removeBlock(p_216931_2_, false);
+@@ -132,8 +134,11 @@
+          Map<Enchantment, Integer> map = EnchantmentHelper.getEnchantments(itemstack1);
+          j = j + itemstack.getRepairCost() + (itemstack2.isEmpty() ? 0 : itemstack2.getRepairCost());
+          this.repairItemUsage = 0;
++         boolean flag = false;
++
+          if (!itemstack2.isEmpty()) {
+-            boolean flag = itemstack2.getItem() == Items.ENCHANTED_BOOK && !EnchantedBookItem.getEnchantmentTag(itemstack2).isEmpty();
++            if (!net.minecraftforge.common.ForgeHooks.onAnvilChange(this, itemstack, itemstack2, result, newItemName, j)) return;
++            flag = itemstack2.getItem() == Items.ENCHANTED_BOOK && !EnchantedBookItem.getEnchantmentTag(itemstack2).isEmpty();
+             if (itemstack1.isDamageable() && itemstack1.getItem().canRepair(itemstack, itemstack2)) {
+                int l2 = Math.min(itemstack1.getDamage(), itemstack1.getMaxDamage() / 4);
+                if (l2 <= 0) {
+@@ -250,6 +255,7 @@
+             i += k;
+             itemstack1.setCustomName(new LiteralText(this.newItemName));
+          }
++         if (flag && !itemstack1.isBookEnchantable(itemstack2)) itemstack1 = ItemStack.EMPTY;
+ 
+          this.levelCost.set(j + i);
+          if (i <= 0) {
+@@ -354,4 +360,8 @@
+    public int getLevelCost() {
+       return this.levelCost.get();
+    }
++
++   public void setMaximumCost(int value) {
++      this.levelCost.set(value);
++   }
+ }

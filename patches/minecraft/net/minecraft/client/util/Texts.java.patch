@@ -1,0 +1,10 @@
+--- a/net/minecraft/client/util/Texts.java
++++ b/net/minecraft/client/util/Texts.java
+@@ -57,6 +57,7 @@
+                   s2 = "";
+                   s3 = s4;
+                }
++               s3 = Formatting.getFormatAtEnd(s2) + s3; //Forge: Fix chat formatting not surviving line wrapping.
+ 
+                Text itextcomponent4 = (new LiteralText(s3)).setStyle(itextcomponent1.getStyle().deepCopy());
+                list1.add(j + 1, itextcomponent4);

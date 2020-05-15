@@ -1,0 +1,17 @@
+--- a/net/minecraft/server/command/LocateCommand.java
++++ b/net/minecraft/server/command/LocateCommand.java
+@@ -48,7 +48,13 @@
+          return execute(p_204758_0_.getSource(), "Shipwreck");
+       })).then(CommandManager.literal("Village").executes((p_218858_0_) -> {
+          return execute(p_218858_0_.getSource(), "Village");
+-      })));
++      // FORGE: Support modded structures via registry name
++      })).then(CommandManager.argument("structure_type", net.minecraft.command.arguments.IdentifierArgumentType.identifier())
++              .suggests((ctx, sb) -> net.minecraft.server.command.CommandSource.suggestMatching(
++                      net.minecraftforge.registries.GameData.getStructureFeatures().getIds().stream()
++                          .map(net.minecraft.util.Identifier::toString), sb))
++              .executes(ctx -> execute(ctx.getSource(), ctx.getArgument("structure_type", net.minecraft.util.Identifier.class).toString().replace("minecraft:", ""))
++      )));
+    }
+ 
+    private static int execute(ServerCommandSource source, String structureName) throws CommandSyntaxException {

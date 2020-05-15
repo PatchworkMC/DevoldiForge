@@ -26,26 +26,27 @@ import javax.annotation.Nullable;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
-
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.renderer.entity.model.BipedModel;
-import net.minecraft.client.renderer.tileentity.ItemStackTileEntityRenderer;
+import net.minecraft.client.render.entity.model.BipedEntityModel;
+import net.minecraft.client.render.item.BuiltinModelItemRenderer;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.MobEntity;
+import net.minecraft.entity.EquipmentSlot;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.ai.attributes.AttributeModifier;
-import net.minecraft.entity.item.ItemEntity;
+import net.minecraft.entity.attribute.EntityAttributeModifier;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
-import net.minecraft.inventory.EquipmentSlotType;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.item.Item;
 import net.minecraft.item.AxeItem;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUseContext;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.item.ItemUsageContext;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
@@ -68,9 +69,9 @@ public interface IForgeItem
      * ItemStack sensitive version of getItemAttributeModifiers
      */
     @SuppressWarnings("deprecation")
-    default Multimap<String, AttributeModifier> getAttributeModifiers(EquipmentSlotType slot, ItemStack stack)
+    default Multimap<String, EntityAttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack)
     {
-        return getItem().getAttributeModifiers(slot);
+        return getItem().getModifiers(slot);
     }
 
     /**
@@ -105,9 +106,9 @@ public interface IForgeItem
      *
      * @return Return PASS to allow vanilla handling, any other to skip normal code.
      */
-    default ActionResultType onItemUseFirst(ItemStack stack, ItemUseContext context)
+    default ActionResult onItemUseFirst(ItemStack stack, ItemUsageContext context)
     {
-        return ActionResultType.PASS;
+        return ActionResult.PASS;
     }
 
     /**
@@ -143,7 +144,7 @@ public interface IForgeItem
      * @return The NBT tag
      */
     @Nullable
-    default CompoundNBT getShareTag(ItemStack stack)
+    default CompoundTag getShareTag(ItemStack stack)
     {
         return stack.getTag();
     }
@@ -155,7 +156,7 @@ public interface IForgeItem
      * @param stack The stack that received NBT
      * @param nbt   Received NBT, can be null
      */
-    default void readShareTag(ItemStack stack, @Nullable CompoundNBT nbt)
+    default void readShareTag(ItemStack stack, @Nullable CompoundTag nbt)
     {
         stack.setTag(nbt);
     }
@@ -216,7 +217,7 @@ public interface IForgeItem
         {
             return ItemStack.EMPTY;
         }
-        return new ItemStack(getItem().getContainerItem());
+        return new ItemStack(getItem().getRecipeRemainder());
     }
 
     /**
@@ -228,7 +229,7 @@ public interface IForgeItem
     @SuppressWarnings("deprecation")
     default boolean hasContainerItem(ItemStack stack)
     {
-        return getItem().hasContainerItem();
+        return getItem().hasRecipeRemainder();
     }
 
     /**
@@ -324,7 +325,7 @@ public interface IForgeItem
      * @param player The Player that is wielding the item
      * @return
      */
-    default boolean doesSneakBypassUse(ItemStack stack, net.minecraft.world.IWorldReader world, BlockPos pos, PlayerEntity player)
+    default boolean doesSneakBypassUse(ItemStack stack, net.minecraft.world.WorldView world, BlockPos pos, PlayerEntity player)
     {
         return false;
     }
@@ -345,9 +346,9 @@ public interface IForgeItem
      * @param entity    The entity trying to equip the armor
      * @return True if the given ItemStack can be inserted in the slot
      */
-    default boolean canEquip(ItemStack stack, EquipmentSlotType armorType, Entity entity)
+    default boolean canEquip(ItemStack stack, EquipmentSlot armorType, Entity entity)
     {
-        return MobEntity.getSlotForItemStack(stack) == armorType;
+        return MobEntity.getPreferredEquipmentSlot(stack) == armorType;
     }
 
     /**
@@ -361,7 +362,7 @@ public interface IForgeItem
      *         decide
      */
     @Nullable
-    default EquipmentSlotType getEquipmentSlot(ItemStack stack)
+    default EquipmentSlot getEquipmentSlot(ItemStack stack)
     {
         return null;
     }
@@ -392,7 +393,7 @@ public interface IForgeItem
      * @return Path of texture to bind, or null to use default
      */
     @Nullable
-    default String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlotType slot, String type)
+    default String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlot slot, String type)
     {
         return null;
     }
@@ -404,9 +405,9 @@ public interface IForgeItem
      * @param stack The current item stack
      * @return A instance of FontRenderer or null to use default
      */
-    @OnlyIn(Dist.CLIENT)
+    @Environment(EnvType.CLIENT)
     @Nullable
-    default net.minecraft.client.gui.FontRenderer getFontRenderer(ItemStack stack)
+    default net.minecraft.client.font.TextRenderer getFontRenderer(ItemStack stack)
     {
         return null;
     }
@@ -420,9 +421,9 @@ public interface IForgeItem
      * @param _default     Original armor model. Will have attributes set.
      * @return A ModelBiped to render instead of the default
      */
-    @OnlyIn(Dist.CLIENT)
+    @Environment(EnvType.CLIENT)
     @Nullable
-    default <A extends BipedModel<?>> A getArmorModel(LivingEntity entityLiving, ItemStack itemStack, EquipmentSlotType armorSlot, A _default)
+    default <A extends BipedEntityModel<?>> A getArmorModel(LivingEntity entityLiving, ItemStack itemStack, EquipmentSlot armorSlot, A _default)
     {
         return null;
     }
@@ -448,7 +449,7 @@ public interface IForgeItem
      *                     configured GUI Scale
      * @param partialTicks Partial ticks for the renderer, useful for interpolation
      */
-    @OnlyIn(Dist.CLIENT)
+    @Environment(EnvType.CLIENT)
     default void renderHelmetOverlay(ItemStack stack, PlayerEntity player, int width, int height, float partialTicks)
     {
     }
@@ -500,7 +501,7 @@ public interface IForgeItem
      */
     default int getRGBDurabilityForDisplay(ItemStack stack)
     {
-        return MathHelper.hsvToRGB(Math.max(0.0F, (float) (1.0F - getDurabilityForDisplay(stack))) / 3.0F, 1.0F, 1.0F);
+        return MathHelper.hsvToRgb(Math.max(0.0F, (float) (1.0F - getDurabilityForDisplay(stack))) / 3.0F, 1.0F, 1.0F);
     }
 
     /**
@@ -549,7 +550,7 @@ public interface IForgeItem
      */
     default boolean canHarvestBlock(ItemStack stack, BlockState state)
     {
-        return getItem().canHarvestBlock(state);
+        return getItem().isEffectiveOn(state);
     }
 
     /**
@@ -562,7 +563,7 @@ public interface IForgeItem
     @SuppressWarnings("deprecation")
     default int getItemStackLimit(ItemStack stack)
     {
-        return getItem().getMaxStackSize();
+        return getItem().getMaxCount();
     }
 
     Set<ToolType> getToolTypes(ItemStack stack);
@@ -587,7 +588,7 @@ public interface IForgeItem
      */
     default int getItemEnchantability(ItemStack stack)
     {
-        return getItem().getItemEnchantability();
+        return getItem().getEnchantability();
     }
 
     /**
@@ -605,7 +606,7 @@ public interface IForgeItem
      */
     default boolean canApplyAtEnchantingTable(ItemStack stack, net.minecraft.enchantment.Enchantment enchantment)
     {
-        return enchantment.type.canEnchantItem(stack.getItem());
+        return enchantment.type.isAcceptableItem(stack.getItem());
     }
 
     /**
@@ -645,7 +646,7 @@ public interface IForgeItem
      */
     default boolean shouldCauseBlockBreakReset(ItemStack oldStack, ItemStack newStack)
     {
-        return !(newStack.getItem() == oldStack.getItem() && ItemStack.areItemStackTagsEqual(newStack, oldStack)
+        return !(newStack.getItem() == oldStack.getItem() && ItemStack.areTagsEqual(newStack, oldStack)
                 && (newStack.isDamageable() || newStack.getDamage() == oldStack.getDamage()));
     }
 
@@ -660,7 +661,7 @@ public interface IForgeItem
      */
     default boolean canContinueUsing(ItemStack oldStack, ItemStack newStack)
     {
-        return ItemStack.areItemsEqualIgnoreDurability(oldStack, newStack);
+        return ItemStack.areItemsEqual(oldStack, newStack);
     }
 
     /**
@@ -698,7 +699,7 @@ public interface IForgeItem
      *         capabilities for the life of this item.
      */
     @Nullable
-    default net.minecraftforge.common.capabilities.ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundNBT nbt)
+    default net.minecraftforge.common.capabilities.ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundTag nbt)
     {
         return null;
     }
@@ -706,7 +707,7 @@ public interface IForgeItem
     default ImmutableMap<String, ITimeValue> getAnimationParameters(final ItemStack stack, final World world, final LivingEntity entity)
     {
         com.google.common.collect.ImmutableMap.Builder<String, ITimeValue> builder = ImmutableMap.builder();
-        getItem().properties.forEach((k,v) -> builder.put(k.toString(), input -> v.call(stack, world, entity)));
+        getItem().propertyGetters.forEach((k,v) -> builder.put(k.toString(), input -> v.call(stack, world, entity)));
         return builder.build();
     }
 
@@ -762,14 +763,14 @@ public interface IForgeItem
      * @return This Item's renderer, or the default instance if it does not have
      *         one.
      */
-    @OnlyIn(Dist.CLIENT)
-    ItemStackTileEntityRenderer getItemStackTileEntityRenderer();
+    @Environment(EnvType.CLIENT)
+    BuiltinModelItemRenderer getItemStackTileEntityRenderer();
 
     /**
      * Retrieves a list of tags names this is known to be associated with.
      * This should be used in favor of TagCollection.getOwningTags, as this caches the result and automatically updates when the TagCollection changes.
      */
-    Set<ResourceLocation> getTags();
+    Set<Identifier> getTags();
 
     /**
      * Reduce the durability of this item by the amount given.

@@ -1,0 +1,14 @@
+--- a/net/minecraft/entity/passive/AbstractTraderEntity.java
++++ b/net/minecraft/entity/passive/AbstractTraderEntity.java
+@@ -180,9 +180,9 @@
+    }
+ 
+    @Nullable
+-   public Entity changeDimension(DimensionType destination) {
++   public Entity changeDimension(DimensionType destination, net.minecraftforge.common.util.ITeleporter teleporter) {
+       this.resetCustomer();
+-      return super.changeDimension(destination);
++      return super.changeDimension(destination, teleporter);
+    }
+ 
+    protected void resetCustomer() {

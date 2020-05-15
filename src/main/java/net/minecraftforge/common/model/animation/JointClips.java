@@ -19,7 +19,7 @@
 
 package net.minecraftforge.common.model.animation;
 
-import net.minecraft.client.renderer.TransformationMatrix;
+import net.minecraft.client.util.math.Rotation3;
 
 /**
  * Various implementations of IJointClip.
@@ -31,9 +31,9 @@ public final class JointClips
         INSTANCE;
 
         @Override
-        public TransformationMatrix apply(float time)
+        public Rotation3 apply(float time)
         {
-            return TransformationMatrix.identity();
+            return Rotation3.identity();
         }
     }
 
@@ -49,7 +49,7 @@ public final class JointClips
         }
 
         @Override
-        public TransformationMatrix apply(float time)
+        public Rotation3 apply(float time)
         {
             return clip.apply(child).apply(time);
         }

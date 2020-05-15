@@ -26,21 +26,27 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.matrix.MatrixStack;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.Matrix4f;
-import net.minecraft.client.renderer.Quaternion;
-import net.minecraft.client.renderer.TransformationMatrix;
-import net.minecraft.client.renderer.Vector3f;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.model.BakedModel;
+import net.minecraft.client.render.model.BakedQuad;
+import net.minecraft.client.render.model.ModelBakeSettings;
+import net.minecraft.client.render.model.ModelLoader;
+import net.minecraft.client.render.model.UnbakedModel;
+import net.minecraft.client.render.model.json.ModelItemPropertyOverrideList;
+import net.minecraft.client.render.model.json.ModelTransformation;
 import net.minecraft.client.renderer.model.*;
-import net.minecraft.client.renderer.texture.AtlasTexture;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.client.renderer.vertex.VertexFormat;
-import net.minecraft.util.Direction;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.texture.Sprite;
+import net.minecraft.client.texture.SpriteAtlasTexture;
+import net.minecraft.client.util.SpriteIdentifier;
+import net.minecraft.client.util.math.Matrix4f;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Rotation3;
+import net.minecraft.client.util.math.Vector3f;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Quaternion;
 import net.minecraftforge.common.ForgeConfig;
 import net.minecraftforge.common.model.TransformationHelper;
 
@@ -51,11 +57,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-final class FancyMissingModel implements IUnbakedModel
+final class FancyMissingModel implements UnbakedModel
 {
-    private static final ResourceLocation font = new ResourceLocation("minecraft", "textures/font/ascii.png");
-    private static final Material font2 = new Material(AtlasTexture.LOCATION_BLOCKS_TEXTURE, new ResourceLocation("minecraft", "font/ascii"));
-    private static final TransformationMatrix smallTransformation = new TransformationMatrix(null, null, new Vector3f(.25f, .25f, .25f), null)
+    private static final Identifier font = new Identifier("minecraft", "textures/font/ascii.png");
+    private static final SpriteIdentifier font2 = new SpriteIdentifier(SpriteAtlasTexture.BLOCK_ATLAS_TEX, new Identifier("minecraft", "font/ascii"));
+    private static final Rotation3 smallTransformation = new Rotation3(null, null, new Vector3f(.25f, .25f, .25f), null)
             .blockCenterToCorner();
     private static final SimpleModelFontRenderer fontRenderer = Util.make(() -> {
         float [] mv = new float[16];
@@ -67,9 +73,9 @@ final class FancyMissingModel implements IUnbakedModel
         mv[0*4+3] = 0;
         Matrix4f m = new Matrix4f(mv);
         return new SimpleModelFontRenderer(
-            Minecraft.getInstance().gameSettings,
+            MinecraftClient.getInstance().options,
             font,
-            Minecraft.getInstance().getTextureManager(),
+            MinecraftClient.getInstance().getTextureManager(),
             false,
             m
         ) {/* TODO Implement once SimpleModelFontRenderer is fixed
@@ -81,58 +87,58 @@ final class FancyMissingModel implements IUnbakedModel
       */};
     });
 
-    private final IUnbakedModel missingModel;
+    private final UnbakedModel missingModel;
     private final String message;
 
-    public FancyMissingModel(IUnbakedModel missingModel, String message)
+    public FancyMissingModel(UnbakedModel missingModel, String message)
     {
         this.missingModel = missingModel;
         this.message = message;
     }
 
     @Override
-    public Collection<Material> getTextures(Function<ResourceLocation, IUnbakedModel> p_225614_1_, Set<com.mojang.datafixers.util.Pair<String, String>> p_225614_2_)
+    public Collection<SpriteIdentifier> getTextureDependencies(Function<Identifier, UnbakedModel> modelGetter, Set<com.mojang.datafixers.util.Pair<String, String>> missingTextureErrors)
     {
         return ImmutableList.of(font2);
     }
 
     @Override
-    public Collection<ResourceLocation> getDependencies()
+    public Collection<Identifier> getModelDependencies()
     {
         return Collections.emptyList();
     }
 
     @Nullable
     @Override
-    public IBakedModel bakeModel(ModelBakery bakery, Function<Material, TextureAtlasSprite> spriteGetter, IModelTransform modelTransform, ResourceLocation modelLocation)
+    public BakedModel bake(ModelLoader bakery, Function<SpriteIdentifier, Sprite> spriteGetter, ModelBakeSettings modelTransform, Identifier modelLocation)
     {
-        IBakedModel bigMissing = missingModel.bakeModel(bakery, spriteGetter, modelTransform, modelLocation);
+        BakedModel bigMissing = missingModel.bake(bakery, spriteGetter, modelTransform, modelLocation);
         ModelTransformComposition smallState = new ModelTransformComposition(modelTransform, new SimpleModelTransform(smallTransformation));
-        IBakedModel smallMissing = missingModel.bakeModel(bakery, spriteGetter, smallState, modelLocation);
-        return new BakedModel(bigMissing, smallMissing, fontRenderer, message, spriteGetter.apply(font2));
+        BakedModel smallMissing = missingModel.bake(bakery, spriteGetter, smallState, modelLocation);
+        return new net.minecraftforge.client.model.FancyMissingModel.BakedModel(bigMissing, smallMissing, fontRenderer, message, spriteGetter.apply(font2));
     }
 
-    static final class BakedModel implements IBakedModel
+    static final class BakedModel implements BakedModel
     {
         private final SimpleModelFontRenderer fontRenderer;
         private final String message;
-        private final TextureAtlasSprite fontTexture;
-        private final IBakedModel missingModel;
-        private final IBakedModel otherModel;
+        private final Sprite fontTexture;
+        private final BakedModel missingModel;
+        private final BakedModel otherModel;
         private final boolean big;
         private ImmutableList<BakedQuad> quads;
 
-        public BakedModel(IBakedModel bigMissing, IBakedModel smallMissing, SimpleModelFontRenderer fontRenderer, String message, TextureAtlasSprite fontTexture)
+        public BakedModel(BakedModel bigMissing, BakedModel smallMissing, SimpleModelFontRenderer fontRenderer, String message, Sprite fontTexture)
         {
             this.missingModel = bigMissing;
-            otherModel = new BakedModel(smallMissing, fontRenderer, message, fontTexture, this);
+            otherModel = new net.minecraftforge.client.model.FancyMissingModel.BakedModel(smallMissing, fontRenderer, message, fontTexture, this);
             this.big = true;
             this.fontRenderer = fontRenderer;
             this.message = message;
             this.fontTexture = fontTexture;
         }
 
-        public BakedModel(IBakedModel smallMissing, SimpleModelFontRenderer fontRenderer, String message, TextureAtlasSprite fontTexture, BakedModel big)
+        public BakedModel(BakedModel smallMissing, SimpleModelFontRenderer fontRenderer, String message, Sprite fontTexture, net.minecraftforge.client.model.FancyMissingModel.BakedModel big)
         {
             this.missingModel = smallMissing;
             otherModel = big;
@@ -155,11 +161,11 @@ final class FancyMissingModel implements IUnbakedModel
                     List<String> splitLines = Lists.newArrayList();
                     for (int y = 0; y < lines.length; y++)
                     {
-                        splitLines.addAll(fontRenderer.listFormattedStringToWidth(lines[y], 0x80));
+                        splitLines.addAll(fontRenderer.wrapStringToWidthAsList(lines[y], 0x80));
                     }
                     for (int y = 0; y < splitLines.size(); y++)
                     {
-                        fontRenderer.drawString(splitLines.get(y), 0, ((y - splitLines.size() / 2f) * fontRenderer.FONT_HEIGHT) + 0x40, 0xFF00FFFF);
+                        fontRenderer.draw(splitLines.get(y), 0, ((y - splitLines.size() / 2f) * fontRenderer.fontHeight) + 0x40, 0xFF00FFFF);
                     }
                     ImmutableList.Builder<BakedQuad> builder = ImmutableList.builder();
                     builder.addAll(missingModel.getQuads (state, side, rand));
@@ -172,22 +178,22 @@ final class FancyMissingModel implements IUnbakedModel
         }
 
         @Override
-        public boolean isAmbientOcclusion() { return true; }
+        public boolean useAmbientOcclusion() { return true; }
 
         @Override
-        public boolean isGui3d() { return false; }
+        public boolean hasDepth() { return false; }
 
         @Override
-        public boolean func_230044_c_() { return false; }
+        public boolean isSideLit() { return false; }
 
         @Override
-        public boolean isBuiltInRenderer() { return false; }
+        public boolean isBuiltin() { return false; }
 
         @Override
-        public TextureAtlasSprite getParticleTexture() { return fontTexture; }
+        public Sprite getSprite() { return fontTexture; }
 
         @Override
-        public ItemOverrideList getOverrides() { return ItemOverrideList.EMPTY; }
+        public ModelItemPropertyOverrideList getItemPropertyOverrides() { return ModelItemPropertyOverrideList.EMPTY; }
 
         @Override
         public boolean doesHandlePerspectives()
@@ -196,9 +202,9 @@ final class FancyMissingModel implements IUnbakedModel
         }
 
         @Override
-        public IBakedModel handlePerspective(ItemCameraTransforms.TransformType cameraTransformType, MatrixStack mat)
+        public BakedModel handlePerspective(ModelTransformation.Mode cameraTransformType, MatrixStack mat)
         {
-            TransformationMatrix transform = TransformationMatrix.identity();
+            Rotation3 transform = Rotation3.identity();
             boolean big = true;
             switch (cameraTransformType)
             {
@@ -208,11 +214,11 @@ final class FancyMissingModel implements IUnbakedModel
                 case THIRD_PERSON_RIGHT_HAND:
                     break;
                 case FIRST_PERSON_LEFT_HAND:
-                    transform = new TransformationMatrix(new Vector3f(-0.62f, 0.5f, -.5f), new Quaternion(1, -1, -1, 1), null, null);
+                    transform = new Rotation3(new Vector3f(-0.62f, 0.5f, -.5f), new Quaternion(1, -1, -1, 1), null, null);
                     big = false;
                     break;
                 case FIRST_PERSON_RIGHT_HAND:
-                    transform = new TransformationMatrix(new Vector3f(-0.5f, 0.5f, -.5f), new Quaternion(1, 1, 1, 1), null, null);
+                    transform = new Rotation3(new Vector3f(-0.5f, 0.5f, -.5f), new Quaternion(1, 1, 1, 1), null, null);
                     big = false;
                     break;
                 case HEAD:
@@ -220,22 +226,22 @@ final class FancyMissingModel implements IUnbakedModel
                 case GUI:
                     if (ForgeConfig.CLIENT.zoomInMissingModelTextInGui.get())
                     {
-                        transform = new TransformationMatrix(null, new Quaternion(1, 1, 1, 1), new Vector3f(4, 4, 4), null);
+                        transform = new Rotation3(null, new Quaternion(1, 1, 1, 1), new Vector3f(4, 4, 4), null);
                         big = false;
                     }
                     else
                     {
-                        transform = new TransformationMatrix(null, new Quaternion(1, 1, 1, 1), null, null);
+                        transform = new Rotation3(null, new Quaternion(1, 1, 1, 1), null, null);
                         big = true;
                     }
                     break;
                 case FIXED:
-                    transform = new TransformationMatrix(null, new Quaternion(-1, -1, 1, 1), null, null);
+                    transform = new Rotation3(null, new Quaternion(-1, -1, 1, 1), null, null);
                     break;
                 default:
                     break;
             }
-            mat.getLast().getMatrix().mul(transform.getMatrix());
+            mat.peek().getModel().multiply(transform.getMatrix());
             if (big != this.big)
             {
                 return otherModel;

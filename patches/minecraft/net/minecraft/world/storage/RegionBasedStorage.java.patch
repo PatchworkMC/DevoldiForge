@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/storage/RegionBasedStorage.java
++++ b/net/minecraft/world/storage/RegionBasedStorage.java
+@@ -33,7 +33,7 @@
+          }
+ 
+          File file1 = new File(this.directory, "r." + pos.getRegionX() + "." + pos.getRegionZ() + ".mca");
+-         RegionFile regionfile1 = new RegionFile(file1, this.directory);
++         RegionFile regionfile1 = new RegionFile(file1, this.directory).extractLargeChunks(pos);
+          this.cachedRegionFiles.putAndMoveToFirst(i, regionfile1);
+          return regionfile1;
+       }

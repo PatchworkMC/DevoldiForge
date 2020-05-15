@@ -1,0 +1,32 @@
+--- a/net/minecraft/client/render/model/BakedQuadFactory.java
++++ b/net/minecraft/client/render/model/BakedQuadFactory.java
+@@ -41,14 +41,16 @@
+       blockfaceuv.uvs[2] = MathHelper.lerp(f, blockfaceuv.uvs[2], f1);
+       blockfaceuv.uvs[1] = MathHelper.lerp(f, blockfaceuv.uvs[1], f2);
+       blockfaceuv.uvs[3] = MathHelper.lerp(f, blockfaceuv.uvs[3], f2);
+-      int[] aint = this.packVertexData(blockfaceuv, sprite, facing, this.getPositionMatrix(posFrom, posTo), transformIn.getRotation(), partRotation, shade);
++      // FORGE: Apply diffuse lighting at render-time instead of baking it in
++      int[] aint = this.packVertexData(blockfaceuv, sprite, facing, this.getPositionMatrix(posFrom, posTo), transformIn.getRotation(), partRotation, false);
+       Direction direction = decodeDirection(aint);
+       System.arraycopy(afloat, 0, blockfaceuv.uvs, 0, afloat.length);
+       if (partRotation == null) {
+          this.encodeDirection(aint, direction);
+       }
+ 
+-      return new BakedQuad(aint, face.tintIndex, direction, sprite);
++      net.minecraftforge.client.ForgeHooksClient.fillNormal(aint, direction);
++      return new BakedQuad(aint, face.tintIndex, direction, sprite, shade);
+    }
+ 
+    public static ModelElementTexture uvLock(ModelElementTexture blockFaceUVIn, Direction facing, Rotation3 modelRotationIn, Identifier modelLocationIn) {
+@@ -155,8 +157,8 @@
+       faceData[i + 1] = Float.floatToRawIntBits(positionIn.getY());
+       faceData[i + 2] = Float.floatToRawIntBits(positionIn.getZ());
+       faceData[i + 3] = shadeColor;
+-      faceData[i + 4] = Float.floatToRawIntBits(sprite.getFrameU((double)faceUV.getU(storeIndex)));
+-      faceData[i + 4 + 1] = Float.floatToRawIntBits(sprite.getFrameV((double)faceUV.getV(storeIndex)));
++      faceData[i + 4] = Float.floatToRawIntBits(sprite.getFrameU((double)faceUV.getU(storeIndex)  * .999 + faceUV.getU((storeIndex + 2) % 4) * .001));
++      faceData[i + 4 + 1] = Float.floatToRawIntBits(sprite.getFrameV((double)faceUV.getV(storeIndex) * .999 + faceUV.getV((storeIndex + 2) % 4) * .001));
+    }
+ 
+    private void rotateVertex(Vector3f vec, @Nullable ModelRotation partRotation) {

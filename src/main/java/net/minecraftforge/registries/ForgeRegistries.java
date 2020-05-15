@@ -19,35 +19,35 @@
 
 package net.minecraftforge.registries;
 
+import net.minecraft.Bootstrap;
 import net.minecraft.block.Block;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.container.ContainerType;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ai.brain.memory.MemoryModuleType;
-import net.minecraft.entity.ai.brain.schedule.Activity;
-import net.minecraft.entity.ai.brain.schedule.Schedule;
+import net.minecraft.entity.ai.brain.Activity;
+import net.minecraft.entity.ai.brain.MemoryModuleType;
+import net.minecraft.entity.ai.brain.Schedule;
 import net.minecraft.entity.ai.brain.sensor.SensorType;
-import net.minecraft.entity.item.PaintingType;
-import net.minecraft.entity.merchant.villager.VillagerProfession;
+import net.minecraft.entity.decoration.painting.PaintingMotive;
+import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.fluid.Fluid;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.util.registry.Bootstrap;
-import net.minecraft.village.PointOfInterestType;
 import net.minecraft.item.Item;
-import net.minecraft.item.crafting.IRecipeSerializer;
-import net.minecraft.particles.ParticleType;
-import net.minecraft.potion.Effect;
+import net.minecraft.particle.ParticleType;
 import net.minecraft.potion.Potion;
-import net.minecraft.stats.StatType;
-import net.minecraft.tileentity.TileEntityType;
-import net.minecraft.util.SoundEvent;
+import net.minecraft.recipe.RecipeSerializer;
+import net.minecraft.sound.SoundEvent;
+import net.minecraft.stat.StatType;
+import net.minecraft.village.VillagerProfession;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.provider.BiomeProviderType;
+import net.minecraft.world.biome.source.BiomeSourceType;
 import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.gen.ChunkGeneratorType;
-import net.minecraft.world.gen.carver.WorldCarver;
+import net.minecraft.world.gen.carver.Carver;
+import net.minecraft.world.gen.chunk.ChunkGeneratorType;
+import net.minecraft.world.gen.decorator.Decorator;
 import net.minecraft.world.gen.feature.Feature;
-import net.minecraft.world.gen.placement.Placement;
-import net.minecraft.world.gen.surfacebuilders.SurfaceBuilder;
+import net.minecraft.world.gen.surfacebuilder.SurfaceBuilder;
+import net.minecraft.world.poi.PointOfInterestType;
 import net.minecraftforge.common.ModDimension;
 import net.minecraftforge.common.loot.GlobalLootModifierSerializer;
 import net.minecraftforge.fml.common.registry.GameRegistry;
@@ -65,17 +65,17 @@ public class ForgeRegistries
     public static final IForgeRegistry<Block> BLOCKS = RegistryManager.ACTIVE.getRegistry(Block.class);
     public static final IForgeRegistry<Fluid> FLUIDS = RegistryManager.ACTIVE.getRegistry(Fluid.class);
     public static final IForgeRegistry<Item> ITEMS = RegistryManager.ACTIVE.getRegistry(Item.class);
-    public static final IForgeRegistry<Effect> POTIONS = RegistryManager.ACTIVE.getRegistry(Effect.class);
+    public static final IForgeRegistry<StatusEffect> POTIONS = RegistryManager.ACTIVE.getRegistry(StatusEffect.class);
     public static final IForgeRegistry<Biome> BIOMES = RegistryManager.ACTIVE.getRegistry(Biome.class);
     public static final IForgeRegistry<SoundEvent> SOUND_EVENTS = RegistryManager.ACTIVE.getRegistry(SoundEvent.class);
     public static final IForgeRegistry<Potion> POTION_TYPES = RegistryManager.ACTIVE.getRegistry(Potion.class);
     public static final IForgeRegistry<Enchantment> ENCHANTMENTS = RegistryManager.ACTIVE.getRegistry(Enchantment.class);
     public static final IForgeRegistry<EntityType<?>> ENTITIES = RegistryManager.ACTIVE.getRegistry(EntityType.class);
-    public static final IForgeRegistry<TileEntityType<?>> TILE_ENTITIES = RegistryManager.ACTIVE.getRegistry(TileEntityType.class);
+    public static final IForgeRegistry<BlockEntityType<?>> TILE_ENTITIES = RegistryManager.ACTIVE.getRegistry(BlockEntityType.class);
     public static final IForgeRegistry<ParticleType<?>> PARTICLE_TYPES = RegistryManager.ACTIVE.getRegistry(ParticleType.class);
     public static final IForgeRegistry<ContainerType<?>> CONTAINERS = RegistryManager.ACTIVE.getRegistry(ContainerType.class);
-    public static final IForgeRegistry<PaintingType> PAINTING_TYPES = RegistryManager.ACTIVE.getRegistry(PaintingType.class);
-    public static final IForgeRegistry<IRecipeSerializer<?>> RECIPE_SERIALIZERS = RegistryManager.ACTIVE.getRegistry(IRecipeSerializer.class);
+    public static final IForgeRegistry<PaintingMotive> PAINTING_TYPES = RegistryManager.ACTIVE.getRegistry(PaintingMotive.class);
+    public static final IForgeRegistry<RecipeSerializer<?>> RECIPE_SERIALIZERS = RegistryManager.ACTIVE.getRegistry(RecipeSerializer.class);
     public static final IForgeRegistry<StatType<?>> STAT_TYPES = RegistryManager.ACTIVE.getRegistry(StatType.class);
     
     // Villages
@@ -87,11 +87,11 @@ public class ForgeRegistries
     public static final IForgeRegistry<Activity> ACTIVITIES = RegistryManager.ACTIVE.getRegistry(Activity.class);
 
     // Worldgen
-    public static final IForgeRegistry<WorldCarver<?>> WORLD_CARVERS = RegistryManager.ACTIVE.getRegistry(WorldCarver.class);
+    public static final IForgeRegistry<Carver<?>> WORLD_CARVERS = RegistryManager.ACTIVE.getRegistry(Carver.class);
     public static final IForgeRegistry<SurfaceBuilder<?>> SURFACE_BUILDERS = RegistryManager.ACTIVE.getRegistry(SurfaceBuilder.class);
     public static final IForgeRegistry<Feature<?>> FEATURES = RegistryManager.ACTIVE.getRegistry(Feature.class);
-    public static final IForgeRegistry<Placement<?>> DECORATORS = RegistryManager.ACTIVE.getRegistry(Placement.class);
-    public static final IForgeRegistry<BiomeProviderType<?, ?>> BIOME_PROVIDER_TYPES = RegistryManager.ACTIVE.getRegistry(BiomeProviderType.class);
+    public static final IForgeRegistry<Decorator<?>> DECORATORS = RegistryManager.ACTIVE.getRegistry(Decorator.class);
+    public static final IForgeRegistry<BiomeSourceType<?, ?>> BIOME_PROVIDER_TYPES = RegistryManager.ACTIVE.getRegistry(BiomeSourceType.class);
     public static final IForgeRegistry<ChunkGeneratorType<?, ?>> CHUNK_GENERATOR_TYPES = RegistryManager.ACTIVE.getRegistry(ChunkGeneratorType.class);
     public static final IForgeRegistry<ChunkStatus> CHUNK_STATUS = RegistryManager.ACTIVE.getRegistry(ChunkStatus.class);
     
@@ -106,6 +106,6 @@ public class ForgeRegistries
     private static void init()
     {
         GameData.init();
-        Bootstrap.register();
+        Bootstrap.initialize();
     }
 }

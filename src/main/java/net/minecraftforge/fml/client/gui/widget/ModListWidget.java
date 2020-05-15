@@ -19,30 +19,30 @@
 
 package net.minecraftforge.fml.client.gui.widget;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.AbstractGui;
-import net.minecraft.client.gui.widget.list.ExtendedList;
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.client.gui.screen.ModListScreen;
 import net.minecraftforge.versions.forge.ForgeVersion;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
+import net.minecraft.util.Identifier;
 import net.minecraftforge.fml.MavenVersionStringHelper;
 import net.minecraftforge.fml.VersionChecker;
 import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
-public class ModListWidget extends ExtendedList<ModListWidget.ModEntry>
+public class ModListWidget extends AlwaysSelectedEntryListWidget<ModListWidget.ModEntry>
 {
-    private static String stripControlCodes(String value) { return net.minecraft.util.StringUtils.stripControlCodes(value); }
-    private static final ResourceLocation VERSION_CHECK_ICONS = new ResourceLocation(ForgeVersion.MOD_ID, "textures/gui/version_check_icons.png");
+    private static String stripControlCodes(String value) { return net.minecraft.util.ChatUtil.stripTextFormat(value); }
+    private static final Identifier VERSION_CHECK_ICONS = new Identifier(ForgeVersion.MOD_ID, "textures/gui/version_check_icons.png");
     private final int listWidth;
 
     private ModListScreen parent;
 
     public ModListWidget(ModListScreen parent, int listWidth, int top, int bottom)
     {
-        super(parent.getMinecraftInstance(), listWidth, parent.height, top, bottom, parent.getFontRenderer().FONT_HEIGHT * 2 + 8);
+        super(parent.getMinecraftInstance(), listWidth, parent.height, top, bottom, parent.getFontRenderer().fontHeight * 2 + 8);
         this.parent = parent;
         this.listWidth = listWidth;
         this.refreshList();
@@ -71,7 +71,7 @@ public class ModListWidget extends ExtendedList<ModListWidget.ModEntry>
         this.parent.renderBackground();
     }
 
-    public class ModEntry extends ExtendedList.AbstractListEntry<ModEntry> {
+    public class ModEntry extends AlwaysSelectedEntryListWidget.Entry<ModEntry> {
         private final ModInfo modInfo;
         private final ModListScreen parent;
 
@@ -86,16 +86,16 @@ public class ModListWidget extends ExtendedList<ModListWidget.ModEntry>
             String name = stripControlCodes(modInfo.getDisplayName());
             String version = stripControlCodes(MavenVersionStringHelper.artifactVersionToString(modInfo.getVersion()));
             VersionChecker.CheckResult vercheck = VersionChecker.getResult(modInfo);
-            FontRenderer font = this.parent.getFontRenderer();
-            font.drawString(font.trimStringToWidth(name, listWidth),left + 3, top + 2, 0xFFFFFF);
-            font.drawString(font.trimStringToWidth(version, listWidth), left + 3 , top + 2 + font.FONT_HEIGHT, 0xCCCCCC);
+            TextRenderer font = this.parent.getFontRenderer();
+            font.draw(font.trimToWidth(name, listWidth),left + 3, top + 2, 0xFFFFFF);
+            font.draw(font.trimToWidth(version, listWidth), left + 3 , top + 2 + font.fontHeight, 0xCCCCCC);
             if (vercheck.status.shouldDraw())
             {
                 //TODO: Consider adding more icons for visualization
-                Minecraft.getInstance().getTextureManager().bindTexture(VERSION_CHECK_ICONS);
+                MinecraftClient.getInstance().getTextureManager().bindTexture(VERSION_CHECK_ICONS);
                 RenderSystem.color4f(1, 1, 1, 1);
                 RenderSystem.pushMatrix();
-                AbstractGui.blit(getLeft() + width - 12, top + entryHeight / 4, vercheck.status.getSheetOffset() * 8, (vercheck.status.isAnimated() && ((System.currentTimeMillis() / 800 & 1)) == 1) ? 8 : 0, 8, 8, 64, 16);
+                DrawableHelper.blit(getLeft() + width - 12, top + entryHeight / 4, vercheck.status.getSheetOffset() * 8, (vercheck.status.isAnimated() && ((System.currentTimeMillis() / 800 & 1)) == 1) ? 8 : 0, 8, 8, 64, 16);
                 RenderSystem.popMatrix();
             }
         }

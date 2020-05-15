@@ -1,0 +1,21 @@
+--- a/net/minecraft/container/GrindstoneContainer.java
++++ b/net/minecraft/container/GrindstoneContainer.java
+@@ -140,12 +140,13 @@
+             }
+ 
+             Item item = itemstack.getItem();
+-            int k = item.getMaxDamage() - itemstack.getDamage();
+-            int l = item.getMaxDamage() - itemstack1.getDamage();
+-            int i1 = k + l + item.getMaxDamage() * 5 / 100;
+-            i = Math.max(item.getMaxDamage() - i1, 0);
++            int k = itemstack.getMaxDamage() - itemstack.getDamage();
++            int l = itemstack.getMaxDamage() - itemstack1.getDamage();
++            int i1 = k + l + itemstack.getMaxDamage() * 5 / 100;
++            i = Math.max(itemstack.getMaxDamage() - i1, 0);
+             itemstack2 = this.transferEnchantments(itemstack, itemstack1);
+-            if (!itemstack2.isDamageable()) {
++            if (!itemstack2.isRepairable()) i = itemstack.getDamage();
++            if (!itemstack2.isDamageable() || !itemstack2.isRepairable()) {
+                if (!ItemStack.areEqualIgnoreDamage(itemstack, itemstack1)) {
+                   this.resultInventory.setInvStack(0, ItemStack.EMPTY);
+                   this.sendContentUpdates();

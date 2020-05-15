@@ -1,0 +1,11 @@
+--- a/net/minecraft/container/CraftingContainer.java
++++ b/net/minecraft/container/CraftingContainer.java
+@@ -33,4 +33,8 @@
+ 
+    @Environment(EnvType.CLIENT)
+    public abstract int getCraftingSlotCount();
++
++   public java.util.List<net.minecraft.client.recipe.book.RecipeBookGroup> getRecipeBookCategories() {
++      return net.minecraft.client.recipe.book.ClientRecipeBook.getGroupsForContainer(this);
++   }
+ }

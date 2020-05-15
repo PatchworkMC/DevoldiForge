@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/gen/feature/MegaJungleTreeFeature.java
++++ b/net/minecraft/world/gen/feature/MegaJungleTreeFeature.java
+@@ -16,7 +16,7 @@
+ 
+    public boolean generate(ModifiableTestableWorld generationReader, Random rand, BlockPos positionIn, Set<BlockPos> p_225557_4_, Set<BlockPos> p_225557_5_, BlockBox boundingBoxIn, MegaTreeFeatureConfig configIn) {
+       int i = this.getHeight(rand, configIn);
+-      if (!this.checkTreeFitsAndReplaceGround(generationReader, positionIn, i)) {
++      if (!this.hasRoom(generationReader, positionIn, i, configIn)) {
+          return false;
+       } else {
+          this.makeLeaves(generationReader, rand, positionIn.up(i), 2, p_225557_5_, boundingBoxIn, configIn);

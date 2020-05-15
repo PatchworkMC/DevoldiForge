@@ -1,0 +1,52 @@
+--- a/net/minecraft/resource/ResourcePackProfile.java
++++ b/net/minecraft/resource/ResourcePackProfile.java
+@@ -32,6 +32,7 @@
+    private final ResourcePackProfile.InsertionPosition position;
+    private final boolean alwaysEnabled;
+    private final boolean pinned;
++   private final boolean hidden; // Forge: Allow packs to be hidden from the UI entirely
+ 
+    @Nullable
+    public static <T extends ResourcePackProfile> T of(String nameIn, boolean p_195793_1_, Supplier<ResourcePack> p_195793_2_, ResourcePackProfile.Factory<T> factory, ResourcePackProfile.InsertionPosition p_195793_4_) {
+@@ -55,7 +56,12 @@
+       return (T)null;
+    }
+ 
++   @Deprecated
+    public ResourcePackProfile(String nameIn, boolean isAlwaysEnabled, Supplier<ResourcePack> resourcePackSupplierIn, Text titleIn, Text descriptionIn, ResourcePackCompatibility compatibilityIn, ResourcePackProfile.InsertionPosition priorityIn, boolean isOrderLocked) {
++      this(nameIn, isAlwaysEnabled, resourcePackSupplierIn, titleIn, descriptionIn, compatibilityIn, priorityIn, isOrderLocked, false);
++   }
++
++   public ResourcePackProfile(String nameIn, boolean isAlwaysEnabled, Supplier<ResourcePack> resourcePackSupplierIn, Text titleIn, Text descriptionIn, ResourcePackCompatibility compatibilityIn, ResourcePackProfile.InsertionPosition priorityIn, boolean isOrderLocked, boolean hidden) {
+       this.name = nameIn;
+       this.packGetter = resourcePackSupplierIn;
+       this.displayName = titleIn;
+@@ -64,12 +70,18 @@
+       this.alwaysEnabled = isAlwaysEnabled;
+       this.position = priorityIn;
+       this.pinned = isOrderLocked;
++      this.hidden = hidden;
+    }
+ 
++   @Deprecated
+    public ResourcePackProfile(String nameIn, boolean isAlwaysEnabled, Supplier<ResourcePack> resourcePackSupplierIn, ResourcePack p_i47908_4_, PackResourceMetadata p_i47908_5_, ResourcePackProfile.InsertionPosition priorityIn) {
+-      this(nameIn, isAlwaysEnabled, resourcePackSupplierIn, new LiteralText(p_i47908_4_.getName()), p_i47908_5_.getDescription(), ResourcePackCompatibility.from(p_i47908_5_.getPackFormat()), priorityIn, false);
++      this(nameIn, isAlwaysEnabled, resourcePackSupplierIn, p_i47908_4_, p_i47908_5_, priorityIn, false);
+    }
+ 
++   public ResourcePackProfile(String nameIn, boolean isAlwaysEnabled, Supplier<ResourcePack> resourcePackSupplierIn, ResourcePack p_i47908_4_, PackResourceMetadata p_i47908_5_, ResourcePackProfile.InsertionPosition priorityIn, boolean hidden) {
++      this(nameIn, isAlwaysEnabled, resourcePackSupplierIn, new LiteralText(p_i47908_4_.getName()), p_i47908_5_.getDescription(), ResourcePackCompatibility.from(p_i47908_5_.getPackFormat()), priorityIn, hidden, hidden);
++   }
++
+    @Environment(EnvType.CLIENT)
+    public Text getDisplayName() {
+       return this.displayName;
+@@ -109,6 +121,8 @@
+    public ResourcePackProfile.InsertionPosition getInitialPosition() {
+       return this.position;
+    }
++   
++   public boolean isHidden() { return hidden; }
+ 
+    public boolean equals(Object p_equals_1_) {
+       if (this == p_equals_1_) {

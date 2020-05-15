@@ -20,7 +20,7 @@
 package net.minecraftforge.event.world;
 
 import net.minecraft.block.BlockState;
-import net.minecraft.state.properties.NoteBlockInstrument;
+import net.minecraft.block.enums.Instrument;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraftforge.eventbus.api.Cancelable;
@@ -87,20 +87,20 @@ public class NoteBlockEvent extends BlockEvent
     @Cancelable
     public static class Play extends NoteBlockEvent
     {
-        private NoteBlockInstrument instrument;
+        private Instrument instrument;
 
-        public Play(World world, BlockPos pos, BlockState state, int note, NoteBlockInstrument instrument)
+        public Play(World world, BlockPos pos, BlockState state, int note, Instrument instrument)
         {
             super(world, pos, state, note);
             this.instrument = instrument;
         }
 
-        public NoteBlockInstrument getInstrument()
+        public Instrument getInstrument()
         {
             return instrument;
         }
 
-        public void setInstrument(NoteBlockInstrument instrument)
+        public void setInstrument(Instrument instrument)
         {
             this.instrument = instrument;
         }

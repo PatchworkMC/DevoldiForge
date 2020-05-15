@@ -1,0 +1,35 @@
+--- a/net/minecraft/entity/EntityContextImpl.java
++++ b/net/minecraft/entity/EntityContextImpl.java
+@@ -19,6 +19,11 @@
+    private final Item heldItem;
+ 
+    protected EntityContextImpl(boolean sneaking, double p_i51181_2_, Item itemIn) {
++      this(null, sneaking, p_i51181_2_, itemIn);
++   }
++
++   protected EntityContextImpl(@javax.annotation.Nullable Entity entityIn, boolean sneaking, double p_i51181_2_, Item itemIn) {
++      this.entity = entityIn;
+       this.descending = sneaking;
+       this.minY = p_i51181_2_;
+       this.heldItem = itemIn;
+@@ -26,7 +31,7 @@
+ 
+    @Deprecated
+    protected EntityContextImpl(Entity entityIn) {
+-      this(entityIn.isDescending(), entityIn.getY(), entityIn instanceof LivingEntity ? ((LivingEntity)entityIn).getMainHandStack().getItem() : Items.AIR);
++      this(entityIn, entityIn.isDescending(), entityIn.getY(), entityIn instanceof LivingEntity ? ((LivingEntity)entityIn).getMainHandStack().getItem() : Items.AIR);
+    }
+ 
+    public boolean isHolding(Item itemIn) {
+@@ -40,4 +45,11 @@
+    public boolean isAbove(VoxelShape shape, BlockPos pos, boolean p_216378_3_) {
+       return this.minY > (double)pos.getY() + shape.getMaximum(Direction.Axis.Y) - (double)1.0E-5F;
+    }
++
++   private final @javax.annotation.Nullable Entity entity;
++
++   @Override
++   public @javax.annotation.Nullable Entity getEntity() {
++      return entity;
++   }
+ }

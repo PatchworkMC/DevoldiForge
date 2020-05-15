@@ -20,26 +20,26 @@
 package net.minecraftforge.fml.network;
 
 import io.netty.buffer.Unpooled;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.IHasContainer;
-import net.minecraft.client.gui.ScreenManager;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.Screens;
+import net.minecraft.client.gui.screen.ingame.ContainerProvider;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.container.Container;
+import net.minecraft.container.ContainerType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.FuzzedBiomeMagnifier;
+import net.minecraft.world.biome.source.VoronoiBiomeAccessType;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.common.ModDimension;
 import net.minecraftforge.fml.LogicalSidedProvider;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -65,21 +65,21 @@ public class FMLPlayMessages
         private final double posX, posY, posZ;
         private final byte pitch, yaw, headYaw;
         private final int velX, velY, velZ;
-        private final PacketBuffer buf;
+        private final PacketByteBuf buf;
 
         SpawnEntity(Entity e)
         {
             this.entity = e;
-            this.typeId = Registry.ENTITY_TYPE.getId(e.getType());
+            this.typeId = Registry.ENTITY_TYPE.getRawId(e.getType());
             this.entityId = e.getEntityId();
-            this.uuid = e.getUniqueID();
-            this.posX = e.getPosX();
-            this.posY = e.getPosY();
-            this.posZ = e.getPosZ();
-            this.pitch = (byte) MathHelper.floor(e.rotationPitch * 256.0F / 360.0F);
-            this.yaw = (byte) MathHelper.floor(e.rotationYaw * 256.0F / 360.0F);
-            this.headYaw = (byte) (e.getRotationYawHead() * 256.0F / 360.0F);
-            Vec3d vec3d = e.getMotion();
+            this.uuid = e.getUuid();
+            this.posX = e.getX();
+            this.posY = e.getY();
+            this.posZ = e.getZ();
+            this.pitch = (byte) MathHelper.floor(e.pitch * 256.0F / 360.0F);
+            this.yaw = (byte) MathHelper.floor(e.yaw * 256.0F / 360.0F);
+            this.headYaw = (byte) (e.getHeadYaw() * 256.0F / 360.0F);
+            Vec3d vec3d = e.getVelocity();
             double d1 = MathHelper.clamp(vec3d.x, -3.9D, 3.9D);
             double d2 = MathHelper.clamp(vec3d.y, -3.9D, 3.9D);
             double d3 = MathHelper.clamp(vec3d.z, -3.9D, 3.9D);
@@ -90,7 +90,7 @@ public class FMLPlayMessages
         }
 
         private SpawnEntity(int typeId, int entityId, UUID uuid, double posX, double posY, double posZ,
-                byte pitch, byte yaw, byte headYaw, int velX, int velY, int velZ, PacketBuffer buf)
+                byte pitch, byte yaw, byte headYaw, int velX, int velY, int velZ, PacketByteBuf buf)
         {
             this.entity = null;
             this.typeId = typeId;
@@ -108,7 +108,7 @@ public class FMLPlayMessages
             this.buf = buf;
         }
 
-        public static void encode(SpawnEntity msg, PacketBuffer buf)
+        public static void encode(SpawnEntity msg, PacketByteBuf buf)
         {
             buf.writeVarInt(msg.typeId);
             buf.writeInt(msg.entityId);
@@ -129,7 +129,7 @@ public class FMLPlayMessages
             }
         }
 
-        public static SpawnEntity decode(PacketBuffer buf)
+        public static SpawnEntity decode(PacketByteBuf buf)
         {
             return new SpawnEntity(
                     buf.readVarInt(),
@@ -145,7 +145,7 @@ public class FMLPlayMessages
         public static void handle(SpawnEntity msg, Supplier<NetworkEvent.Context> ctx)
         {
             ctx.get().enqueueWork(() -> {
-                EntityType<?> type = Registry.ENTITY_TYPE.getByValue(msg.typeId);
+                EntityType<?> type = Registry.ENTITY_TYPE.get(msg.typeId);
                 if (type == null)
                 {
                     throw new RuntimeException(String.format("Could not spawn entity (id %d) with unknown type at (%f, %f, %f)", msg.entityId, msg.posX, msg.posY, msg.posZ));
@@ -158,15 +158,15 @@ public class FMLPlayMessages
                     return;
                 }
 
-                e.setPacketCoordinates(msg.posX, msg.posY, msg.posZ);
-                e.setPositionAndRotation(msg.posX, msg.posY, msg.posZ, (msg.yaw * 360) / 256.0F, (msg.pitch * 360) / 256.0F);
-                e.setRotationYawHead((msg.headYaw * 360) / 256.0F);
-                e.setRenderYawOffset((msg.headYaw * 360) / 256.0F);
+                e.updateTrackedPosition(msg.posX, msg.posY, msg.posZ);
+                e.updatePositionAndAngles(msg.posX, msg.posY, msg.posZ, (msg.yaw * 360) / 256.0F, (msg.pitch * 360) / 256.0F);
+                e.setHeadYaw((msg.headYaw * 360) / 256.0F);
+                e.setYaw((msg.headYaw * 360) / 256.0F);
 
                 e.setEntityId(msg.entityId);
-                e.setUniqueId(msg.uuid);
+                e.setUuid(msg.uuid);
                 world.filter(ClientWorld.class::isInstance).ifPresent(w->((ClientWorld)w).addEntity(msg.entityId, e));
-                e.setVelocity(msg.velX / 8000.0, msg.velY / 8000.0, msg.velZ / 8000.0);
+                e.setVelocityClient(msg.velX / 8000.0, msg.velY / 8000.0, msg.velZ / 8000.0);
                 if (e instanceof IEntityAdditionalSpawnData)
                 {
                     ((IEntityAdditionalSpawnData) e).readSpawnData(msg.buf);
@@ -240,7 +240,7 @@ public class FMLPlayMessages
             return velZ;
         }
 
-        public PacketBuffer getAdditionalData()
+        public PacketByteBuf getAdditionalData()
         {
             return buf;
         }
@@ -250,15 +250,15 @@ public class FMLPlayMessages
     {
         private final int id;
         private final int windowId;
-        private final ITextComponent name;
-        private final PacketBuffer additionalData;
+        private final Text name;
+        private final PacketByteBuf additionalData;
 
-        OpenContainer(ContainerType<?> id, int windowId, ITextComponent name, PacketBuffer additionalData)
+        OpenContainer(ContainerType<?> id, int windowId, Text name, PacketByteBuf additionalData)
         {
-            this(Registry.MENU.getId(id), windowId, name, additionalData);
+            this(Registry.CONTAINER.getRawId(id), windowId, name, additionalData);
         }
 
-        private OpenContainer(int id, int windowId, ITextComponent name, PacketBuffer additionalData)
+        private OpenContainer(int id, int windowId, Text name, PacketByteBuf additionalData)
         {
             this.id = id;
             this.windowId = windowId;
@@ -266,69 +266,69 @@ public class FMLPlayMessages
             this.additionalData = additionalData;
         }
 
-        public static void encode(OpenContainer msg, PacketBuffer buf)
+        public static void encode(OpenContainer msg, PacketByteBuf buf)
         {
             buf.writeVarInt(msg.id);
             buf.writeVarInt(msg.windowId);
-            buf.writeTextComponent(msg.name);
+            buf.writeText(msg.name);
             buf.writeByteArray(msg.additionalData.readByteArray());
         }
 
-        public static OpenContainer decode(PacketBuffer buf)
+        public static OpenContainer decode(PacketByteBuf buf)
         {
-            return new OpenContainer(buf.readVarInt(), buf.readVarInt(), buf.readTextComponent(), new PacketBuffer(Unpooled.wrappedBuffer(buf.readByteArray(32600))));
+            return new OpenContainer(buf.readVarInt(), buf.readVarInt(), buf.readText(), new PacketByteBuf(Unpooled.wrappedBuffer(buf.readByteArray(32600))));
         }
 
         public static void handle(OpenContainer msg, Supplier<NetworkEvent.Context> ctx)
         {
             ctx.get().enqueueWork(() -> {
-                ScreenManager.getScreenFactory(msg.getType(), Minecraft.getInstance(), msg.getWindowId(), msg.getName())
+                Screens.getScreenFactory(msg.getType(), MinecraftClient.getInstance(), msg.getWindowId(), msg.getName())
                              .ifPresent(f -> {
-                                 Container c = msg.getType().create(msg.getWindowId(), Minecraft.getInstance().player.inventory, msg.getAdditionalData());
+                                 Container c = msg.getType().create(msg.getWindowId(), MinecraftClient.getInstance().player.inventory, msg.getAdditionalData());
                                  @SuppressWarnings("unchecked")
-                                 Screen s = ((ScreenManager.IScreenFactory<Container, ?>)f).create(c, Minecraft.getInstance().player.inventory, msg.getName());
-                                 Minecraft.getInstance().player.openContainer = ((IHasContainer<?>)s).getContainer();
-                                 Minecraft.getInstance().displayGuiScreen(s);
+                                 Screen s = ((Screens.Provider<Container, ?>)f).create(c, MinecraftClient.getInstance().player.inventory, msg.getName());
+                                 MinecraftClient.getInstance().player.container = ((ContainerProvider<?>)s).getContainer();
+                                 MinecraftClient.getInstance().openScreen(s);
                              });
             });
             ctx.get().setPacketHandled(true);
         }
 
         public final ContainerType<?> getType() {
-            return Registry.MENU.getByValue(this.id);
+            return Registry.CONTAINER.get(this.id);
         }
 
         public int getWindowId() {
             return windowId;
         }
 
-        public ITextComponent getName() {
+        public Text getName() {
             return name;
         }
 
-        public PacketBuffer getAdditionalData() {
+        public PacketByteBuf getAdditionalData() {
             return additionalData;
         }
     }
 
     public static class DimensionInfoMessage
     {
-        private ResourceLocation dimName;
+        private Identifier dimName;
         private boolean skylight;
         private int id;
-        private ResourceLocation modDimensionName;
-        private PacketBuffer extraData;
+        private Identifier modDimensionName;
+        private PacketByteBuf extraData;
 
         DimensionInfoMessage(DimensionType type) {
-            id = type.getId() + 1;
+            id = type.getRawId() + 1;
             dimName = type.getRegistryName();
             modDimensionName = type.getModType().getRegistryName();
             skylight = type.hasSkyLight();
-            extraData = new PacketBuffer(Unpooled.buffer());
+            extraData = new PacketByteBuf(Unpooled.buffer());
             type.getModType().write(extraData, true);
         }
 
-        DimensionInfoMessage(final int dimId, final ResourceLocation dimname, final ResourceLocation modDimensionName, final boolean skylight, final PacketBuffer extraData) {
+        DimensionInfoMessage(final int dimId, final Identifier dimname, final Identifier modDimensionName, final boolean skylight, final PacketByteBuf extraData) {
             id = dimId;
             this.dimName = dimname;
             this.modDimensionName = modDimensionName;
@@ -336,19 +336,19 @@ public class FMLPlayMessages
             this.extraData = extraData;
         }
 
-        public static DimensionInfoMessage decode(PacketBuffer buffer) {
+        public static DimensionInfoMessage decode(PacketByteBuf buffer) {
             int dimId = buffer.readInt();
-            ResourceLocation dimname = buffer.readResourceLocation();
-            ResourceLocation moddimname = buffer.readResourceLocation();
+            Identifier dimname = buffer.readIdentifier();
+            Identifier moddimname = buffer.readIdentifier();
             boolean skylight = buffer.readBoolean();
-            PacketBuffer pb = new PacketBuffer(Unpooled.wrappedBuffer(buffer.readByteArray()));
+            PacketByteBuf pb = new PacketByteBuf(Unpooled.wrappedBuffer(buffer.readByteArray()));
             return new DimensionInfoMessage(dimId, dimname, moddimname, skylight, pb);
         }
 
-        public static void encode(DimensionInfoMessage message, PacketBuffer buffer) {
+        public static void encode(DimensionInfoMessage message, PacketByteBuf buffer) {
             buffer.writeInt(message.id);
-            buffer.writeResourceLocation(message.dimName);
-            buffer.writeResourceLocation(message.modDimensionName);
+            buffer.writeIdentifier(message.dimName);
+            buffer.writeIdentifier(message.modDimensionName);
             buffer.writeBoolean(message.skylight);
             buffer.writeByteArray(message.extraData.array());
         }
@@ -358,7 +358,7 @@ public class FMLPlayMessages
             // default to overworld if no moddim found
             if (modDim == null) return DimensionType.OVERWORLD;
             modDim.read(extraData, true);
-            return new DimensionType(id, "dummy", "dummy", modDim.getFactory(), skylight, FuzzedBiomeMagnifier.INSTANCE, modDim, extraData);
+            return new DimensionType(id, "dummy", "dummy", modDim.getFactory(), skylight, VoronoiBiomeAccessType.INSTANCE, modDim, extraData);
         }
 
         public static boolean handle(final DimensionInfoMessage message, final Supplier<NetworkEvent.Context> contextSupplier) {

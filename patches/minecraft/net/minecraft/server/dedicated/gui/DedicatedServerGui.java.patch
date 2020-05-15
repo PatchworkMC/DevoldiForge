@@ -1,0 +1,23 @@
+--- a/net/minecraft/server/dedicated/gui/DedicatedServerGui.java
++++ b/net/minecraft/server/dedicated/gui/DedicatedServerGui.java
+@@ -138,8 +138,10 @@
+       return jpanel;
+    }
+ 
++   private java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+    public void start() {
+       this.consoleUpdateThread.start();
++      latch.countDown();
+    }
+ 
+    public void stop() {
+@@ -154,6 +156,9 @@
+    }
+ 
+    public void appendToConsole(JTextArea textArea, JScrollPane scrollPane, String line) {
++      try {
++         latch.await();
++      } catch (InterruptedException e){} //Prevent logging until after constructor has ended.
+       if (!SwingUtilities.isEventDispatchThread()) {
+          SwingUtilities.invokeLater(() -> {
+             this.appendToConsole(textArea, scrollPane, line);

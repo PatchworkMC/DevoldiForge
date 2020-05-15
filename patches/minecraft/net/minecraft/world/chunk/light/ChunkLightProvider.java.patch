@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/chunk/light/ChunkLightProvider.java
++++ b/net/minecraft/world/chunk/light/ChunkLightProvider.java
+@@ -218,4 +218,8 @@
+       long i = ChunkSectionPos.withZeroZ(ChunkSectionPos.asLong(pos.x, 0, pos.z));
+       this.lightStorage.setRetainData(i, retain);
+    }
++
++   // FORGE START
++
++   public abstract int queuedUpdateSize();
+ }

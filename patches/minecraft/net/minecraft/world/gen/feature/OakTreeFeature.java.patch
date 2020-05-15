@@ -1,0 +1,11 @@
+--- a/net/minecraft/world/gen/feature/OakTreeFeature.java
++++ b/net/minecraft/world/gen/feature/OakTreeFeature.java
+@@ -23,7 +23,7 @@
+          return false;
+       } else {
+          BlockPos blockpos = optional.get();
+-         this.setToDirt(generationReader, blockpos.down());
++         this.setDirtAt(generationReader, blockpos.down(), blockpos);
+          configIn.foliagePlacer.generate(generationReader, rand, configIn, i, j, k, blockpos, p_225557_5_);
+          this.generate(generationReader, rand, i, blockpos, configIn.trunkTopOffset + rand.nextInt(configIn.trunkTopOffsetRandom + 1), p_225557_4_, boundingBoxIn, configIn);
+          return true;

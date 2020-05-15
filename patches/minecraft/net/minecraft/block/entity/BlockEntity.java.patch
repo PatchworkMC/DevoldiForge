@@ -1,0 +1,74 @@
+--- a/net/minecraft/block/entity/BlockEntity.java
++++ b/net/minecraft/block/entity/BlockEntity.java
+@@ -18,7 +18,7 @@
+ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+ 
+-public abstract class BlockEntity {
++public abstract class BlockEntity extends net.minecraftforge.common.capabilities.CapabilityProvider<BlockEntity> implements net.minecraftforge.common.extensions.IForgeTileEntity {
+    private static final Logger LOGGER = LogManager.getLogger();
+    private final BlockEntityType<?> type;
+    @Nullable
+@@ -28,9 +28,12 @@
+    @Nullable
+    private BlockState cachedState;
+    private boolean invalid;
++   private CompoundTag customTileData;
+ 
+    public BlockEntity(BlockEntityType<?> tileEntityTypeIn) {
++      super(BlockEntity.class);
+       this.type = tileEntityTypeIn;
++      this.gatherCapabilities();
+    }
+ 
+    @Nullable
+@@ -49,6 +52,8 @@
+ 
+    public void fromTag(CompoundTag compound) {
+       this.pos = new BlockPos(compound.getInt("x"), compound.getInt("y"), compound.getInt("z"));
++      if (compound.contains("ForgeData")) this.customTileData = compound.getCompound("ForgeData");
++      if (getCapabilities() != null && compound.contains("ForgeCaps")) deserializeCaps(compound.getCompound("ForgeCaps"));
+    }
+ 
+    public CompoundTag toTag(CompoundTag compound) {
+@@ -64,6 +69,8 @@
+          compound.putInt("x", this.pos.getX());
+          compound.putInt("y", this.pos.getY());
+          compound.putInt("z", this.pos.getZ());
++         if (this.customTileData != null) compound.put("ForgeData", this.customTileData);
++         if (getCapabilities() != null) compound.put("ForgeCaps", serializeCaps());
+          return compound;
+       }
+    }
+@@ -96,7 +103,7 @@
+       if (this.world != null) {
+          this.cachedState = this.world.getBlockState(this.pos);
+          this.world.markDirty(this.pos, this);
+-         if (!this.cachedState.isAir()) {
++         if (!this.cachedState.isAir(this.world, this.pos)) {
+             this.world.updateHorizontalAdjacent(this.pos, this.cachedState.getBlock());
+          }
+       }
+@@ -142,6 +149,8 @@
+ 
+    public void markRemoved() {
+       this.removed = true;
++      this.invalidateCaps();
++      requestModelDataUpdate();
+    }
+ 
+    public void cancelRemoval() {
+@@ -184,6 +193,13 @@
+       return this.type;
+    }
+ 
++   @Override
++   public CompoundTag getTileData() {
++      if (this.customTileData == null)
++         this.customTileData = new CompoundTag();
++      return this.customTileData;
++   }
++
+    public void markInvalid() {
+       if (!this.invalid) {
+          this.invalid = true;

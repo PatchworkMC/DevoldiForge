@@ -28,10 +28,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-
-import net.minecraft.advancements.Advancement;
-import net.minecraft.util.JSONUtils;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.advancement.Advancement;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.JsonHelper;
 import net.minecraftforge.common.crafting.conditions.ICondition;
 
 public class ConditionalAdvancement
@@ -41,14 +40,14 @@ public class ConditionalAdvancement
         return new Builder();
     }
 
-    public static Advancement.Builder read(Gson gson, ResourceLocation recipeId, JsonObject json)
+    public static Advancement.Task read(Gson gson, Identifier recipeId, JsonObject json)
     {
-        JsonArray entries = JSONUtils.getJsonArray(json, "advancements", null);
+        JsonArray entries = JsonHelper.getArray(json, "advancements", null);
         if (entries == null)
         {
             if (!CraftingHelper.processConditions(json, "conditions"))
                 return null;
-            return gson.fromJson(json, Advancement.Builder.class);
+            return gson.fromJson(json, Advancement.Task.class);
         }
 
         int idx = 0;
@@ -56,8 +55,8 @@ public class ConditionalAdvancement
         {
             if (!ele.isJsonObject())
                 throw new JsonSyntaxException("Invalid advancement entry at index " + idx + " Must be JsonObject");
-            if (CraftingHelper.processConditions(JSONUtils.getJsonArray(ele.getAsJsonObject(), "conditions")))
-                return gson.fromJson(JSONUtils.getJsonObject(ele.getAsJsonObject(), "advancement"), Advancement.Builder.class);
+            if (CraftingHelper.processConditions(JsonHelper.getArray(ele.getAsJsonObject(), "conditions")))
+                return gson.fromJson(JsonHelper.getObject(ele.getAsJsonObject(), "advancement"), Advancement.Task.class);
             idx++;
         }
         return null;
@@ -66,7 +65,7 @@ public class ConditionalAdvancement
     public static class Builder
     {
         private List<ICondition[]> conditions = new ArrayList<>();
-        private List<Advancement.Builder> advancements = new ArrayList<>();
+        private List<Advancement.Task> advancements = new ArrayList<>();
 
         private List<ICondition> currentConditions = new ArrayList<>();
         private boolean locked = false;
@@ -79,7 +78,7 @@ public class ConditionalAdvancement
             return this;
         }
 
-        public Builder addAdvancement(Consumer<Consumer<Advancement.Builder>> callable)
+        public Builder addAdvancement(Consumer<Consumer<Advancement.Task>> callable)
         {
             if (locked)
                 throw new IllegalStateException("Attempted to modify finished builder");
@@ -87,7 +86,7 @@ public class ConditionalAdvancement
             return this;
         }
 
-        public Builder addAdvancement(Advancement.Builder recipe)
+        public Builder addAdvancement(Advancement.Task recipe)
         {
             if (locked)
                 throw new IllegalStateException("Attempted to modify finished builder");
@@ -120,7 +119,7 @@ public class ConditionalAdvancement
                 for (ICondition c : conditions.get(x))
                     conds.add(CraftingHelper.serialize(c));
                 holder.add("conditions", conds);
-                holder.add("advancement", advancements.get(x).serialize());
+                holder.add("advancement", advancements.get(x).toJson());
 
                 array.add(holder);
             }

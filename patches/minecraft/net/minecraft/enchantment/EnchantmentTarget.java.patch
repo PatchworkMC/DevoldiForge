@@ -1,0 +1,29 @@
+--- a/net/minecraft/enchantment/EnchantmentTarget.java
++++ b/net/minecraft/enchantment/EnchantmentTarget.java
+@@ -14,7 +14,7 @@
+ import net.minecraft.item.SwordItem;
+ import net.minecraft.item.TridentItem;
+ 
+-public enum EnchantmentTarget {
++public enum EnchantmentTarget implements net.minecraftforge.common.IExtensibleEnum {
+    ALL {
+       public boolean isAcceptableItem(Item itemIn) {
+          for(EnchantmentTarget enchantmenttype : EnchantmentTarget.values()) {
+@@ -96,5 +96,16 @@
+    private EnchantmentTarget() {
+    }
+ 
+-   public abstract boolean isAcceptableItem(Item itemIn);
++   private java.util.function.Predicate<Item> delegate;
++   private EnchantmentTarget(java.util.function.Predicate<Item> delegate) {
++      this.delegate = delegate;
++   }
++
++   public static EnchantmentTarget create(String name, java.util.function.Predicate<Item> delegate) {
++      throw new IllegalStateException("Enum not extended");
++   }
++
++   public boolean isAcceptableItem(Item itemIn) {
++      return this.delegate == null ? false : this.delegate.test(itemIn);
++   }
+ }

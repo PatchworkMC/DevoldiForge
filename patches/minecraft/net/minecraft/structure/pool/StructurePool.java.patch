@@ -1,0 +1,27 @@
+--- a/net/minecraft/structure/pool/StructurePool.java
++++ b/net/minecraft/structure/pool/StructurePool.java
+@@ -72,7 +72,7 @@
+       return this.elements.size();
+    }
+ 
+-   public static enum Projection {
++   public static enum Projection implements net.minecraftforge.common.IExtensibleEnum {
+       TERRAIN_MATCHING("terrain_matching", ImmutableList.of(new GravityStructureProcessor(Heightmap.Type.WORLD_SURFACE_WG, -1))),
+       RIGID("rigid", ImmutableList.of());
+ 
+@@ -98,5 +98,15 @@
+       public ImmutableList<StructureProcessor> getProcessors() {
+          return this.processors;
+       }
++      
++      public static Projection create(String enumName, String nameIn, ImmutableList<StructureProcessor> structureProcessorsIn) {
++         throw new IllegalStateException("Enum not extended");
++      }
++
++      @Override
++      @Deprecated
++      public void init() {
++         PROJECTIONS_BY_ID.put(getId(), this);
++      }
+    }
+ }

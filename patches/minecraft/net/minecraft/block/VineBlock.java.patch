@@ -1,46 +1,46 @@
 --- a/net/minecraft/block/VineBlock.java
 +++ b/net/minecraft/block/VineBlock.java
 @@ -19,7 +19,7 @@
- import net.minecraft.world.IWorldReader;
- import net.minecraft.world.server.ServerWorld;
+ import net.minecraft.world.IWorld;
+ import net.minecraft.world.WorldView;
  
 -public class VineBlock extends Block {
 +public class VineBlock extends Block implements net.minecraftforge.common.IShearable {
-    public static final BooleanProperty field_176277_a = SixWayBlock.field_196496_z;
-    public static final BooleanProperty field_176273_b = SixWayBlock.field_196488_a;
-    public static final BooleanProperty field_176278_M = SixWayBlock.field_196490_b;
+    public static final BooleanProperty UP = ConnectingBlock.UP;
+    public static final BooleanProperty NORTH = ConnectingBlock.NORTH;
+    public static final BooleanProperty EAST = ConnectingBlock.EAST;
 @@ -152,14 +152,14 @@
-             p_225534_2_.func_217377_a(p_225534_3_, false);
+             worldIn.removeBlock(pos, false);
           }
  
--      } else if (p_225534_2_.field_73012_v.nextInt(4) == 0) {
-+      } else if (p_225534_2_.field_73012_v.nextInt(4) == 0 && p_225534_2_.isAreaLoaded(p_225534_3_, 4)) { // Forge: check area to prevent loading unloaded chunks
-          Direction direction = Direction.func_176741_a(p_225534_4_);
-          BlockPos blockpos = p_225534_3_.func_177984_a();
-          if (direction.func_176740_k().func_176722_c() && !p_225534_1_.func_177229_b(func_176267_a(direction))) {
-             if (this.func_196539_a(p_225534_2_, p_225534_3_)) {
-                BlockPos blockpos4 = p_225534_3_.func_177972_a(direction);
-                BlockState blockstate5 = p_225534_2_.func_180495_p(blockpos4);
--               if (blockstate5.func_196958_f()) {
-+               if (blockstate5.isAir(p_225534_2_, blockpos4)) {
-                   Direction direction3 = direction.func_176746_e();
-                   Direction direction4 = direction.func_176735_f();
-                   boolean flag = p_225534_1_.func_177229_b(func_176267_a(direction3));
+-      } else if (worldIn.random.nextInt(4) == 0) {
++      } else if (worldIn.random.nextInt(4) == 0 && worldIn.isAreaLoaded(pos, 4)) { // Forge: check area to prevent loading unloaded chunks
+          Direction direction = Direction.random(rand);
+          BlockPos blockpos = pos.up();
+          if (direction.getAxis().isHorizontal() && !state.get(getFacingProperty(direction))) {
+             if (this.canGrowAt(worldIn, pos)) {
+                BlockPos blockpos4 = pos.offset(direction);
+                BlockState blockstate5 = worldIn.getBlockState(blockpos4);
+-               if (blockstate5.isAir()) {
++               if (blockstate5.isAir(worldIn, blockpos4)) {
+                   Direction direction3 = direction.rotateYClockwise();
+                   Direction direction4 = direction.rotateYCounterclockwise();
+                   boolean flag = state.get(getFacingProperty(direction3));
 @@ -216,8 +216,8 @@
-             if (p_225534_3_.func_177956_o() > 0) {
-                BlockPos blockpos1 = p_225534_3_.func_177977_b();
-                BlockState blockstate1 = p_225534_2_.func_180495_p(blockpos1);
--               if (blockstate1.func_196958_f() || blockstate1.func_177230_c() == this) {
--                  BlockState blockstate2 = blockstate1.func_196958_f() ? this.func_176223_P() : blockstate1;
-+               if (blockstate1.isAir(p_225534_2_, blockpos1) || blockstate1.func_177230_c() == this) {
-+                  BlockState blockstate2 = blockstate1.isAir(p_225534_2_, blockpos1) ? this.func_176223_P() : blockstate1;
-                   BlockState blockstate3 = this.func_196544_a(p_225534_1_, blockstate2, p_225534_4_);
-                   if (blockstate2 != blockstate3 && this.func_196540_x(blockstate3)) {
-                      p_225534_2_.func_180501_a(blockpos1, blockstate3, 2);
+             if (pos.getY() > 0) {
+                BlockPos blockpos1 = pos.down();
+                BlockState blockstate1 = worldIn.getBlockState(blockpos1);
+-               if (blockstate1.isAir() || blockstate1.getBlock() == this) {
+-                  BlockState blockstate2 = blockstate1.isAir() ? this.getDefaultState() : blockstate1;
++               if (blockstate1.isAir(worldIn, blockpos1) || blockstate1.getBlock() == this) {
++                  BlockState blockstate2 = blockstate1.isAir(worldIn, blockpos1) ? this.getDefaultState() : blockstate1;
+                   BlockState blockstate3 = this.getGrownState(state, blockstate2, rand);
+                   if (blockstate2 != blockstate3 && this.hasHorizontalSide(blockstate3)) {
+                      worldIn.setBlockState(blockpos1, blockstate3, 2);
 @@ -322,4 +322,6 @@
-    public static BooleanProperty func_176267_a(Direction p_176267_0_) {
-       return field_196546_A.get(p_176267_0_);
+    public static BooleanProperty getFacingProperty(Direction side) {
+       return FACING_PROPERTIES.get(side);
     }
 +
-+   @Override public boolean isLadder(BlockState state, IWorldReader world, BlockPos pos, net.minecraft.entity.LivingEntity entity) { return true; }
++   @Override public boolean isLadder(BlockState state, WorldView world, BlockPos pos, net.minecraft.entity.LivingEntity entity) { return true; }
  }

@@ -1,0 +1,11 @@
+--- a/net/minecraft/entity/EntityContext.java
++++ b/net/minecraft/entity/EntityContext.java
+@@ -5,7 +5,7 @@
+ import net.minecraft.util.math.BlockPos;
+ import net.minecraft.util.shape.VoxelShape;
+ 
+-public interface EntityContext {
++public interface EntityContext extends net.minecraftforge.common.extensions.IForgeSelectionContext {
+    static EntityContext absent() {
+       return EntityContextImpl.ABSENT;
+    }

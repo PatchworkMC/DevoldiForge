@@ -19,7 +19,7 @@
 
 package net.minecraftforge.fml;
 
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.World;
 
@@ -33,16 +33,16 @@ public enum LogicalSidedProvider
     INSTANCE((c)->c.get(), (s)->s.get()),
     CLIENTWORLD((c)-> Optional.<World>of(c.get().world), (s)->Optional.<World>empty())
     ;
-    private static Supplier<Minecraft> client;
+    private static Supplier<MinecraftClient> client;
     private static Supplier<MinecraftServer> server;
 
-    LogicalSidedProvider(Function<Supplier<Minecraft>, ?> clientSide, Function<Supplier<MinecraftServer>, ?> serverSide)
+    LogicalSidedProvider(Function<Supplier<MinecraftClient>, ?> clientSide, Function<Supplier<MinecraftServer>, ?> serverSide)
     {
         this.clientSide = clientSide;
         this.serverSide = serverSide;
     }
 
-    public static void setClient(Supplier<Minecraft> client)
+    public static void setClient(Supplier<MinecraftClient> client)
     {
         LogicalSidedProvider.client = client;
     }
@@ -52,7 +52,7 @@ public enum LogicalSidedProvider
     }
 
 
-    private final Function<Supplier<Minecraft>, ?> clientSide;
+    private final Function<Supplier<MinecraftClient>, ?> clientSide;
     private final Function<Supplier<MinecraftServer>, ?> serverSide;
 
     @SuppressWarnings("unchecked")

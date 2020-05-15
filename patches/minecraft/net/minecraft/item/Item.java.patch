@@ -1,99 +1,99 @@
 --- a/net/minecraft/item/Item.java
 +++ b/net/minecraft/item/Item.java
-@@ -40,8 +40,8 @@
+@@ -43,8 +43,8 @@
  import net.minecraftforge.api.distmarker.Dist;
  import net.minecraftforge.api.distmarker.OnlyIn;
  
--public class Item implements IItemProvider {
--   public static final Map<Block, Item> field_179220_a = Maps.newHashMap();
-+public class Item extends net.minecraftforge.registries.ForgeRegistryEntry<Item> implements IItemProvider, net.minecraftforge.common.extensions.IForgeItem {
-+   public static final Map<Block, Item> field_179220_a = net.minecraftforge.registries.GameData.getBlockItemMap();
-    private static final IItemPropertyGetter field_185046_b = (p_210306_0_, p_210306_1_, p_210306_2_) -> {
-       return p_210306_0_.func_77951_h() ? 1.0F : 0.0F;
+-public class Item implements ItemConvertible {
+-   public static final Map<Block, Item> BLOCK_ITEMS = Maps.newHashMap();
++public class Item extends net.minecraftforge.registries.ForgeRegistryEntry<Item> implements ItemConvertible, net.minecraftforge.common.extensions.IForgeItem {
++   public static final Map<Block, Item> BLOCK_ITEMS = net.minecraftforge.registries.GameData.getBlockItemMap();
+    private static final ItemPropertyGetter DAMAGED_PROPERTY_GETTER = (p_210306_0_, p_210306_1_, p_210306_2_) -> {
+       return p_210306_0_.isDamaged() ? 1.0F : 0.0F;
     };
-@@ -98,6 +98,10 @@
-          this.func_185043_a(new ResourceLocation("damaged"), field_185046_b);
-          this.func_185043_a(new ResourceLocation("damage"), field_185047_c);
+@@ -101,6 +101,10 @@
+          this.addPropertyGetter(new Identifier("damaged"), DAMAGED_PROPERTY_GETTER);
+          this.addPropertyGetter(new Identifier("damage"), DAMAGE_PROPERTY_GETTER);
        }
-+      this.canRepair = p_i48487_1_.canRepair;
-+      this.toolClasses.putAll(p_i48487_1_.toolClasses);
-+      Object tmp = p_i48487_1_.ister == null ? null : net.minecraftforge.fml.DistExecutor.callWhenOn(Dist.CLIENT, p_i48487_1_.ister);
-+      this.ister = tmp == null ? null : () -> (net.minecraft.client.renderer.tileentity.ItemStackTileEntityRenderer) tmp;
++      this.canRepair = properties.canRepair;
++      this.toolClasses.putAll(properties.toolClasses);
++      Object tmp = properties.ister == null ? null : net.minecraftforge.fml.DistExecutor.callWhenOn(Dist.CLIENT, properties.ister);
++      this.ister = tmp == null ? null : () -> (net.minecraft.client.render.item.BuiltinModelItemRenderer) tmp;
  
     }
  
-@@ -157,10 +161,12 @@
-       return this.func_219971_r() ? p_77654_3_.func_213357_a(p_77654_2_, p_77654_1_) : p_77654_1_;
-    }
- 
-+   @Deprecated // Use ItemStack sensitive version.
-    public final int func_77639_j() {
-       return this.field_77777_bU;
+@@ -160,10 +164,12 @@
+       return this.isFood() ? entityLiving.eatFood(worldIn, stack) : stack;
     }
  
 +   @Deprecated // Use ItemStack sensitive version.
-    public final int func_77612_l() {
-       return this.field_77699_b;
+    public final int getMaxCount() {
+       return this.maxCount;
     }
-@@ -215,10 +221,12 @@
+ 
++   @Deprecated // Use ItemStack sensitive version.
+    public final int getMaxDamage() {
+       return this.maxDamage;
+    }
+@@ -218,10 +224,12 @@
     }
  
     @Nullable
 +   @Deprecated // Use ItemStack sensitive version.
-    public final Item func_77668_q() {
-       return this.field_77700_c;
+    public final Item getRecipeRemainder() {
+       return this.recipeRemainder;
     }
  
 +   @Deprecated // Use ItemStack sensitive version.
-    public boolean func_77634_r() {
-       return this.field_77700_c != null;
+    public boolean hasRecipeRemainder() {
+       return this.recipeRemainder != null;
     }
-@@ -278,7 +286,7 @@
-    }
- 
-    public boolean func_77616_k(ItemStack p_77616_1_) {
--      return this.func_77639_j() == 1 && this.func_77645_m();
-+      return this.getItemStackLimit(p_77616_1_) == 1 && this.func_77645_m();
+@@ -281,7 +289,7 @@
     }
  
-    protected static RayTraceResult func_219968_a(World p_219968_0_, PlayerEntity p_219968_1_, RayTraceContext.FluidMode p_219968_2_) {
-@@ -291,8 +299,8 @@
-       float f5 = MathHelper.func_76126_a(-f * ((float)Math.PI / 180F));
+    public boolean isEnchantable(ItemStack stack) {
+-      return this.getMaxCount() == 1 && this.isDamageable();
++      return this.getItemStackLimit(stack) == 1 && this.isDamageable();
+    }
+ 
+    protected static HitResult rayTrace(World worldIn, PlayerEntity player, RayTraceContext.FluidHandling fluidMode) {
+@@ -294,8 +302,8 @@
+       float f5 = MathHelper.sin(-f * ((float)Math.PI / 180F));
        float f6 = f3 * f4;
        float f7 = f2 * f4;
 -      double d0 = 5.0D;
--      Vec3d vec3d1 = vec3d.func_72441_c((double)f6 * 5.0D, (double)f5 * 5.0D, (double)f7 * 5.0D);
-+      double d0 = p_219968_1_.func_110148_a(PlayerEntity.REACH_DISTANCE).func_111126_e();;
-+      Vec3d vec3d1 = vec3d.func_72441_c((double)f6 * d0, (double)f5 * d0, (double)f7 * d0);
-       return p_219968_0_.func_217299_a(new RayTraceContext(vec3d, vec3d1, RayTraceContext.BlockMode.OUTLINE, p_219968_2_, p_219968_1_));
+-      Vec3d vec3d1 = vec3d.add((double)f6 * 5.0D, (double)f5 * 5.0D, (double)f7 * 5.0D);
++      double d0 = player.getAttributeInstance(PlayerEntity.REACH_DISTANCE).getValue();;
++      Vec3d vec3d1 = vec3d.add((double)f6 * d0, (double)f5 * d0, (double)f7 * d0);
+       return worldIn.rayTrace(new RayTraceContext(vec3d, vec3d1, RayTraceContext.ShapeType.OUTLINE, fluidMode, player));
     }
  
-@@ -308,6 +316,7 @@
+@@ -311,6 +319,7 @@
     }
  
-    protected boolean func_194125_a(ItemGroup p_194125_1_) {
-+      if (getCreativeTabs().stream().anyMatch(tab -> tab == p_194125_1_)) return true;
-       ItemGroup itemgroup = this.func_77640_w();
-       return itemgroup != null && (p_194125_1_ == ItemGroup.field_78027_g || p_194125_1_ == itemgroup);
+    protected boolean isIn(ItemGroup group) {
++      if (getCreativeTabs().stream().anyMatch(tab -> tab == group)) return true;
+       ItemGroup itemgroup = this.getGroup();
+       return itemgroup != null && (group == ItemGroup.SEARCH || group == itemgroup);
     }
-@@ -321,10 +330,44 @@
+@@ -324,10 +333,44 @@
        return false;
     }
  
 +   @Deprecated // Use ItemStack sensitive version.
-    public Multimap<String, AttributeModifier> func_111205_h(EquipmentSlotType p_111205_1_) {
+    public Multimap<String, EntityAttributeModifier> getModifiers(EquipmentSlot equipmentSlot) {
        return HashMultimap.create();
     }
  
 +   @Nullable
-+   private final java.util.function.Supplier<net.minecraft.client.renderer.tileentity.ItemStackTileEntityRenderer> ister;
++   private final java.util.function.Supplier<net.minecraft.client.render.item.BuiltinModelItemRenderer> ister;
 +   private final java.util.Map<net.minecraftforge.common.ToolType, Integer> toolClasses = Maps.newHashMap();
-+   private final net.minecraftforge.common.util.ReverseTagWrapper<Item> reverseTags = new net.minecraftforge.common.util.ReverseTagWrapper<>(this, net.minecraft.tags.ItemTags::getGeneration, net.minecraft.tags.ItemTags::func_199903_a);
++   private final net.minecraftforge.common.util.ReverseTagWrapper<Item> reverseTags = new net.minecraftforge.common.util.ReverseTagWrapper<>(this, net.minecraft.tag.ItemTags::getGeneration, net.minecraft.tag.ItemTags::getContainer);
 +   protected final boolean canRepair;
 +
 +   @Override
 +   public boolean isRepairable(ItemStack stack) {
-+     return canRepair && func_77645_m();
++     return canRepair && isDamageable();
 +   }
 +
 +   @Override
@@ -106,47 +106,47 @@
 +     return toolClasses.getOrDefault(tool, -1);
 +   }
 +
-+   @OnlyIn(Dist.CLIENT)
++   @Environment(EnvType.CLIENT)
 +   @Override
-+   public final net.minecraft.client.renderer.tileentity.ItemStackTileEntityRenderer getItemStackTileEntityRenderer() {
-+     net.minecraft.client.renderer.tileentity.ItemStackTileEntityRenderer renderer = ister != null ? ister.get() : null;
-+     return renderer != null ? renderer : net.minecraft.client.renderer.tileentity.ItemStackTileEntityRenderer.field_147719_a;
++   public final net.minecraft.client.render.item.BuiltinModelItemRenderer getItemStackTileEntityRenderer() {
++     net.minecraft.client.render.item.BuiltinModelItemRenderer renderer = ister != null ? ister.get() : null;
++     return renderer != null ? renderer : net.minecraft.client.render.item.BuiltinModelItemRenderer.INSTANCE;
 +   }
 +
 +   @Override
-+   public java.util.Set<ResourceLocation> getTags() {
++   public java.util.Set<Identifier> getTags() {
 +      return reverseTags.getTagNames();
 +   }
 +
-    public boolean func_219970_i(ItemStack p_219970_1_) {
-       return p_219970_1_.func_77973_b() == Items.field_222114_py;
+    public boolean isUsedOnRelease(ItemStack stack) {
+       return stack.getItem() == Items.CROSSBOW;
     }
-@@ -362,6 +405,9 @@
-       private ItemGroup field_200923_d;
-       private Rarity field_208104_e = Rarity.COMMON;
-       private Food field_221541_f;
+@@ -365,6 +408,9 @@
+       private ItemGroup group;
+       private Rarity rarity = Rarity.COMMON;
+       private FoodComponent foodComponent;
 +      private boolean canRepair = true;
 +      private java.util.Map<net.minecraftforge.common.ToolType, Integer> toolClasses = Maps.newHashMap();
-+      private java.util.function.Supplier<java.util.concurrent.Callable<net.minecraft.client.renderer.tileentity.ItemStackTileEntityRenderer>> ister;
++      private java.util.function.Supplier<java.util.concurrent.Callable<net.minecraft.client.render.item.BuiltinModelItemRenderer>> ister;
  
-       public Item.Properties func_221540_a(Food p_221540_1_) {
-          this.field_221541_f = p_221540_1_;
-@@ -401,5 +447,20 @@
-          this.field_208104_e = p_208103_1_;
+       public Item.Settings food(FoodComponent foodIn) {
+          this.foodComponent = foodIn;
+@@ -404,5 +450,20 @@
+          this.rarity = rarityIn;
           return this;
        }
 +
-+      public Item.Properties setNoRepair() {
++      public Item.Settings setNoRepair() {
 +         canRepair = false;
 +         return this;
 +      }
 +
-+      public Item.Properties addToolType(net.minecraftforge.common.ToolType type, int level) {
++      public Item.Settings addToolType(net.minecraftforge.common.ToolType type, int level) {
 +         toolClasses.put(type, level);
 +         return this;
 +      }
 +
-+      public Item.Properties setISTER(java.util.function.Supplier<java.util.concurrent.Callable<net.minecraft.client.renderer.tileentity.ItemStackTileEntityRenderer>> ister) {
++      public Item.Settings setISTER(java.util.function.Supplier<java.util.concurrent.Callable<net.minecraft.client.render.item.BuiltinModelItemRenderer>> ister) {
 +         this.ister = ister;
 +         return this;
 +      }

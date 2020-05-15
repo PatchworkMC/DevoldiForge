@@ -19,9 +19,9 @@
 
 package net.minecraftforge.common.data;
 
-import net.minecraft.tags.Tag.ITagEntry;
+import net.minecraft.tag.Tag.Entry;
 
 /**
  * Marker class used by Forge to make a tag entry optional at runtime
  */
-public interface IOptionalTagEntry<T> extends ITagEntry<T> {}
+public interface IOptionalTagEntry<T> extends Entry<T> {}

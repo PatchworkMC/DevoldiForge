@@ -19,12 +19,10 @@
 
 package net.minecraftforge.fml.network;
 
-import net.minecraft.network.login.ServerLoginNetHandler;
 import com.google.common.collect.Multimap;
-import net.minecraft.network.NetworkManager;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.network.ClientConnection;
+import net.minecraft.text.LiteralText;
+import net.minecraft.util.Identifier;
 import net.minecraftforge.fml.config.ConfigTracker;
 import net.minecraftforge.fml.loading.AdvancedLogMessageAdapter;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
@@ -93,11 +91,11 @@ public class FMLHandshakeHandler {
      * @param manager The network manager for this connection
      * @param direction The {@link NetworkDirection} for this connection: {@link NetworkDirection#LOGIN_TO_SERVER} or {@link NetworkDirection#LOGIN_TO_CLIENT}
      */
-    static void registerHandshake(NetworkManager manager, NetworkDirection direction) {
+    static void registerHandshake(ClientConnection manager, NetworkDirection direction) {
         manager.channel().attr(FMLNetworkConstants.FML_HANDSHAKE_HANDLER).compareAndSet(null, new FMLHandshakeHandler(manager, direction));
     }
 
-    static boolean tickLogin(NetworkManager networkManager)
+    static boolean tickLogin(ClientConnection networkManager)
     {
         return networkManager.channel().attr(FMLNetworkConstants.FML_HANDSHAKE_HANDLER).get().tickServer();
     }
@@ -107,17 +105,17 @@ public class FMLHandshakeHandler {
     private List<Integer> sentMessages = new ArrayList<>();
 
     private final NetworkDirection direction;
-    private final NetworkManager manager;
+    private final ClientConnection manager;
     private int packetPosition;
-    private Map<ResourceLocation, ForgeRegistry.Snapshot> registrySnapshots;
-    private Set<ResourceLocation> registriesToReceive;
-    private Map<ResourceLocation, String> registryHashes;
+    private Map<Identifier, ForgeRegistry.Snapshot> registrySnapshots;
+    private Set<Identifier> registriesToReceive;
+    private Map<Identifier, String> registryHashes;
 
-    private FMLHandshakeHandler(NetworkManager networkManager, NetworkDirection side)
+    private FMLHandshakeHandler(ClientConnection networkManager, NetworkDirection side)
     {
         this.direction = side;
         this.manager = networkManager;
-        if (networkManager.isLocalChannel()) {
+        if (networkManager.isLocal()) {
             this.messageList = NetworkRegistry.gatherLoginPayloads(this.direction, true);
             LOGGER.debug(FMLHSMARKER, "Starting local connection.");
         } else if (NetworkHooks.getConnectionType(()->this.manager)==ConnectionType.VANILLA) {
@@ -176,7 +174,7 @@ public class FMLHandshakeHandler {
         c.get().setPacketHandled(true);
         if (!accepted) {
             LOGGER.error(FMLHSMARKER, "Terminating connection with server, mismatched mod list");
-            c.get().getNetworkManager().closeChannel(new StringTextComponent("Connection closed - mismatched mod channel list"));
+            c.get().getNetworkManager().disconnect(new LiteralText("Connection closed - mismatched mod channel list"));
             return;
         }
         FMLNetworkConstants.handshakeChannel.reply(new FMLHandshakeMessages.C2SModListReply(), c.get());
@@ -206,7 +204,7 @@ public class FMLHandshakeHandler {
         c.get().setPacketHandled(true);
         if (!accepted) {
             LOGGER.error(FMLHSMARKER, "Terminating connection with client, mismatched mod list");
-            c.get().getNetworkManager().closeChannel(new StringTextComponent("Connection closed - mismatched mod channel list"));
+            c.get().getNetworkManager().disconnect(new LiteralText("Connection closed - mismatched mod channel list"));
             return;
         }
         LOGGER.debug(FMLHSMARKER, "Accepted client connection mod list");
@@ -236,7 +234,7 @@ public class FMLHandshakeHandler {
         CountDownLatch block = new CountDownLatch(1);
         contextSupplier.get().enqueueWork(() -> {
             LOGGER.debug(FMLHSMARKER, "Injecting registry snapshot from server.");
-            final Multimap<ResourceLocation, ResourceLocation> missingData = GameData.injectSnapshot(registrySnapshots, false, false);
+            final Multimap<Identifier, Identifier> missingData = GameData.injectSnapshot(registrySnapshots, false, false);
             LOGGER.debug(FMLHSMARKER, "Snapshot injected.");
             if (!missingData.isEmpty()) {
                 LOGGER.error(FMLHSMARKER, "Missing registry data for network connection:\n{}", new AdvancedLogMessageAdapter(sb->
@@ -255,7 +253,7 @@ public class FMLHandshakeHandler {
             LOGGER.debug(FMLHSMARKER, "Registry load complete, continuing handshake.");
         } else {
             LOGGER.error(FMLHSMARKER, "Failed to load registry, closing connection.");
-            this.manager.closeChannel(new StringTextComponent("Failed to synchronize registry data from server, closing connection"));
+            this.manager.disconnect(new LiteralText("Failed to synchronize registry data from server, closing connection"));
         }
         return successfulConnection.get();
     }

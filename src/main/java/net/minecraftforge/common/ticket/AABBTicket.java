@@ -19,7 +19,7 @@
 
 package net.minecraftforge.common.ticket;
 
-import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 
 import javax.annotation.Nonnull;
@@ -27,9 +27,9 @@ import javax.annotation.Nonnull;
 public class AABBTicket extends SimpleTicket<Vec3d>
 {
     @Nonnull
-    public final AxisAlignedBB axisAlignedBB;
+    public final Box axisAlignedBB;
 
-    public AABBTicket(@Nonnull AxisAlignedBB axisAlignedBB)
+    public AABBTicket(@Nonnull Box axisAlignedBB)
     {
         this.axisAlignedBB = axisAlignedBB;
     }

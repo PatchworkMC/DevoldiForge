@@ -1,0 +1,32 @@
+--- a/net/minecraft/world/dimension/TheEndDimension.java
++++ b/net/minecraft/world/dimension/TheEndDimension.java
+@@ -26,8 +26,8 @@
+ 
+    public TheEndDimension(World worldIn, DimensionType typeIn) {
+       super(worldIn, typeIn, 0.0F);
+-      CompoundTag compoundnbt = worldIn.getLevelProperties().getWorldData(DimensionType.THE_END);
+-      this.enderDragonFight = worldIn instanceof ServerWorld ? new EnderDragonFight((ServerWorld)worldIn, compoundnbt.getCompound("DragonFight")) : null;
++      CompoundTag compoundnbt = worldIn.getLevelProperties().getWorldData(typeIn);
++      this.enderDragonFight = worldIn instanceof ServerWorld ? new EnderDragonFight((ServerWorld)worldIn, compoundnbt.getCompound("DragonFight"), this) : null;
+    }
+ 
+    public ChunkGenerator<?> createChunkGenerator() {
+@@ -101,17 +101,13 @@
+       return false;
+    }
+ 
+-   public DimensionType getType() {
+-      return DimensionType.THE_END;
+-   }
+-
+    public void saveWorldData() {
+       CompoundTag compoundnbt = new CompoundTag();
+       if (this.enderDragonFight != null) {
+          compoundnbt.put("DragonFight", this.enderDragonFight.toTag());
+       }
+ 
+-      this.world.getLevelProperties().setWorldData(DimensionType.THE_END, compoundnbt);
++      this.world.getLevelProperties().setWorldData(this.world.getDimension().getType(), compoundnbt);
+    }
+ 
+    public void update() {

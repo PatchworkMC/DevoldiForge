@@ -19,14 +19,14 @@
 
 package net.minecraftforge.fml.network;
 
+import net.minecraft.container.Container;
+import net.minecraft.container.ContainerType;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.inventory.container.ContainerType;
-import net.minecraft.network.PacketBuffer;
+import net.minecraft.util.PacketByteBuf;
 
-public interface IContainerFactory<T extends Container> extends ContainerType.IFactory<T>
+public interface IContainerFactory<T extends Container> extends ContainerType.Factory<T>
 {
-    T create(int windowId, PlayerInventory inv, PacketBuffer data);
+    T create(int windowId, PlayerInventory inv, PacketByteBuf data);
     
     @Override
     default T create(int p_create_1_, PlayerInventory p_create_2_)

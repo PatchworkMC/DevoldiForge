@@ -1,43 +1,43 @@
 --- a/net/minecraft/block/StemBlock.java
 +++ b/net/minecraft/block/StemBlock.java
-@@ -40,22 +40,24 @@
+@@ -42,22 +42,24 @@
  
-    public void func_225534_a_(BlockState p_225534_1_, ServerWorld p_225534_2_, BlockPos p_225534_3_, Random p_225534_4_) {
-       super.func_225534_a_(p_225534_1_, p_225534_2_, p_225534_3_, p_225534_4_);
-+      if (!p_225534_2_.isAreaLoaded(p_225534_3_, 1)) return; // Forge: prevent loading unloaded chunks when checking neighbor's light
-       if (p_225534_2_.func_226659_b_(p_225534_3_, 0) >= 9) {
-          float f = CropsBlock.func_180672_a(this, p_225534_2_, p_225534_3_);
--         if (p_225534_4_.nextInt((int)(25.0F / f) + 1) == 0) {
-+         if (net.minecraftforge.common.ForgeHooks.onCropsGrowPre(p_225534_2_, p_225534_3_, p_225534_1_, p_225534_4_.nextInt((int)(25.0F / f) + 1) == 0)) {
-             int i = p_225534_1_.func_177229_b(field_176484_a);
+    public void scheduledTick(BlockState state, ServerWorld worldIn, BlockPos pos, Random rand) {
+       super.scheduledTick(state, worldIn, pos, rand);
++      if (!worldIn.isAreaLoaded(pos, 1)) return; // Forge: prevent loading unloaded chunks when checking neighbor's light
+       if (worldIn.getBaseLightLevel(pos, 0) >= 9) {
+          float f = CropBlock.getAvailableMoisture(this, worldIn, pos);
+-         if (rand.nextInt((int)(25.0F / f) + 1) == 0) {
++         if (net.minecraftforge.common.ForgeHooks.onCropsGrowPre(worldIn, pos, state, rand.nextInt((int)(25.0F / f) + 1) == 0)) {
+             int i = state.get(AGE);
              if (i < 7) {
--               p_225534_1_ = p_225534_1_.func_206870_a(field_176484_a, Integer.valueOf(i + 1));
--               p_225534_2_.func_180501_a(p_225534_3_, p_225534_1_, 2);
-+               p_225534_2_.func_180501_a(p_225534_3_, p_225534_1_.func_206870_a(field_176484_a, Integer.valueOf(i + 1)), 2);
+-               state = state.with(AGE, Integer.valueOf(i + 1));
+-               worldIn.setBlockState(pos, state, 2);
++               worldIn.setBlockState(pos, state.with(AGE, Integer.valueOf(i + 1)), 2);
              } else {
-                Direction direction = Direction.Plane.HORIZONTAL.func_179518_a(p_225534_4_);
-                BlockPos blockpos = p_225534_3_.func_177972_a(direction);
--               Block block = p_225534_2_.func_180495_p(blockpos.func_177977_b()).func_177230_c();
--               if (p_225534_2_.func_180495_p(blockpos).func_196958_f() && (block == Blocks.field_150458_ak || block == Blocks.field_150346_d || block == Blocks.field_196660_k || block == Blocks.field_196661_l || block == Blocks.field_196658_i)) {
-+               BlockState soil = p_225534_2_.func_180495_p(blockpos.func_177977_b());
-+               Block block = soil.func_177230_c();
-+               if (p_225534_2_.func_175623_d(blockpos) && (soil.canSustainPlant(p_225534_2_, blockpos.func_177977_b(), Direction.UP, this) || block == Blocks.field_150458_ak || block == Blocks.field_150346_d || block == Blocks.field_196660_k || block == Blocks.field_196661_l || block == Blocks.field_196658_i)) {
-                   p_225534_2_.func_175656_a(blockpos, this.field_149877_a.func_176223_P());
-                   p_225534_2_.func_175656_a(p_225534_3_, this.field_149877_a.func_196523_e().func_176223_P().func_206870_a(HorizontalBlock.field_185512_D, direction));
+                Direction direction = Direction.Type.HORIZONTAL.random(rand);
+                BlockPos blockpos = pos.offset(direction);
+-               Block block = worldIn.getBlockState(blockpos.down()).getBlock();
+-               if (worldIn.getBlockState(blockpos).isAir() && (block == Blocks.FARMLAND || block == Blocks.DIRT || block == Blocks.COARSE_DIRT || block == Blocks.PODZOL || block == Blocks.GRASS_BLOCK)) {
++               BlockState soil = worldIn.getBlockState(blockpos.down());
++               Block block = soil.getBlock();
++               if (worldIn.isAir(blockpos) && (soil.canSustainPlant(worldIn, blockpos.down(), Direction.UP, this) || block == Blocks.FARMLAND || block == Blocks.DIRT || block == Blocks.COARSE_DIRT || block == Blocks.PODZOL || block == Blocks.GRASS_BLOCK)) {
+                   worldIn.setBlockState(blockpos, this.gourdBlock.getDefaultState());
+                   worldIn.setBlockState(pos, this.gourdBlock.getAttachedStem().getDefaultState().with(HorizontalFacingBlock.FACING, direction));
                 }
              }
-+            net.minecraftforge.common.ForgeHooks.onCropsGrowPost(p_225534_2_, p_225534_3_, p_225534_1_);
++            net.minecraftforge.common.ForgeHooks.onCropsGrowPost(worldIn, pos, state);
           }
  
        }
-@@ -101,4 +103,10 @@
-    public StemGrownBlock func_208486_d() {
-       return this.field_149877_a;
+@@ -103,4 +105,10 @@
+    public GourdBlock getGourdBlock() {
+       return this.gourdBlock;
     }
 +
 +   //FORGE START
 +   @Override
-+   public net.minecraftforge.common.PlantType getPlantType(IBlockReader world, BlockPos pos) {
++   public net.minecraftforge.common.PlantType getPlantType(BlockView world, BlockPos pos) {
 +      return net.minecraftforge.common.PlantType.Crop;
 +   }
  }

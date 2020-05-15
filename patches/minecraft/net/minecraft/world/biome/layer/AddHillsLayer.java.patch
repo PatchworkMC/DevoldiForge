@@ -1,0 +1,14 @@
+--- a/net/minecraft/world/biome/layer/AddHillsLayer.java
++++ b/net/minecraft/world/biome/layer/AddHillsLayer.java
+@@ -59,7 +59,10 @@
+ 
+       if (p_215723_1_.nextInt(3) == 0 || k == 0) {
+          int l = i;
+-         if (i == DESERT_ID) {
++         Biome biome = Registry.BIOME.get(i);
++         Biome hill = biome == null ? null : biome.getHill(p_215723_1_);
++         if (hill != null) l = Registry.BIOME.getRawId(hill);
++         else if (i == DESERT_ID) {
+             l = DESERT_HILLS_ID;
+          } else if (i == FOREST_ID) {
+             l = WOODED_HILLS_ID;

@@ -1,0 +1,37 @@
+--- a/net/minecraft/data/server/BlockLootTableGenerator.java
++++ b/net/minecraft/data/server/BlockLootTableGenerator.java
+@@ -204,7 +204,7 @@
+       return LootTable.builder();
+    }
+ 
+-   public void accept(BiConsumer<Identifier, LootTable.Builder> p_accept_1_) {
++   protected void addTables() {
+       this.registerForSelfDrop(Blocks.GRANITE);
+       this.registerForSelfDrop(Blocks.POLISHED_GRANITE);
+       this.registerForSelfDrop(Blocks.DIORITE);
+@@ -976,9 +976,13 @@
+       this.register(Blocks.CAKE, createEmpty());
+       this.register(Blocks.FROSTED_ICE, createEmpty());
+       this.register(Blocks.SPAWNER, createEmpty());
++   }
++
++   public void accept(BiConsumer<Identifier, LootTable.Builder> p_accept_1_) {
++      this.addTables();
+       Set<Identifier> set = Sets.newHashSet();
+ 
+-      for(Block block : Registry.BLOCK) {
++      for(Block block : getKnownBlocks()) {
+          Identifier resourcelocation = block.getDropTableId();
+          if (resourcelocation != LootTables.EMPTY && set.add(resourcelocation)) {
+             LootTable.Builder loottable$builder = this.lootTables.remove(resourcelocation);
+@@ -995,6 +999,10 @@
+       }
+    }
+ 
++   protected Iterable<Block> getKnownBlocks() {
++       return Registry.BLOCK;
++   }
++
+    public void registerForPottedPlant(Block flowerPot) {
+       this.registerWithFunction(flowerPot, (p_229438_0_) -> {
+          return createForPottedPlant(((FlowerPotBlock)p_229438_0_).getContent());

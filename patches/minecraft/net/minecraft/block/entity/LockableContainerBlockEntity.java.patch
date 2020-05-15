@@ -1,0 +1,25 @@
+--- a/net/minecraft/block/entity/LockableContainerBlockEntity.java
++++ b/net/minecraft/block/entity/LockableContainerBlockEntity.java
+@@ -80,4 +80,22 @@
+    }
+ 
+    protected abstract Container createContainer(int id, PlayerInventory player);
++
++   private net.minecraftforge.common.util.LazyOptional<?> itemHandler = net.minecraftforge.common.util.LazyOptional.of(() -> createUnSidedHandler());
++   protected net.minecraftforge.items.IItemHandler createUnSidedHandler() {
++      return new net.minecraftforge.items.wrapper.InvWrapper(this);
++   }
++
++   @javax.annotation.Nullable
++   public <T> net.minecraftforge.common.util.LazyOptional<T> getCapability(net.minecraftforge.common.capabilities.Capability<T> cap, @javax.annotation.Nullable net.minecraft.util.math.Direction side) {
++      if (!this.removed && cap == net.minecraftforge.items.CapabilityItemHandler.ITEM_HANDLER_CAPABILITY )
++         return itemHandler.cast();
++      return super.getCapability(cap, side);
++   }
++
++   @Override
++   public void markRemoved() {
++      super.markRemoved();
++      itemHandler.invalidate();
++   }
+ }

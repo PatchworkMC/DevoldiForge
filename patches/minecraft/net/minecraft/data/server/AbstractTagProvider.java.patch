@@ -1,0 +1,10 @@
+--- a/net/minecraft/data/server/AbstractTagProvider.java
++++ b/net/minecraft/data/server/AbstractTagProvider.java
+@@ -51,6 +51,7 @@
+       tagcollection.getEntries().forEach((p_223474_2_, p_223474_3_) -> {
+          JsonObject jsonobject = p_223474_3_.toJson(this.registry::getId);
+          Path path = this.getOutput(p_223474_2_);
++         if (path == null) return; //Forge: Allow running this data provider without writing it. Recipe provider needs valid tags.
+ 
+          try {
+             String s = GSON.toJson((JsonElement)jsonobject);

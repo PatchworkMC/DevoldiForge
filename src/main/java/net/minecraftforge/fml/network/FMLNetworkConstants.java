@@ -20,7 +20,7 @@
 package net.minecraftforge.fml.network;
 
 import io.netty.util.AttributeKey;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Identifier;
 import net.minecraftforge.fml.network.event.EventNetworkChannel;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 import org.apache.logging.log4j.Marker;
@@ -41,10 +41,10 @@ public class FMLNetworkConstants
     static final AttributeKey<String> FML_NETVERSION = AttributeKey.valueOf("fml:netversion");
     static final AttributeKey<FMLHandshakeHandler> FML_HANDSHAKE_HANDLER = AttributeKey.valueOf("fml:handshake");
     static final AttributeKey<FMLMCRegisterPacketHandler.ChannelList> FML_MC_REGISTRY = AttributeKey.valueOf("minecraft:netregistry");
-    static final ResourceLocation FML_HANDSHAKE_RESOURCE = new ResourceLocation("fml:handshake");
-    static final ResourceLocation FML_PLAY_RESOURCE = new ResourceLocation("fml:play");
-    static final ResourceLocation MC_REGISTER_RESOURCE = new ResourceLocation("minecraft:register");
-    static final ResourceLocation MC_UNREGISTER_RESOURCE = new ResourceLocation("minecraft:unregister");
+    static final Identifier FML_HANDSHAKE_RESOURCE = new Identifier("fml:handshake");
+    static final Identifier FML_PLAY_RESOURCE = new Identifier("fml:play");
+    static final Identifier MC_REGISTER_RESOURCE = new Identifier("minecraft:register");
+    static final Identifier MC_UNREGISTER_RESOURCE = new Identifier("minecraft:unregister");
     static final SimpleChannel handshakeChannel = NetworkInitialization.getHandshakeChannel();
     static final SimpleChannel playChannel = NetworkInitialization.getPlayChannel();
     static final List<EventNetworkChannel> mcRegChannels = NetworkInitialization.buildMCRegistrationChannels();

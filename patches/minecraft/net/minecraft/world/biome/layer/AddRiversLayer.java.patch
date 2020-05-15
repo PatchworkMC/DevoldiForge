@@ -1,0 +1,15 @@
+--- a/net/minecraft/world/biome/layer/AddRiversLayer.java
++++ b/net/minecraft/world/biome/layer/AddRiversLayer.java
+@@ -22,11 +22,7 @@
+       if (BiomeLayers.isOcean(i)) {
+          return i;
+       } else if (j == RIVER_ID) {
+-         if (i == SNOWY_TUNDRA_ID) {
+-            return FROZEN_RIVER_ID;
+-         } else {
+-            return i != MUSHROOM_FIELDS_ID && i != MUSHROOM_FIELD_SHORE_ID ? j & 255 : MUSHROOM_FIELD_SHORE_ID;
+-         }
++         return Registry.BIOME.getRawId(Registry.BIOME.get(i).getRiver());
+       } else {
+          return i;
+       }

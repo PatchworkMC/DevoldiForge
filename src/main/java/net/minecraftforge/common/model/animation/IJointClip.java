@@ -19,12 +19,12 @@
 
 package net.minecraftforge.common.model.animation;
 
-import net.minecraft.client.renderer.TransformationMatrix;
+import net.minecraft.client.util.math.Rotation3;
 
 /**
  * Returns Local joint pose; animation clip for specific model part.
  */
 public interface IJointClip
 {
-    TransformationMatrix apply(float time);
+    Rotation3 apply(float time);
 }

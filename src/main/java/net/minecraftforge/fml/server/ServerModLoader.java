@@ -19,7 +19,7 @@
 
 package net.minecraftforge.fml.server;
 
-import net.minecraft.server.dedicated.DedicatedServer;
+import net.minecraft.server.dedicated.MinecraftDedicatedServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.*;
 import net.minecraftforge.fml.network.FMLStatusPing;
@@ -33,10 +33,10 @@ import static net.minecraftforge.fml.loading.LogMarkers.LOADING;
 public class ServerModLoader
 {
     private static final Logger LOGGER = LogManager.getLogger();
-    private static DedicatedServer server;
+    private static MinecraftDedicatedServer server;
     private static boolean hasErrors = false;
 
-    public static void begin(DedicatedServer dedicatedServer) {
+    public static void begin(MinecraftDedicatedServer dedicatedServer) {
         ServerModLoader.server = dedicatedServer;
         SidedProvider.setServer(()->dedicatedServer);
         LogicalSidedProvider.setServer(()->dedicatedServer);
@@ -65,7 +65,7 @@ public class ServerModLoader
             warnings.forEach(warning -> LOGGER.warn(LOADING, warning.formatToString()));
         }
         MinecraftForge.EVENT_BUS.start();
-        server.getServerStatusResponse().setForgeData(new FMLStatusPing()); //gathers NetworkRegistry data
+        server.getServerMetadata().setForgeData(new FMLStatusPing()); //gathers NetworkRegistry data
     }
 
     public static boolean hasErrors() {

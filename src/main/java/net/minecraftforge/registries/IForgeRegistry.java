@@ -24,11 +24,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import net.minecraft.util.ResourceLocation;
-
-
-import net.minecraft.util.ResourceLocation;
-
+import net.minecraft.util.Identifier;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -39,24 +35,24 @@ import javax.annotation.Nullable;
  */
 public interface IForgeRegistry<V extends IForgeRegistryEntry<V>> extends Iterable<V>
 {
-    ResourceLocation getRegistryName();
+    Identifier getRegistryName();
     Class<V> getRegistrySuperType();
 
     void register(V value);
 
     void registerAll(@SuppressWarnings("unchecked") V... values);
 
-    boolean containsKey(ResourceLocation key);
+    boolean containsKey(Identifier key);
     boolean containsValue(V value);
     boolean isEmpty();
 
-    @Nullable V getValue(ResourceLocation key);
-    @Nullable ResourceLocation getKey(V value);
-    @Nullable ResourceLocation getDefaultKey();
+    @Nullable V getValue(Identifier key);
+    @Nullable Identifier getKey(V value);
+    @Nullable Identifier getDefaultKey();
 
-    @Nonnull Set<ResourceLocation>           getKeys();
+    @Nonnull Set<Identifier>           getKeys();
     @Nonnull Collection<V>                   getValues();
-    @Nonnull Set<Entry<ResourceLocation, V>> getEntries();
+    @Nonnull Set<Entry<Identifier, V>> getEntries();
 
     /**
      * Retrieve the slave map of type T from the registry.
@@ -66,7 +62,7 @@ public interface IForgeRegistry<V extends IForgeRegistryEntry<V>> extends Iterab
      * @param <T> Type to return
      * @return The slavemap if present
      */
-    <T> T getSlaveMap(ResourceLocation slaveMapName, Class<T> type);
+    <T> T getSlaveMap(Identifier slaveMapName, Class<T> type);
 
     /**
      * Callback fired when objects are added to the registry. This will fire when the registry is rebuilt
@@ -99,7 +95,7 @@ public interface IForgeRegistry<V extends IForgeRegistryEntry<V>> extends Iterab
      */
     interface ValidateCallback<V extends IForgeRegistryEntry<V>>
     {
-        void onValidate(IForgeRegistryInternal<V> owner, RegistryManager stage, int id, ResourceLocation key, V obj);
+        void onValidate(IForgeRegistryInternal<V> owner, RegistryManager stage, int id, Identifier key, V obj);
     }
 
     /**
@@ -115,7 +111,7 @@ public interface IForgeRegistry<V extends IForgeRegistryEntry<V>> extends Iterab
      */
     interface DummyFactory<V extends IForgeRegistryEntry<V>>
     {
-        V createDummy(ResourceLocation key);
+        V createDummy(Identifier key);
     }
 
     /**
@@ -123,6 +119,6 @@ public interface IForgeRegistry<V extends IForgeRegistryEntry<V>> extends Iterab
      */
     interface MissingFactory<V extends IForgeRegistryEntry<V>>
     {
-        V createMissing(ResourceLocation key, boolean isNetwork);
+        V createMissing(Identifier key, boolean isNetwork);
     }
 }

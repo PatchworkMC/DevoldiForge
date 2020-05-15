@@ -19,7 +19,7 @@
 
 package net.minecraftforge.client.extensions;
 
-import net.minecraft.client.renderer.TransformationMatrix;
+import net.minecraft.client.util.math.Rotation3;
 
 /**
  * An {@code IModelState} is a function from model part to a transformation that should be applied
@@ -33,8 +33,8 @@ public interface IForgeModelTransform
      * @return A transformation to apply to the part, if any. The coordinate system of the transform
      *         is determined by the part type.
      */
-    default TransformationMatrix getPartTransformation(Object part)
+    default Rotation3 getPartTransformation(Object part)
     {
-        return TransformationMatrix.identity();
+        return Rotation3.identity();
     }
 }

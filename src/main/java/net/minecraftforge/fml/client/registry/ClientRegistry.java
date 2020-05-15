@@ -19,34 +19,32 @@
 
 package net.minecraftforge.fml.client.registry;
 
-import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.options.KeyBinding;
+import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
+import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.entity.Entity;
-import net.minecraft.tileentity.TileEntityType;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.Identifier;
 import org.apache.commons.lang3.ArrayUtils;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
-import net.minecraft.client.settings.KeyBinding;
-import net.minecraft.tileentity.TileEntity;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 public class ClientRegistry
 {
-    private static Map<Class<? extends Entity>, ResourceLocation> entityShaderMap = new ConcurrentHashMap<>();
+    private static Map<Class<? extends Entity>, Identifier> entityShaderMap = new ConcurrentHashMap<>();
 
     /**
      * Registers a Tile Entity renderer.
      * Call this during {@link net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent}.
      * This method is safe to call during parallel mod loading.
      */
-    public static synchronized <T extends TileEntity> void bindTileEntityRenderer(TileEntityType<T> tileEntityType,
-            Function<? super TileEntityRendererDispatcher, ? extends TileEntityRenderer<? super T>> rendererFactory)
+    public static synchronized <T extends BlockEntity> void bindTileEntityRenderer(BlockEntityType<T> tileEntityType,
+            Function<? super BlockEntityRenderDispatcher, ? extends BlockEntityRenderer<? super T>> rendererFactory)
     {
-        TileEntityRendererDispatcher.instance.setSpecialRendererInternal(tileEntityType, rendererFactory.apply(TileEntityRendererDispatcher.instance));
+        BlockEntityRenderDispatcher.INSTANCE.setSpecialRendererInternal(tileEntityType, rendererFactory.apply(BlockEntityRenderDispatcher.INSTANCE));
     }
 
     /**
@@ -56,7 +54,7 @@ public class ClientRegistry
      */
     public static synchronized void registerKeyBinding(KeyBinding key)
     {
-        Minecraft.getInstance().gameSettings.keyBindings = ArrayUtils.add(Minecraft.getInstance().gameSettings.keyBindings, key);
+        MinecraftClient.getInstance().options.keysAll = ArrayUtils.add(MinecraftClient.getInstance().options.keysAll, key);
     }
 
     /**
@@ -65,12 +63,12 @@ public class ClientRegistry
      * Call this during {@link net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent}.
      * This method is safe to call during parallel mod loading.
      */
-    public static void registerEntityShader(Class<? extends Entity> entityClass, ResourceLocation shader)
+    public static void registerEntityShader(Class<? extends Entity> entityClass, Identifier shader)
     {
         entityShaderMap.put(entityClass, shader);
     }
 
-    public static ResourceLocation getEntityShader(Class<? extends Entity> entityClass)
+    public static Identifier getEntityShader(Class<? extends Entity> entityClass)
     {
         return entityShaderMap.get(entityClass);
     }

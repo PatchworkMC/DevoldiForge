@@ -1,0 +1,32 @@
+--- a/net/minecraft/client/resource/ClientResourcePackProfile.java
++++ b/net/minecraft/client/resource/ClientResourcePackProfile.java
+@@ -25,8 +25,13 @@
+    @Nullable
+    private Identifier iconId;
+ 
++   @Deprecated
+    public ClientResourcePackProfile(String nameIn, boolean isAlwaysEnabled, Supplier<ResourcePack> resourcePackSupplierIn, ResourcePack p_i48113_4_, PackResourceMetadata p_i48113_5_, ResourcePackProfile.InsertionPosition priorityIn) {
+-      super(nameIn, isAlwaysEnabled, resourcePackSupplierIn, p_i48113_4_, p_i48113_5_, priorityIn);
++	  this(nameIn, isAlwaysEnabled, resourcePackSupplierIn, p_i48113_4_, p_i48113_5_, priorityIn, false);
++   }
++
++   public ClientResourcePackProfile(String nameIn, boolean isAlwaysEnabled, Supplier<ResourcePack> resourcePackSupplierIn, ResourcePack p_i48113_4_, PackResourceMetadata p_i48113_5_, ResourcePackProfile.InsertionPosition priorityIn, boolean hidden) {
++      super(nameIn, isAlwaysEnabled, resourcePackSupplierIn, p_i48113_4_, p_i48113_5_, priorityIn, hidden);
+       NativeImage nativeimage = null;
+ 
+       try (InputStream inputstream = p_i48113_4_.openRoot("pack.png")) {
+@@ -38,8 +43,13 @@
+       this.icon = nativeimage;
+    }
+ 
++   @Deprecated
+    public ClientResourcePackProfile(String nameIn, boolean isAlwaysEnabled, Supplier<ResourcePack> resourcePackSupplierIn, Text titleIn, Text descriptionIn, ResourcePackCompatibility compatibilityIn, ResourcePackProfile.InsertionPosition priorityIn, boolean isOrderLocked, @Nullable NativeImage p_i48114_9_) {
+-      super(nameIn, isAlwaysEnabled, resourcePackSupplierIn, titleIn, descriptionIn, compatibilityIn, priorityIn, isOrderLocked);
++      this(nameIn, isAlwaysEnabled, resourcePackSupplierIn, titleIn, descriptionIn, compatibilityIn, priorityIn, isOrderLocked, p_i48114_9_, false);
++   }
++
++   public ClientResourcePackProfile(String nameIn, boolean isAlwaysEnabled, Supplier<ResourcePack> resourcePackSupplierIn, Text titleIn, Text descriptionIn, ResourcePackCompatibility compatibilityIn, ResourcePackProfile.InsertionPosition priorityIn, boolean isOrderLocked, @Nullable NativeImage p_i48114_9_, boolean hidden) {
++      super(nameIn, isAlwaysEnabled, resourcePackSupplierIn, titleIn, descriptionIn, compatibilityIn, priorityIn, isOrderLocked, hidden);
+       this.icon = p_i48114_9_;
+    }
+ 

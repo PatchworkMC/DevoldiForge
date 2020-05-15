@@ -1,0 +1,47 @@
+--- a/net/minecraft/client/render/model/BakedQuad.java
++++ b/net/minecraft/client/render/model/BakedQuad.java
+@@ -8,13 +8,22 @@
+ import net.minecraftforge.api.distmarker.OnlyIn;
+ 
+ @Environment(EnvType.CLIENT)
+-public class BakedQuad {
++public class BakedQuad implements net.minecraftforge.client.model.pipeline.IVertexProducer {
+    protected final int[] vertexData;
+    protected final int colorIndex;
+    protected final Direction face;
+    protected final Sprite sprite;
+ 
++   /**
++    * @deprecated Use constructor with the format argument.
++    */
++   @Deprecated
+    public BakedQuad(int[] vertexDataIn, int tintIndexIn, Direction faceIn, Sprite spriteIn) {
++      this(vertexDataIn, tintIndexIn, faceIn, spriteIn, true);
++   }
++
++   public BakedQuad(int[] vertexDataIn, int tintIndexIn, Direction faceIn, Sprite spriteIn, boolean applyDiffuseLighting) {
++      this.applyDiffuseLighting = applyDiffuseLighting;
+       this.vertexData = vertexDataIn;
+       this.colorIndex = tintIndexIn;
+       this.face = faceIn;
+@@ -36,4 +45,20 @@
+    public Direction getFace() {
+       return this.face;
+    }
++
++   // Forge start
++   protected final boolean applyDiffuseLighting;
++
++   @Override
++   public void pipe(net.minecraftforge.client.model.pipeline.IVertexConsumer consumer) {
++      net.minecraftforge.client.model.pipeline.LightUtil.putBakedQuad(consumer, this);
++   }
++
++   public Sprite a() {
++      return sprite;
++   }
++
++   public boolean shouldApplyDiffuseLighting() {
++       return applyDiffuseLighting;
++   }
+ }

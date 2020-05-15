@@ -20,21 +20,20 @@
 package net.minecraftforge.client.model.generators;
 
 import com.google.common.base.Preconditions;
-
-import net.minecraft.resources.ResourcePackType;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resource.ResourceType;
+import net.minecraft.util.Identifier;
 
 public abstract class ModelFile {
 
-    protected ResourceLocation location;
+    protected Identifier location;
 
-    protected ModelFile(ResourceLocation location) {
+    protected ModelFile(Identifier location) {
         this.location = location;
     }
 
     protected abstract boolean exists();
 
-    public ResourceLocation getLocation() {
+    public Identifier getLocation() {
         assertExistence();
         return location;
     }
@@ -47,16 +46,16 @@ public abstract class ModelFile {
         Preconditions.checkState(exists(), "Model at %s does not exist", location);
     }
 
-    public ResourceLocation getUncheckedLocation() {
+    public Identifier getUncheckedLocation() {
         return location;
     }
 
     public static class UncheckedModelFile extends ModelFile {
 
         public UncheckedModelFile(String location) {
-           this(new ResourceLocation(location));
+           this(new Identifier(location));
         }
-        public UncheckedModelFile(ResourceLocation location) {
+        public UncheckedModelFile(Identifier location) {
             super(location);
         }
 
@@ -69,7 +68,7 @@ public abstract class ModelFile {
     public static class ExistingModelFile extends ModelFile {
         private final ExistingFileHelper existingHelper;
 
-        public ExistingModelFile(ResourceLocation location, ExistingFileHelper existingHelper) {
+        public ExistingModelFile(Identifier location, ExistingFileHelper existingHelper) {
             super(location);
             this.existingHelper = existingHelper;
         }
@@ -77,9 +76,9 @@ public abstract class ModelFile {
         @Override
         protected boolean exists() {
             if (getUncheckedLocation().getPath().contains("."))
-                return existingHelper.exists(getUncheckedLocation(), ResourcePackType.CLIENT_RESOURCES, "", "models");
+                return existingHelper.exists(getUncheckedLocation(), ResourceType.CLIENT_RESOURCES, "", "models");
             else
-                return existingHelper.exists(getUncheckedLocation(), ResourcePackType.CLIENT_RESOURCES, ".json", "models");
+                return existingHelper.exists(getUncheckedLocation(), ResourceType.CLIENT_RESOURCES, ".json", "models");
         }
     }
 }

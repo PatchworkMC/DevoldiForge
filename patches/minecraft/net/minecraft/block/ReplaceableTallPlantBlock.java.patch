@@ -1,0 +1,11 @@
+--- a/net/minecraft/block/ReplaceableTallPlantBlock.java
++++ b/net/minecraft/block/ReplaceableTallPlantBlock.java
+@@ -4,7 +4,7 @@
+ import net.minecraft.item.ItemPlacementContext;
+ import net.minecraft.state.property.EnumProperty;
+ 
+-public class ReplaceableTallPlantBlock extends TallPlantBlock {
++public class ReplaceableTallPlantBlock extends TallPlantBlock implements net.minecraftforge.common.IShearable {
+    public static final EnumProperty<DoubleBlockHalf> HALF = TallPlantBlock.HALF;
+ 
+    public ReplaceableTallPlantBlock(Block.Settings propertiesIn) {

@@ -1,0 +1,14 @@
+--- a/net/minecraft/block/entity/ConduitBlockEntity.java
++++ b/net/minecraft/block/entity/ConduitBlockEntity.java
+@@ -134,10 +134,8 @@
+                   BlockPos blockpos1 = this.pos.add(j1, k1, l1);
+                   BlockState blockstate = this.world.getBlockState(blockpos1);
+ 
+-                  for(Block block : ACTIVATING_BLOCKS) {
+-                     if (blockstate.getBlock() == block) {
++                      if (blockstate.isConduitFrame(this.world, blockpos1, getPos())) {
+                         this.activatingBlocks.add(blockpos1);
+-                     }
+                   }
+                }
+             }

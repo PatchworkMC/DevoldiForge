@@ -20,32 +20,33 @@
 package net.minecraftforge.common.extensions;
 
 import java.util.function.LongFunction;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.CreateBuffetWorldScreen;
-import net.minecraft.client.gui.screen.CreateFlatWorldScreen;
-import net.minecraft.client.gui.screen.CreateWorldScreen;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.CustomizeBuffetLevelScreen;
+import net.minecraft.client.gui.screen.CustomizeFlatLevelScreen;
+import net.minecraft.client.gui.screen.world.CreateWorldScreen;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldType;
-import net.minecraft.world.gen.ChunkGenerator;
-import net.minecraft.world.gen.IExtendedNoiseRandom;
-import net.minecraft.world.gen.OverworldGenSettings;
-import net.minecraft.world.gen.area.IArea;
-import net.minecraft.world.gen.area.IAreaFactory;
-import net.minecraft.world.gen.layer.AddBambooForestLayer;
-import net.minecraft.world.gen.layer.BiomeLayer;
-import net.minecraft.world.gen.layer.EdgeBiomeLayer;
-import net.minecraft.world.gen.layer.ZoomLayer;
-import net.minecraft.world.gen.layer.LayerUtil;
+import net.minecraft.world.biome.layer.AddBambooJungleLayer;
+import net.minecraft.world.biome.layer.BiomeLayers;
+import net.minecraft.world.biome.layer.EaseBiomeEdgeLayer;
+import net.minecraft.world.biome.layer.ScaleLayer;
+import net.minecraft.world.biome.layer.SetBaseBiomesLayer;
+import net.minecraft.world.biome.layer.util.LayerFactory;
+import net.minecraft.world.biome.layer.util.LayerSampleContext;
+import net.minecraft.world.biome.layer.util.LayerSampler;
+import net.minecraft.world.gen.chunk.ChunkGenerator;
+import net.minecraft.world.gen.chunk.OverworldChunkGeneratorConfig;
+import net.minecraft.world.level.LevelGeneratorType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 public interface IForgeWorldType
 {
-    default WorldType getWorldType()
+    default LevelGeneratorType getWorldType()
     {
-        return (WorldType) this;
+        return (LevelGeneratorType) this;
     }
 
     /**
@@ -61,28 +62,28 @@ public interface IForgeWorldType
      * @param mc  The Minecraft instance
      * @param gui the createworld GUI
      */
-    @OnlyIn(Dist.CLIENT)
-    default void onCustomizeButton(Minecraft mc, CreateWorldScreen gui)
+    @Environment(EnvType.CLIENT)
+    default void onCustomizeButton(MinecraftClient mc, CreateWorldScreen gui)
     {
-        if (this == WorldType.FLAT)
-            mc.displayGuiScreen(new CreateFlatWorldScreen(gui, gui.chunkProviderSettingsJson));
-        else if (this == WorldType.BUFFET)
-            mc.displayGuiScreen(new CreateBuffetWorldScreen(gui, gui.chunkProviderSettingsJson));
+        if (this == LevelGeneratorType.FLAT)
+            mc.openScreen(new CustomizeFlatLevelScreen(gui, gui.generatorOptionsTag));
+        else if (this == LevelGeneratorType.BUFFET)
+            mc.openScreen(new CustomizeBuffetLevelScreen(gui, gui.generatorOptionsTag));
     }
 
     default boolean handleSlimeSpawnReduction(java.util.Random random, IWorld world)
     {
-        return this == WorldType.FLAT ? random.nextInt(4) != 1 : false;
+        return this == LevelGeneratorType.FLAT ? random.nextInt(4) != 1 : false;
     }
 
     default double getHorizon(World world)
     {
-        return this == WorldType.FLAT ? 0.0D : 63.0D;
+        return this == LevelGeneratorType.FLAT ? 0.0D : 63.0D;
     }
 
     default double voidFadeMagnitude()
     {
-        return this == WorldType.FLAT ? 1.0D : 0.03125D;
+        return this == LevelGeneratorType.FLAT ? 1.0D : 0.03125D;
     }
 
     /**
@@ -116,13 +117,13 @@ public interface IForgeWorldType
      * @return An {@link IAreaFactory} that representing the Biomes to be generated.
      * @see {@link GenLayerBiome}
      */
-    default <T extends IArea, C extends IExtendedNoiseRandom<T>> IAreaFactory<T> getBiomeLayer(IAreaFactory<T> parentLayer,
-            OverworldGenSettings chunkSettings, LongFunction<C> contextFactory)
+    default <T extends LayerSampler, C extends LayerSampleContext<T>> LayerFactory<T> getBiomeLayer(LayerFactory<T> parentLayer,
+            OverworldChunkGeneratorConfig chunkSettings, LongFunction<C> contextFactory)
     {
-        parentLayer = (new BiomeLayer(getWorldType(), chunkSettings.getBiomeId())).apply(contextFactory.apply(200L), parentLayer);
-        parentLayer = AddBambooForestLayer.INSTANCE.apply(contextFactory.apply(1001L), parentLayer);
-        parentLayer = LayerUtil.repeat(1000L, ZoomLayer.NORMAL, parentLayer, 2, contextFactory);
-        parentLayer = EdgeBiomeLayer.INSTANCE.apply(contextFactory.apply(1000L), parentLayer);
+        parentLayer = (new SetBaseBiomesLayer(getWorldType(), chunkSettings.getForcedBiome())).create(contextFactory.apply(200L), parentLayer);
+        parentLayer = AddBambooJungleLayer.INSTANCE.create(contextFactory.apply(1001L), parentLayer);
+        parentLayer = BiomeLayers.stack(1000L, ScaleLayer.NORMAL, parentLayer, 2, contextFactory);
+        parentLayer = EaseBiomeEdgeLayer.INSTANCE.create(contextFactory.apply(1000L), parentLayer);
         return parentLayer;
     }
 }

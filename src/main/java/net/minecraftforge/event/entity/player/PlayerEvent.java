@@ -20,9 +20,6 @@
 package net.minecraftforge.event.entity.player;
 
 import java.io.File;
-
-import net.minecraft.entity.item.ItemEntity;
-import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.common.MinecraftForge;
@@ -30,7 +27,9 @@ import net.minecraftforge.event.ForgeEventFactory;
 import net.minecraftforge.eventbus.api.Cancelable;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.eventbus.api.Event;
@@ -416,8 +415,8 @@ public class PlayerEvent extends LivingEvent
     public static class ItemCraftedEvent extends PlayerEvent {
         @Nonnull
         private final ItemStack crafting;
-        private final IInventory craftMatrix;
-        public ItemCraftedEvent(PlayerEntity player, @Nonnull ItemStack crafting, IInventory craftMatrix)
+        private final Inventory craftMatrix;
+        public ItemCraftedEvent(PlayerEntity player, @Nonnull ItemStack crafting, Inventory craftMatrix)
         {
             super(player);
             this.crafting = crafting;
@@ -430,7 +429,7 @@ public class PlayerEvent extends LivingEvent
             return this.crafting;
         }
 
-        public IInventory getInventory()
+        public Inventory getInventory()
         {
             return this.craftMatrix;
         }

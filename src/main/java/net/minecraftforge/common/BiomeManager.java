@@ -26,10 +26,9 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 
 import net.minecraft.world.biome.Biomes;
-import net.minecraft.util.WeightedRandom;
+import net.minecraft.world.biome.source.BiomeSource;
+import net.minecraft.util.WeightedPicker;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.provider.BiomeProvider;
-
 import javax.annotation.Nullable;
 
 public class BiomeManager
@@ -82,17 +81,17 @@ public class BiomeManager
 
     public static void addSpawnBiome(Biome biome)
     {
-        if (!BiomeProvider.BIOMES_TO_SPAWN_IN.contains(biome))
+        if (!BiomeSource.SPAWN_BIOMES.contains(biome))
         {
-            BiomeProvider.BIOMES_TO_SPAWN_IN.add(biome);
+            BiomeSource.SPAWN_BIOMES.add(biome);
         }
     }
 
     public static void removeSpawnBiome(Biome biome)
     {
-        if (BiomeProvider.BIOMES_TO_SPAWN_IN.contains(biome))
+        if (BiomeSource.SPAWN_BIOMES.contains(biome))
         {
-            BiomeProvider.BIOMES_TO_SPAWN_IN.remove(biome);
+            BiomeSource.SPAWN_BIOMES.remove(biome);
         }
     }
 
@@ -142,7 +141,7 @@ public class BiomeManager
         }
     }
 
-    public static class BiomeEntry extends WeightedRandom.Item
+    public static class BiomeEntry extends WeightedPicker.Entry
     {
         public final Biome biome;
 

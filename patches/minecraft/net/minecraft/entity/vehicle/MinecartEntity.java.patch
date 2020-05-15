@@ -1,0 +1,10 @@
+--- a/net/minecraft/entity/vehicle/MinecartEntity.java
++++ b/net/minecraft/entity/vehicle/MinecartEntity.java
+@@ -15,6 +15,7 @@
+    }
+ 
+    public boolean interact(PlayerEntity player, Hand hand) {
++      if (super.interact(player, hand)) return true;
+       if (player.shouldCancelInteraction()) {
+          return false;
+       } else if (this.hasPassengers()) {

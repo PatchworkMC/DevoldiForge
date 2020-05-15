@@ -1,0 +1,11 @@
+--- a/net/minecraft/entity/decoration/AbstractDecorationEntity.java
++++ b/net/minecraft/entity/decoration/AbstractDecorationEntity.java
+@@ -114,6 +114,8 @@
+                int j1 = (j - 1) / -2;
+                blockpos$mutable.set(blockpos).setOffset(direction, k + i1).setOffset(Direction.UP, l + j1);
+                BlockState blockstate = this.world.getBlockState(blockpos$mutable);
++               if (net.minecraft.block.Block.sideCoversSmallSquare(this.world, blockpos$mutable, this.facing))
++                  continue;
+                if (!blockstate.getMaterial().isSolid() && !AbstractRedstoneGateBlock.isRedstoneGate(blockstate)) {
+                   return false;
+                }

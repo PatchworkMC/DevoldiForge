@@ -21,21 +21,20 @@ package net.minecraftforge.server.command;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
-
-import net.minecraft.command.CommandSource;
+import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.BaseText;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.TextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.dimension.DimensionType;
 import net.minecraftforge.common.DimensionManager;
 import net.minecraftforge.common.WorldWorkerManager.IWorker;
 
 public class ChunkGenWorker implements IWorker
 {
-    private final CommandSource listener;
+    private final ServerCommandSource listener;
     protected final BlockPos start;
     protected final int total;
     private final DimensionType dim;
@@ -46,7 +45,7 @@ public class ChunkGenWorker implements IWorker
     private int genned = 0;
     private Boolean keepingLoaded;
 
-    public ChunkGenWorker(CommandSource listener, BlockPos start, int total, DimensionType dim, int interval)
+    public ChunkGenWorker(ServerCommandSource listener, BlockPos start, int total, DimensionType dim, int interval)
     {
         this.listener = listener;
         this.start = start;
@@ -83,9 +82,9 @@ public class ChunkGenWorker implements IWorker
         return ret;
     }
 
-    public TextComponent getStartMessage(CommandSource sender)
+    public BaseText getStartMessage(ServerCommandSource sender)
     {
-        return new TranslationTextComponent("commands.forge.gen.start", total, start.getX(), start.getZ(), dim);
+        return new TranslatableText("commands.forge.gen.start", total, start.getX(), start.getZ(), dim);
     }
 
     @Override
@@ -97,13 +96,13 @@ public class ChunkGenWorker implements IWorker
     @Override
     public boolean doWork()
     {
-        ServerWorld world = DimensionManager.getWorld(listener.getServer(), dim, false, false);
+        ServerWorld world = DimensionManager.getWorld(listener.getMinecraftServer(), dim, false, false);
         if (world == null)
         {
-            world = DimensionManager.initWorld(listener.getServer(), dim);
+            world = DimensionManager.initWorld(listener.getMinecraftServer(), dim);
             if (world == null)
             {
-                listener.sendFeedback(new TranslationTextComponent("commands.forge.gen.dim_fail", dim), true);
+                listener.sendFeedback(new TranslatableText("commands.forge.gen.dim_fail", dim), true);
                 queue.clear();
                 return false;
             }
@@ -135,7 +134,7 @@ public class ChunkGenWorker implements IWorker
 
             if (++lastNotification >= notificationFrequency || lastNotifcationTime < System.currentTimeMillis() - 60*1000)
             {
-                listener.sendFeedback(new TranslationTextComponent("commands.forge.gen.progress", total - queue.size(), total), true);
+                listener.sendFeedback(new TranslatableText("commands.forge.gen.progress", total - queue.size(), total), true);
                 lastNotification = 0;
                 lastNotifcationTime = System.currentTimeMillis();
             }
@@ -143,8 +142,8 @@ public class ChunkGenWorker implements IWorker
             int x = next.getX();
             int z = next.getZ();
 
-            if (!world.chunkExists(x, z)) { //Chunk is unloaded
-                IChunk chunk = world.getChunk(x, z, ChunkStatus.EMPTY, true);
+            if (!world.isChunkLoaded(x, z)) { //Chunk is unloaded
+                Chunk chunk = world.getChunk(x, z, ChunkStatus.EMPTY, true);
                 if (!chunk.getStatus().isAtLeast(ChunkStatus.FULL)) {
                     chunk = world.getChunk(x, z, ChunkStatus.FULL);
                     genned++; //There isn't a way to check if the chunk is actually created just if it was loaded
@@ -154,7 +153,7 @@ public class ChunkGenWorker implements IWorker
 
         if (queue.size() == 0)
         {
-            listener.sendFeedback(new TranslationTextComponent("commands.forge.gen.complete", genned, total, DimensionType.getKey(dim)), true);
+            listener.sendFeedback(new TranslatableText("commands.forge.gen.complete", genned, total, DimensionType.getId(dim)), true);
             if (keepingLoaded != null && !keepingLoaded)
             {
                 DimensionManager.keepLoaded(dim, false);

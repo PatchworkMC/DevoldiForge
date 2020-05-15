@@ -1,0 +1,12 @@
+--- a/net/minecraft/client/render/model/WeightedBakedModel.java
++++ b/net/minecraft/client/render/model/WeightedBakedModel.java
+@@ -34,6 +34,9 @@
+    public boolean useAmbientOcclusion() {
+       return this.defaultModel.useAmbientOcclusion();
+    }
++   
++   @Override
++   public boolean isAmbientOcclusion(BlockState state) { return this.defaultModel.isAmbientOcclusion(state); }
+ 
+    public boolean hasDepth() {
+       return this.defaultModel.hasDepth();

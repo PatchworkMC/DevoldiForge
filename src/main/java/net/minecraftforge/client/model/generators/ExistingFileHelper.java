@@ -25,16 +25,15 @@ import java.nio.file.Path;
 import java.util.Collection;
 
 import com.google.common.annotations.VisibleForTesting;
-
-import net.minecraft.resources.FilePack;
-import net.minecraft.resources.FolderPack;
-import net.minecraft.resources.IResource;
-import net.minecraft.resources.IResourceManager;
-import net.minecraft.resources.IResourcePack;
-import net.minecraft.resources.ResourcePackType;
-import net.minecraft.resources.SimpleReloadableResourceManager;
-import net.minecraft.resources.VanillaPack;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resource.DefaultResourcePack;
+import net.minecraft.resource.DirectoryResourcePack;
+import net.minecraft.resource.ReloadableResourceManagerImpl;
+import net.minecraft.resource.Resource;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.resource.ResourcePack;
+import net.minecraft.resource.ResourceType;
+import net.minecraft.resource.ZipResourcePack;
+import net.minecraft.util.Identifier;
 import net.minecraftforge.fml.event.lifecycle.GatherDataEvent;
 
 /**
@@ -45,29 +44,29 @@ import net.minecraftforge.fml.event.lifecycle.GatherDataEvent;
  */
 public class ExistingFileHelper {
 
-    private final SimpleReloadableResourceManager clientResources, serverData;
+    private final ReloadableResourceManagerImpl clientResources, serverData;
     private final boolean enable;
 
     public ExistingFileHelper(Collection<Path> existingPacks, boolean enable) {
-        this.clientResources = new SimpleReloadableResourceManager(ResourcePackType.CLIENT_RESOURCES, Thread.currentThread());
-        this.serverData = new SimpleReloadableResourceManager(ResourcePackType.SERVER_DATA, Thread.currentThread());
-        this.clientResources.addResourcePack(new VanillaPack("minecraft", "realms"));
-        this.serverData.addResourcePack(new VanillaPack("minecraft"));
+        this.clientResources = new ReloadableResourceManagerImpl(ResourceType.CLIENT_RESOURCES, Thread.currentThread());
+        this.serverData = new ReloadableResourceManagerImpl(ResourceType.SERVER_DATA, Thread.currentThread());
+        this.clientResources.addPack(new DefaultResourcePack("minecraft", "realms"));
+        this.serverData.addPack(new DefaultResourcePack("minecraft"));
         for (Path existing : existingPacks) {
             File file = existing.toFile();
-            IResourcePack pack = file.isDirectory() ? new FolderPack(file) : new FilePack(file);
-            this.clientResources.addResourcePack(pack);
-            this.serverData.addResourcePack(pack);
+            ResourcePack pack = file.isDirectory() ? new DirectoryResourcePack(file) : new ZipResourcePack(file);
+            this.clientResources.addPack(pack);
+            this.serverData.addPack(pack);
         };
         this.enable = enable;
     }
 
-    private IResourceManager getManager(ResourcePackType type) {
-        return type == ResourcePackType.CLIENT_RESOURCES ? clientResources : serverData;
+    private ResourceManager getManager(ResourceType type) {
+        return type == ResourceType.CLIENT_RESOURCES ? clientResources : serverData;
     }
 
-    private ResourceLocation getLocation(ResourceLocation base, String suffix, String prefix) {
-        return new ResourceLocation(base.getNamespace(), prefix + "/" + base.getPath() + suffix);
+    private Identifier getLocation(Identifier base, String suffix, String prefix) {
+        return new Identifier(base.getNamespace(), prefix + "/" + base.getPath() + suffix);
     }
 
     /**
@@ -82,15 +81,15 @@ public class ExistingFileHelper {
      * @return {@code true} if the resource exists in any pack, {@code false}
      *         otherwise
      */
-    public boolean exists(ResourceLocation loc, ResourcePackType type, String pathSuffix, String pathPrefix) {
+    public boolean exists(Identifier loc, ResourceType type, String pathSuffix, String pathPrefix) {
         if (!enable) {
             return true;
         }
-        return getManager(type).hasResource(getLocation(loc, pathSuffix, pathPrefix));
+        return getManager(type).containsResource(getLocation(loc, pathSuffix, pathPrefix));
     }
 
     @VisibleForTesting
-    public IResource getResource(ResourceLocation loc, ResourcePackType type, String pathSuffix, String pathPrefix) throws IOException {
+    public Resource getResource(Identifier loc, ResourceType type, String pathSuffix, String pathPrefix) throws IOException {
         return getManager(type).getResource(getLocation(loc, pathSuffix, pathPrefix));
     }
 
