@@ -11,7 +11,7 @@
     List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, Random rand);
  
     boolean useAmbientOcclusion();
-@@ -25,9 +27,12 @@
+@@ -25,9 +27,13 @@
  
     boolean isBuiltin();
  
@@ -20,6 +20,7 @@
     Sprite getSprite();
  
 -   ModelTransformation getTransformation();
++   /**@deprecated Forge: Use {@link net.minecraftforge.client.extensions.IForgeBakedModel#handlePerspective(net.minecraft.client.renderer.model.ItemCameraTransforms.TransformType, com.mojang.blaze3d.matrix.MatrixStack)} instead */
 +   @Deprecated
 +   default ModelTransformation getTransformation() { return ModelTransformation.NONE; }
  

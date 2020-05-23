@@ -57,8 +57,12 @@ import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.gen.carver.Carver;
 import net.minecraft.world.gen.chunk.ChunkGeneratorType;
 import net.minecraft.world.gen.decorator.Decorator;
+import net.minecraft.world.gen.decorator.TreeDecoratorType;
 import net.minecraft.world.gen.feature.Feature;
 import net.minecraft.world.gen.feature.StructureFeature;
+import net.minecraft.world.gen.foliage.FoliagePlacerType;
+import net.minecraft.world.gen.placer.BlockPlacerType;
+import net.minecraft.world.gen.stateprovider.BlockStateProviderType;
 import net.minecraft.world.gen.surfacebuilder.SurfaceBuilder;
 import net.minecraft.world.poi.PointOfInterestType;
 import net.minecraftforge.common.MinecraftForge;
@@ -142,7 +146,11 @@ public class GameData
     public static final Identifier BIOME_PROVIDER_TYPES = new Identifier("biome_source_type");
     public static final Identifier CHUNK_GENERATOR_TYPES = new Identifier("chunk_generator_type");
     public static final Identifier CHUNK_STATUS = new Identifier("chunk_status");
-    
+    public static final Identifier BLOCK_STATE_PROVIDER_TYPES = new Identifier("block_state_provider_type");
+    public static final Identifier BLOCK_PLACER_TYPES = new Identifier("block_placer_type");
+    public static final Identifier FOLIAGE_PLACER_TYPES = new Identifier("foliage_placer_type");
+    public static final Identifier TREE_DECORATOR_TYPES = new Identifier("tree_decorator_type");
+
     // Custom forge registries
     public static final Identifier MODDIMENSIONS = new Identifier("forge:moddimensions");
     public static final Identifier SERIALIZERS = new Identifier("minecraft:dataserializers");
@@ -209,7 +217,11 @@ public class GameData
         makeRegistry(BIOME_PROVIDER_TYPES, BiomeSourceType.class).disableSaving().disableSync().create();
         makeRegistry(CHUNK_GENERATOR_TYPES, ChunkGeneratorType.class).disableSaving().disableSync().create();
         makeRegistry(CHUNK_STATUS, ChunkStatus.class, new Identifier("empty")).disableSaving().disableSync().create();
-        
+        makeRegistry(BLOCK_STATE_PROVIDER_TYPES, BlockStateProviderType.class).disableSaving().disableSync().create();
+        makeRegistry(BLOCK_PLACER_TYPES, BlockPlacerType.class).disableSaving().disableSync().create();
+        makeRegistry(FOLIAGE_PLACER_TYPES, FoliagePlacerType.class).disableSaving().disableSync().create();
+        makeRegistry(TREE_DECORATOR_TYPES, TreeDecoratorType.class).disableSaving().disableSync().create();
+
         // Custom forge registries
         makeRegistry(MODDIMENSIONS, ModDimension.class ).disableSaving().create();
         makeRegistry(SERIALIZERS, DataSerializerEntry.class, 256 /*vanilla space*/, MAX_VARINT).disableSaving().disableOverrides().addCallback(SerializerCallbacks.INSTANCE).create();

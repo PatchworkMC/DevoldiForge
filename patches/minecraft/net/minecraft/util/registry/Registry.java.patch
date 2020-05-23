@@ -8,7 +8,7 @@
  import net.minecraft.structure.StructurePieceType;
  import net.minecraft.structure.pool.StructurePoolElementType;
  import net.minecraft.structure.processor.StructureProcessorType;
-@@ -72,47 +71,51 @@
+@@ -72,88 +71,90 @@
  import org.apache.logging.log4j.LogManager;
  import org.apache.logging.log4j.Logger;
  
@@ -72,9 +72,20 @@
 +   @Deprecated public static final Registry<Biome> BIOME = forge("biome", Biome.class, () -> {
        return Biomes.DEFAULT;
     });
-    public static final Registry<BlockStateProviderType<?>> BLOCK_STATE_PROVIDER_TYPE = create("block_state_provider_type", () -> {
-@@ -127,33 +130,31 @@
-    public static final Registry<TreeDecoratorType<?>> TREE_DECORATOR_TYPE = create("tree_decorator_type", () -> {
+-   public static final Registry<BlockStateProviderType<?>> BLOCK_STATE_PROVIDER_TYPE = create("block_state_provider_type", () -> {
++   @Deprecated public static final Registry<BlockStateProviderType<?>> BLOCK_STATE_PROVIDER_TYPE = forge("block_state_provider_type", BlockStateProviderType.class, () -> {
+       return BlockStateProviderType.SIMPLE_STATE_PROVIDER;
+    });
+-   public static final Registry<BlockPlacerType<?>> BLOCK_PLACER_TYPE = create("block_placer_type", () -> {
++   @Deprecated public static final Registry<BlockPlacerType<?>> BLOCK_PLACER_TYPE = forge("block_placer_type", BlockPlacerType.class, () -> {
+       return BlockPlacerType.SIMPLE_BLOCK_PLACER;
+    });
+-   public static final Registry<FoliagePlacerType<?>> FOLIAGE_PLACER_TYPE = create("foliage_placer_type", () -> {
++   @Deprecated public static final Registry<FoliagePlacerType<?>> FOLIAGE_PLACER_TYPE = forge("foliage_placer_type", FoliagePlacerType.class, () -> {
+       return FoliagePlacerType.BLOB_FOLIAGE_PLACER;
+    });
+-   public static final Registry<TreeDecoratorType<?>> TREE_DECORATOR_TYPE = create("tree_decorator_type", () -> {
++   @Deprecated public static final Registry<TreeDecoratorType<?>> TREE_DECORATOR_TYPE = forge("tree_decorator_type", TreeDecoratorType.class, () -> {
        return TreeDecoratorType.LEAVE_VINE;
     });
 -   public static final Registry<ParticleType<? extends ParticleEffect>> PARTICLE_TYPE = create("particle_type", () -> {

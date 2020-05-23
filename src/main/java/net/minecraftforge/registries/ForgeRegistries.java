@@ -45,7 +45,11 @@ import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.gen.carver.Carver;
 import net.minecraft.world.gen.chunk.ChunkGeneratorType;
 import net.minecraft.world.gen.decorator.Decorator;
+import net.minecraft.world.gen.decorator.TreeDecoratorType;
 import net.minecraft.world.gen.feature.Feature;
+import net.minecraft.world.gen.foliage.FoliagePlacerType;
+import net.minecraft.world.gen.placer.BlockPlacerType;
+import net.minecraft.world.gen.stateprovider.BlockStateProviderType;
 import net.minecraft.world.gen.surfacebuilder.SurfaceBuilder;
 import net.minecraft.world.poi.PointOfInterestType;
 import net.minecraftforge.common.ModDimension;
@@ -94,7 +98,11 @@ public class ForgeRegistries
     public static final IForgeRegistry<BiomeSourceType<?, ?>> BIOME_PROVIDER_TYPES = RegistryManager.ACTIVE.getRegistry(BiomeSourceType.class);
     public static final IForgeRegistry<ChunkGeneratorType<?, ?>> CHUNK_GENERATOR_TYPES = RegistryManager.ACTIVE.getRegistry(ChunkGeneratorType.class);
     public static final IForgeRegistry<ChunkStatus> CHUNK_STATUS = RegistryManager.ACTIVE.getRegistry(ChunkStatus.class);
-    
+    public static final IForgeRegistry<BlockStateProviderType<?>> BLOCK_STATE_PROVIDER_TYPES = RegistryManager.ACTIVE.getRegistry(BlockStateProviderType.class);
+    public static final IForgeRegistry<BlockPlacerType<?>> BLOCK_PLAYER_TYPES = RegistryManager.ACTIVE.getRegistry(BlockPlacerType.class);
+    public static final IForgeRegistry<FoliagePlacerType<?>> FOLIAGE_PLAYER_TYPES = RegistryManager.ACTIVE.getRegistry(FoliagePlacerType.class);
+    public static final IForgeRegistry<TreeDecoratorType<?>> TREE_DECORATOR_TYPES = RegistryManager.ACTIVE.getRegistry(TreeDecoratorType.class);
+
     // Custom forge registries
     public static final IForgeRegistry<ModDimension> MOD_DIMENSIONS = RegistryManager.ACTIVE.getRegistry(ModDimension.class);
     public static final IForgeRegistry<DataSerializerEntry> DATA_SERIALIZERS = RegistryManager.ACTIVE.getRegistry(DataSerializerEntry.class);
