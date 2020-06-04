@@ -79,6 +79,7 @@ public class ModelLoaderRegistry
         registerLoader(new Identifier("forge","bucket"), DynamicBucketModel.Loader.INSTANCE);
         registerLoader(new Identifier("forge","composite"), CompositeModel.Loader.INSTANCE);
         registerLoader(new Identifier("forge","multi-layer"), MultiLayerModel.Loader.INSTANCE);
+        registerLoader(new Identifier("forge","item-layers"), ItemLayerModel.Loader.INSTANCE);
 
         // TODO: Implement as new model loaders
         //registerLoader(new ResourceLocation("forge:b3d"), new ModelLoaderAdapter(B3DLoader.INSTANCE));

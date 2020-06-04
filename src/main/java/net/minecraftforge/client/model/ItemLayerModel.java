@@ -21,8 +21,15 @@ package net.minecraftforge.client.model;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonObject;
 import com.mojang.datafixers.util.Pair;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import net.minecraft.client.render.VertexFormat;
+import net.minecraft.client.render.VertexFormatElement;
 import net.minecraft.client.render.model.BakedModel;
 import net.minecraft.client.render.model.BakedQuad;
 import net.minecraft.client.render.model.ModelBakeSettings;
@@ -34,19 +41,18 @@ import net.minecraft.client.renderer.model.*;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.SpriteIdentifier;
 import net.minecraft.client.util.math.Rotation3;
+import net.minecraft.resource.ResourceManager;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.JsonHelper;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec2f;
 import net.minecraftforge.client.model.geometry.IModelGeometry;
 import net.minecraftforge.client.model.pipeline.BakedQuadBuilder;
 import net.minecraftforge.client.model.pipeline.IVertexConsumer;
 import net.minecraftforge.client.model.pipeline.TRSRTransformer;
 
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Set;
+import javax.annotation.Nullable;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -66,15 +72,22 @@ public final class ItemLayerModel implements IModelGeometry<ItemLayerModel>
     private static final Direction[] VERTICALS = {Direction.WEST, Direction.EAST};
 
     private ImmutableList<SpriteIdentifier> textures;
-
-    public ItemLayerModel(ImmutableList<SpriteIdentifier> textures)
-    {
-        this.textures = textures;
-    }
+    private final ImmutableSet<Integer> fullbrightLayers;
 
     public ItemLayerModel()
     {
-        this.textures = null;
+        this(null, ImmutableSet.of());
+    }
+
+    public ItemLayerModel(ImmutableList<SpriteIdentifier> textures)
+    {
+        this(textures, ImmutableSet.of());
+    }
+
+    public ItemLayerModel(@Nullable ImmutableList<SpriteIdentifier> textures, ImmutableSet<Integer> fullbrightLayers)
+    {
+        this.textures = textures;
+        this.fullbrightLayers = fullbrightLayers;
     }
 
     private static ImmutableList<SpriteIdentifier> getTextures(IModelConfiguration model)
@@ -92,7 +105,7 @@ public final class ItemLayerModel implements IModelGeometry<ItemLayerModel>
     {
         //TODO: Verify
         Rotation3 transform = modelTransform.getRotation();
-        ImmutableList<BakedQuad> quads = getQuadsForSprites(textures, transform, spriteGetter);
+        ImmutableList<BakedQuad> quads = getQuadsForSprites(textures, transform, spriteGetter, fullbrightLayers);
         Sprite particle = spriteGetter.apply(
                 owner.isTexturePresent("particle") ? owner.resolveTexture("particle") : textures.get(0)
         );
@@ -102,16 +115,26 @@ public final class ItemLayerModel implements IModelGeometry<ItemLayerModel>
 
     public static ImmutableList<BakedQuad> getQuadsForSprites(List<SpriteIdentifier> textures, Rotation3 transform, Function<SpriteIdentifier, Sprite> spriteGetter)
     {
+        return getQuadsForSprites(textures, transform, spriteGetter, Collections.emptySet());
+    }
+
+    public static ImmutableList<BakedQuad> getQuadsForSprites(List<SpriteIdentifier> textures, Rotation3 transform, Function<SpriteIdentifier, Sprite> spriteGetter, Set<Integer> fullbrights)
+    {
         ImmutableList.Builder<BakedQuad> builder = ImmutableList.builder();
         for(int i = 0; i < textures.size(); i++)
         {
             Sprite tas = spriteGetter.apply(textures.get(i));
-            builder.addAll(getQuadsForSprite(i, tas, transform));
+            builder.addAll(getQuadsForSprite(i, tas, transform, fullbrights.contains(i)));
         }
         return builder.build();
     }
 
     public static ImmutableList<BakedQuad> getQuadsForSprite(int tint, Sprite sprite, Rotation3 transform)
+    {
+        return getQuadsForSprite(tint, sprite, transform, false);
+    }
+
+    public static ImmutableList<BakedQuad> getQuadsForSprite(int tint, Sprite sprite, Rotation3 transform, boolean fullbright)
     {
         ImmutableList.Builder<BakedQuad> builder = ImmutableList.builder();
 
@@ -131,7 +154,7 @@ public final class ItemLayerModel implements IModelGeometry<ItemLayerModel>
                 ptu = true;
                 for(int u = 0; u < uMax; u++)
                 {
-                    int alpha = sprite.getPixelRGBA(f, u, v) >> 24 & 0xFF;
+                    int alpha = sprite.getPixelRGBA(f, u, vMax - v - 1) >> 24 & 0xFF;
                     boolean t = alpha / 255f <= 0.1f;
 
                     if (!t && alpha < 255)
@@ -202,7 +225,7 @@ public final class ItemLayerModel implements IModelGeometry<ItemLayerModel>
                         {
                             // make quad [uStart, u]
                             int off = facing == Direction.DOWN ? 1 : 0;
-                            builder.add(buildSideQuad(transform, facing, tint, sprite, uStart, v+off, u-uStart));
+                            builder.add(buildSideQuad(transform, facing, tint, sprite, uStart, v+off, u-uStart, fullbright));
                             building = false;
                         }
                         else if (!building && face) // start new quad
@@ -216,7 +239,7 @@ public final class ItemLayerModel implements IModelGeometry<ItemLayerModel>
                 {
                     // make quad [uStart, uEnd]
                     int off = facing == Direction.DOWN ? 1 : 0;
-                    builder.add(buildSideQuad(transform, facing, tint, sprite, uStart, v+off, uEnd-uStart));
+                    builder.add(buildSideQuad(transform, facing, tint, sprite, uStart, v+off, uEnd-uStart, fullbright));
                 }
             }
         }
@@ -249,7 +272,7 @@ public final class ItemLayerModel implements IModelGeometry<ItemLayerModel>
                         {
                             // make quad [vStart, v]
                             int off = facing == Direction.EAST ? 1 : 0;
-                            builder.add(buildSideQuad(transform, facing, tint, sprite, u+off, vStart, v-vStart));
+                            builder.add(buildSideQuad(transform, facing, tint, sprite, u+off, vStart, v-vStart, fullbright));
                             building = false;
                         }
                         else if (!building && face) // start new quad
@@ -263,20 +286,20 @@ public final class ItemLayerModel implements IModelGeometry<ItemLayerModel>
                 {
                     // make quad [vStart, vEnd]
                     int off = facing == Direction.EAST ? 1 : 0;
-                    builder.add(buildSideQuad(transform, facing, tint, sprite, u+off, vStart, vEnd-vStart));
+                    builder.add(buildSideQuad(transform, facing, tint, sprite, u+off, vStart, vEnd-vStart, fullbright));
                 }
             }
         }
 
         // front
-        builder.add(buildQuad(transform, Direction.NORTH, sprite, tint,
+        builder.add(buildQuad(transform, Direction.NORTH, sprite, tint, fullbright,
             0, 0, 7.5f / 16f, sprite.getMinU(), sprite.getMaxV(),
             0, 1, 7.5f / 16f, sprite.getMinU(), sprite.getMinV(),
             1, 1, 7.5f / 16f, sprite.getMaxU(), sprite.getMinV(),
             1, 0, 7.5f / 16f, sprite.getMaxU(), sprite.getMaxV()
         ));
         // back
-        builder.add(buildQuad(transform, Direction.SOUTH, sprite, tint,
+        builder.add(buildQuad(transform, Direction.SOUTH, sprite, tint, fullbright,
             0, 0, 8.5f / 16f, sprite.getMinU(), sprite.getMaxV(),
             1, 0, 8.5f / 16f, sprite.getMaxU(), sprite.getMaxV(),
             1, 1, 8.5f / 16f, sprite.getMaxU(), sprite.getMinV(),
@@ -325,7 +348,7 @@ public final class ItemLayerModel implements IModelGeometry<ItemLayerModel>
         }
     }
 
-    private static BakedQuad buildSideQuad(Rotation3 transform, Direction side, int tint, Sprite sprite, int u, int v, int size)
+    private static BakedQuad buildSideQuad(Rotation3 transform, Direction side, int tint, Sprite sprite, int u, int v, int size, boolean fullbright)
     {
         final float eps = 1e-2f;
 
@@ -364,7 +387,7 @@ public final class ItemLayerModel implements IModelGeometry<ItemLayerModel>
         float v1 = 16f * (1f - y1 - dy);
 
         return buildQuad(
-            transform, remap(side), sprite, tint,
+            transform, remap(side), sprite, tint, fullbright,
             x0, y0, z0, sprite.getFrameU(u0), sprite.getFrameV(v0),
             x1, y1, z0, sprite.getFrameU(u1), sprite.getFrameV(v1),
             x1, y1, z1, sprite.getFrameU(u1), sprite.getFrameV(v1),
@@ -378,7 +401,7 @@ public final class ItemLayerModel implements IModelGeometry<ItemLayerModel>
         return side.getAxis() == Direction.Axis.Y ? side.getOpposite() : side;
     }
 
-    private static BakedQuad buildQuad(Rotation3 transform, Direction side, Sprite sprite, int tint,
+    private static BakedQuad buildQuad(Rotation3 transform, Direction side, Sprite sprite, int tint, boolean fullbright,
         float x0, float y0, float z0, float u0, float v0,
         float x1, float y1, float z1, float u1, float v1,
         float x2, float y2, float z2, float u2, float v2,
@@ -388,24 +411,29 @@ public final class ItemLayerModel implements IModelGeometry<ItemLayerModel>
 
         builder.setQuadTint(tint);
         builder.setQuadOrientation(side);
+        builder.setApplyDiffuseLighting(false);
 
         boolean hasTransform = !transform.isIdentity();
         IVertexConsumer consumer = hasTransform ? new TRSRTransformer(builder, transform) : builder;
 
-        putVertex(consumer, side, x0, y0, z0, u0, v0);
-        putVertex(consumer, side, x1, y1, z1, u1, v1);
-        putVertex(consumer, side, x2, y2, z2, u2, v2);
-        putVertex(consumer, side, x3, y3, z3, u3, v3);
+        int uLight, vLight;
+        uLight = vLight = fullbright ? 15 : 0;
+
+        putVertex(consumer, side, x0, y0, z0, u0, v0, uLight, vLight);
+        putVertex(consumer, side, x1, y1, z1, u1, v1, uLight, vLight);
+        putVertex(consumer, side, x2, y2, z2, u2, v2, uLight, vLight);
+        putVertex(consumer, side, x3, y3, z3, u3, v3, uLight, vLight);
 
         return builder.build();
     }
 
-    private static void putVertex(IVertexConsumer consumer, Direction side, float x, float y, float z, float u, float v)
+    private static void putVertex(IVertexConsumer consumer, Direction side, float x, float y, float z, float u, float v, int uLight, int vLight)
     {
         VertexFormat format = consumer.getVertexFormat();
         for(int e = 0; e < format.getElements().size(); e++)
         {
-            switch(format.getElements().get(e).getType())
+            VertexFormatElement element = format.getElements().get(e);
+            outer:switch(element.getType())
             {
             case POSITION:
                 consumer.put(e, x, y, z, 1f);
@@ -420,16 +448,46 @@ public final class ItemLayerModel implements IModelGeometry<ItemLayerModel>
                 consumer.put(e, offX, offY, offZ, 0f);
                 break;
             case UV:
-                if(format.getElements().get(e).getIndex() == 0)
+                switch(element.getIndex())
                 {
-                    consumer.put(e, u, v, 0f, 1f);
-                    break;
+                    case 0:
+                        consumer.put(e, u, v, 0f, 1f);
+                        break outer;
+                    case 2:
+                        consumer.put(e, (uLight<<4)/32768.0f, (vLight<<4)/32768.0f, 0, 1);
+                        break outer;
                 }
                 // else fallthrough to default
             default:
                 consumer.put(e);
                 break;
             }
+        }
+    }
+
+    public static class Loader implements IModelLoader<ItemLayerModel>
+    {
+        public static final Loader INSTANCE = new Loader();
+
+        @Override
+        public void apply(ResourceManager resourceManager)
+        {
+            // nothing to do
+        }
+
+        @Override
+        public ItemLayerModel read(JsonDeserializationContext deserializationContext, JsonObject modelContents)
+        {
+            ImmutableSet.Builder<Integer> fullbrightLayers = ImmutableSet.builder();
+            if (modelContents.has("fullbright_layers"))
+            {
+                JsonArray arr = JsonHelper.getArray(modelContents, "fullbright_layers");
+                for(int i=0;i<arr.size();i++)
+                {
+                    fullbrightLayers.add(arr.get(i).getAsInt());
+                }
+            }
+            return new ItemLayerModel(null, fullbrightLayers.build());
         }
     }
 }
