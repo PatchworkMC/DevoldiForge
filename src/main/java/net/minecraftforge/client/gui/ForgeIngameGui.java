@@ -674,17 +674,18 @@ public class ForgeIngameGui extends InGameHud
         {
             client.getProfiler().push("overlayMessage");
             float hue = (float)overlayRemaining - partialTicks;
-            int opacity = (int)(hue * 256.0F / 20.0F);
+            int opacity = (int)(hue * 255.0F / 20.0F);
             if (opacity > 255) opacity = 255;
 
-            if (opacity > 0)
+            if (opacity > 8)
             {
                 RenderSystem.pushMatrix();
                 RenderSystem.translatef((float)(width / 2), (float)(height - 68), 0.0F);
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
                 int color = (overlayTinted ? MathHelper.hsvToRgb(hue / 50.0F, 0.7F, 0.6F) & WHITE : WHITE);
-                fontrenderer.drawWithShadow(overlayMessage, -fontrenderer.getStringWidth(overlayMessage) / 2, -4, color | (opacity << 24));
+                drawTextBackground(fontrenderer, -4, fontrenderer.getStringWidth(overlayMessage));
+                fontrenderer.draw(overlayMessage, -fontrenderer.getStringWidth(overlayMessage) / 2, -4, color | (opacity << 24));
                 RenderSystem.disableBlend();
                 RenderSystem.popMatrix();
             }
