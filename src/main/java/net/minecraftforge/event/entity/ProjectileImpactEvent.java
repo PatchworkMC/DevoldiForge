@@ -20,6 +20,7 @@
 package net.minecraftforge.event.entity;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.FireworkEntity;
 import net.minecraft.entity.projectile.ExplosiveProjectileEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.entity.thrown.ThrownEntity;
@@ -102,6 +103,26 @@ public class ProjectileImpactEvent extends EntityEvent
         public ThrownEntity getThrowable()
         {
             return throwable;
+        }
+    }
+
+    /**
+     * Event is cancellable, causes firework to ignore the current hit and continue on its journey.
+     */
+    @Cancelable
+    public static class FireworkRocket extends ProjectileImpactEvent
+    {
+        private final FireworkEntity fireworkRocket;
+
+        public FireworkRocket(FireworkEntity fireworkRocket, HitResult ray)
+        {
+            super(fireworkRocket, ray);
+            this.fireworkRocket = fireworkRocket;
+        }
+
+        public FireworkEntity getFireworkRocket()
+        {
+            return fireworkRocket;
         }
     }
 }

@@ -32,6 +32,7 @@ import net.fabricmc.api.Environment;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityCategory;
+import net.minecraft.entity.FireworkEntity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LightningEntity;
 import net.minecraft.entity.LivingEntity;
@@ -628,6 +629,11 @@ public class ForgeEventFactory
     public static boolean onProjectileImpact(ThrownEntity throwable, HitResult ray)
     {
         return MinecraftForge.EVENT_BUS.post(new ProjectileImpactEvent.Throwable(throwable, ray));
+    }
+
+    public static boolean onProjectileImpact(FireworkEntity fireworkRocket, HitResult ray)
+    {
+        return MinecraftForge.EVENT_BUS.post(new ProjectileImpactEvent.FireworkRocket(fireworkRocket, ray));
     }
 
     public static LootTable loadLootTable(Identifier name, LootTable table, LootManager lootTableManager)

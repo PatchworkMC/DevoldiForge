@@ -1,0 +1,10 @@
+--- a/net/minecraft/entity/FireworkEntity.java
++++ b/net/minecraft/entity/FireworkEntity.java
+@@ -184,6 +184,7 @@
+    }
+ 
+    protected void handleCollision(HitResult p_213892_1_) {
++      if(p_213892_1_.getType() != HitResult.Type.MISS && net.minecraftforge.event.ForgeEventFactory.onProjectileImpact(this, p_213892_1_)) return;
+       if (p_213892_1_.getType() == HitResult.Type.ENTITY && !this.world.isClient) {
+          this.explodeAndRemove();
+       } else if (this.collided) {
