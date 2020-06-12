@@ -883,7 +883,7 @@ public interface IForgeBlock
     @Nullable
     default PathNodeType getAiPathNodeType(BlockState state, BlockView world, BlockPos pos, @Nullable MobEntity entity)
     {
-        return state.isBurning(world, pos) ? PathNodeType.DANGER_FIRE : null;
+        return state.getBlock() == Blocks.LAVA ? PathNodeType.LAVA : state.isBurning(world, pos) ? PathNodeType.DAMAGE_FIRE : null;
     }
 
     /**

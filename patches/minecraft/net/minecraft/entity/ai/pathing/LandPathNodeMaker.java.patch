@@ -14,8 +14,8 @@
 -                     } else {
 -                        z = PathNodeType.DANGER_FIRE;
 -                     }
-+                     PathNodeType type = getBasicPathNodeType(p_193578_0_, blockaccessIn, x, y);
-+                     if (type == PathNodeType.DANGER_CACTUS || type == PathNodeType.DANGER_FIRE || type == PathNodeType.DANGER_OTHER)
++                     PathNodeType type = getBasicPathNodeType(p_193578_0_, blockaccessIn + i, x + j, y + k).getDanger();
++                     if (type != null)
 +                        z = type;
                    }
                 }
