@@ -1,6 +1,6 @@
 --- a/net/minecraft/world/MobSpawnerLogic.java
 +++ b/net/minecraft/world/MobSpawnerLogic.java
-@@ -129,7 +129,7 @@
+@@ -129,11 +129,12 @@
                    entity.refreshPositionAndAngles(entity.getX(), entity.getY(), entity.getZ(), world.random.nextFloat() * 360.0F, 0.0F);
                    if (entity instanceof MobEntity) {
                       MobEntity mobentity = (MobEntity)entity;
@@ -9,7 +9,12 @@
                          continue;
                       }
  
-@@ -286,4 +286,9 @@
+                      if (this.spawnEntry.getEntityTag().getSize() == 1 && this.spawnEntry.getEntityTag().contains("id", 8)) {
++                        if (!net.minecraftforge.event.ForgeEventFactory.doSpecialSpawn(mobentity, world, (float)entity.getX(), (float)entity.getY(), (float)entity.getZ(), this, SpawnType.SPAWNER))
+                         ((MobEntity)entity).initialize(world, world.getLocalDifficulty(new BlockPos(entity)), SpawnType.SPAWNER, (EntityData)null, (CompoundTag)null);
+                      }
+                   }
+@@ -286,4 +287,9 @@
     public double method_8279() {
        return this.field_9159;
     }
