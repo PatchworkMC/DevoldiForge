@@ -177,7 +177,7 @@
              return false;
           } else {
 -            return stackA.tag == null || stackA.tag.equals(stackB.tag);
-+            return stackA.tag == null || stackA.tag.equals(stackB.tag) && stackA.areCapsCompatible(stackB);
++            return (stackA.tag == null || stackA.tag.equals(stackB.tag)) && stackA.areCapsCompatible(stackB);
           }
        } else {
           return false;
@@ -186,7 +186,7 @@
           return false;
        } else {
 -         return this.tag == null || this.tag.equals(other.tag);
-+         return this.tag == null || this.tag.equals(other.tag) && this.areCapsCompatible(other);
++         return (this.tag == null || this.tag.equals(other.tag)) && this.areCapsCompatible(other);
        }
     }
  
