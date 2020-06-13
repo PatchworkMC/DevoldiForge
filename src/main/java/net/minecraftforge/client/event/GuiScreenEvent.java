@@ -211,6 +211,7 @@ public class GuiScreenEvent extends Event
         }
     }
 
+    @Deprecated // Remove in 1.16
     public static class ActionPerformedEvent extends GuiScreenEvent
     {
         private ButtonWidget button;

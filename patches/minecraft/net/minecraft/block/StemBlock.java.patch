@@ -1,6 +1,6 @@
 --- a/net/minecraft/block/StemBlock.java
 +++ b/net/minecraft/block/StemBlock.java
-@@ -42,22 +42,24 @@
+@@ -38,22 +38,24 @@
  
     public void scheduledTick(BlockState state, ServerWorld worldIn, BlockPos pos, Random rand) {
        super.scheduledTick(state, worldIn, pos, rand);
@@ -30,7 +30,7 @@
           }
  
        }
-@@ -103,4 +105,10 @@
+@@ -98,4 +100,10 @@
     public GourdBlock getGourdBlock() {
        return this.gourdBlock;
     }
