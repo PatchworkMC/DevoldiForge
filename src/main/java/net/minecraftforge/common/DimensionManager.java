@@ -19,6 +19,7 @@
 
 package net.minecraftforge.common;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
@@ -45,6 +48,8 @@ import com.google.common.collect.Multiset;
 import io.netty.buffer.Unpooled;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.WorldGenerationProgressListener;
@@ -55,8 +60,10 @@ import net.minecraft.util.PacketByteBuf;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.registry.MutableRegistry;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldSaveHandler;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.dimension.DimensionType;
+import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.event.world.RegisterDimensionsEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.StartupQuery;
@@ -64,6 +71,7 @@ import net.minecraftforge.fml.server.ServerModLoader;
 import net.minecraftforge.registries.ClearableRegistry;
 import net.minecraftforge.registries.ForgeRegistries;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -84,6 +92,7 @@ public class DimensionManager
     private static final ConcurrentMap<World, World> weakWorldMap = new MapMaker().weakKeys().weakValues().makeMap();
     private static final Multiset<Integer> leakedWorlds = HashMultiset.create();
     private static final Map<Identifier, SavedEntry> savedEntries = new HashMap<>();
+    private static final List<String> foldersScheduledForDeletion = new ArrayList<>();
     private static volatile Set<World> playerWorlds = new HashSet<>();
 
     /**
@@ -99,7 +108,8 @@ public class DimensionManager
      * @param magnifier The biome generation processor
      * @return the DimensionType for the dimension.
      */
-    public static DimensionType registerOrGetDimension(Identifier name, ModDimension type, PacketByteBuf data, boolean hasSkyLight) {
+    public static DimensionType registerOrGetDimension(Identifier name, ModDimension type, PacketByteBuf data, boolean hasSkyLight)
+    {
         return REGISTRY.getOrEmpty(name).orElseGet(()->registerDimension(name, type, data, hasSkyLight));
     }
     /**
@@ -198,14 +208,49 @@ public class DimensionManager
         return ret;
     }
 
+    /**
+     * Marks the given dimension for deletion upon next reload of the save.
+     * The corresponding data directory will be deleted as well.
+     *
+     * Note that the dimension need not be currently unloaded. The dimension will stay functioning as normal
+     * until the save is reloaded.
+     *
+     * Vanilla dimensions are not supported and will throw an exception.
+     *
+     * @param dim the dimension to delete
+     */
+    public static void markForDeletion(DimensionType dim)
+    {
+        if (dim.isVanilla())
+        {
+            throw new IllegalArgumentException("Cannot delete vanilla dimensions.");
+        }
+        getData(dim).markedForDeletion = true;
+
+        Path base = Paths.get(".").toAbsolutePath().normalize();
+        Path directory = dim.getSaveDirectory(base.toFile()).toPath().toAbsolutePath().normalize();
+        if (!directory.startsWith(base))
+        {
+            LOGGER.warn("DimensionType {} returned save directory outside of base directory. This is bad. The directory will not be deleted.", dim);
+        }
+        else
+        {
+            String relative = base.relativize(directory).toString();
+            foldersScheduledForDeletion.add(relative);
+        }
+    }
+
     //==========================================================================================================
     //                                         FORGE INTERNAL
     //==========================================================================================================
 
+    /**
+     * Deprecated, unregistering dimensions at runtime is not supported.
+     * @see DimensionManager#markForDeletion(DimensionType)
+     */
+    @Deprecated
     public static void unregisterDimension(int id)
     {
-        Validate.isTrue(dimensions.containsKey(id), String.format("Failed to unregister dimension for id %d; No provider registered", id));
-        dimensions.remove(id);
     }
 
     public static DimensionType registerDimensionInternal(int id, Identifier name, ModDimension type, PacketByteBuf data, boolean hasSkyLight)
@@ -346,7 +391,7 @@ public class DimensionManager
         data.putInt("version", 1);
         List<SavedEntry> list = new ArrayList<>();
         for (DimensionType type : REGISTRY)
-            list.add(new SavedEntry(type));
+            list.add(new SavedEntry(type, getData(type).markedForDeletion));
         savedEntries.values().forEach(list::add);
 
         Collections.sort(list, (a, b) -> a.id - b.id);
@@ -354,6 +399,10 @@ public class DimensionManager
         list.forEach(e -> lst.add(e.write()));
 
         data.put("entries", lst);
+
+        ListTag deleteLst = new ListTag();
+        foldersScheduledForDeletion.forEach(folder -> deleteLst.add(StringTag.of(folder)));
+        data.put("delete_dirs", deleteLst);
     }
 
     public static void readRegistry(CompoundTag data)
@@ -395,7 +444,7 @@ public class DimensionManager
                     continue;
                 }
             }
-            else
+            else if (!entry.markedForDeletion)
             {
                 ModDimension mod = ForgeRegistries.MOD_DIMENSIONS.getValue(entry.type);
                 if (mod == null)
@@ -405,6 +454,46 @@ public class DimensionManager
                     continue;
                 }
                 registerDimensionInternal(entry.id, entry.name, mod, entry.data == null ? null : new PacketByteBuf(Unpooled.wrappedBuffer(entry.data)), entry.skyLight());
+            }
+        }
+
+        foldersScheduledForDeletion.clear();
+
+        ListTag folderList = data.getList("delete_dirs", Constants.NBT.TAG_STRING);
+        folderList.stream()
+                .map(Tag::asString)
+                .forEach(foldersScheduledForDeletion::add);
+    }
+
+    public static void processScheduledDeletions(WorldSaveHandler saveHandler)
+    {
+        List<String> toDelete = new ArrayList<>(foldersScheduledForDeletion);
+        foldersScheduledForDeletion.clear();
+        if (!toDelete.isEmpty())
+        {
+            StringBuilder text = new StringBuilder();
+            text.append("The following dimensions are marked for deletion by their owning mod. Proceed?\n\n");
+            for (String folder : toDelete)
+            {
+                text.append(folder).append('\n');
+            }
+            if (!StartupQuery.confirm(text.toString()))
+            {
+                StartupQuery.abort();
+                return;
+            }
+        }
+        for (String folderName : toDelete)
+        {
+            File folder = new File(saveHandler.getWorldDir(), folderName);
+            try
+            {
+                FileUtils.deleteDirectory(folder);
+                LOGGER.info(DIMMGR, "Modded dimension directory {} scheduled for deletion was deleted.", folderName);
+            }
+            catch (Exception e)
+            {
+                LOGGER.error(DIMMGR, "Failed to delete modded dimension directory {} that was scheduled for deletion.", folderName, e);
             }
         }
     }
@@ -435,6 +524,7 @@ public class DimensionManager
     {
         int ticksWaited = 0;
         boolean keepLoaded = false;
+        boolean markedForDeletion = false;
     }
 
     public static class SavedEntry
@@ -444,6 +534,7 @@ public class DimensionManager
         Identifier type;
         byte[] data;
         boolean skyLight;
+        boolean markedForDeletion;
 
         public int getId()
         {
@@ -479,9 +570,10 @@ public class DimensionManager
             this.type = data.contains("type", 8) ? new Identifier(data.getString("type")) : null;
             this.data = data.contains("data", 7) ? data.getByteArray("data") : null;
             this.skyLight = data.contains("sky_light", 99) ? data.getBoolean("sky_light") : true;
+            this.markedForDeletion = data.getBoolean("marked_for_deletion");
         }
 
-        private SavedEntry(DimensionType data)
+        private SavedEntry(DimensionType data, boolean markedForDeletion)
         {
             this.id = REGISTRY.getRawId(data);
             this.name = REGISTRY.getId(data);
@@ -490,6 +582,7 @@ public class DimensionManager
             if (data.getData() != null)
                 this.data = data.getData().array();
             this.skyLight = data.hasSkyLight();
+            this.markedForDeletion = markedForDeletion;
         }
 
         private CompoundTag write()
@@ -502,6 +595,7 @@ public class DimensionManager
             if (data != null)
                 ret.putByteArray("data", data);
             ret.putBoolean("sky_light", skyLight);
+            ret.putBoolean("marked_for_deletion", markedForDeletion);
             return ret;
         }
     }
