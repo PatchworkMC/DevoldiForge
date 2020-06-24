@@ -20,7 +20,15 @@
           }
  
           if (this.hasPassengers() && this.field_6964) {
-@@ -947,4 +948,22 @@
+@@ -672,6 +673,7 @@
+                this.setVelocity(vec3d.x, d1, vec3d.z);
+                this.setInAir(true);
+                this.velocityDirty = true;
++               net.minecraftforge.common.ForgeHooks.onLivingJump(this);
+                if (f1 > 0.0F) {
+                   float f2 = MathHelper.sin(this.yaw * ((float)Math.PI / 180F));
+                   float f3 = MathHelper.cos(this.yaw * ((float)Math.PI / 180F));
+@@ -947,4 +949,22 @@
  
        return super.initialize(worldIn, difficultyIn, reason, spawnDataIn, dataTag);
     }
