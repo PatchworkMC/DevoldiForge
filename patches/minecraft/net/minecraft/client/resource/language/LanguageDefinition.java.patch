@@ -4,7 +4,7 @@
        this.name = regionIn;
        this.region = nameIn;
        this.rightToLeft = bidirectionalIn;
-+      String[] splitLangCode = region.split("_", 2);
++      String[] splitLangCode = code.split("_", 2);
 +      if (splitLangCode.length == 1) { // Vanilla has some languages without underscores
 +          this.javaLocale = new java.util.Locale(code);
 +      } else {
