@@ -17,7 +17,7 @@
           BlockEntity tileentity = reader.getBlockEntity(posIn);
           if (tileentity instanceof ChestBlockEntity) {
              return ((ChestBlockEntity)tileentity).viewerCount;
-@@ -224,4 +225,56 @@
+@@ -224,4 +225,39 @@
     protected Container createContainer(int id, PlayerInventory player) {
        return GenericContainer.createGeneric9x3(id, player, this);
     }
@@ -46,25 +46,8 @@
 +      if (!(state.getBlock() instanceof ChestBlock)) {
 +         return new net.minecraftforge.items.wrapper.InvWrapper(this);
 +      }
-+      ChestType type = state.get(ChestBlock.CHEST_TYPE);
-+      if (type != ChestType.SINGLE) {
-+         BlockPos opos = this.getPos().offset(ChestBlock.getFacing(state));
-+         BlockState ostate = this.getWorld().getBlockState(opos);
-+         if (state.getBlock() == ostate.getBlock()) {
-+            ChestType otype = ostate.get(ChestBlock.CHEST_TYPE);
-+            if (otype != ChestType.SINGLE && type != otype && state.get(ChestBlock.FACING) == ostate.get(ChestBlock.FACING)) {
-+               BlockEntity ote = this.getWorld().getBlockEntity(opos);
-+               if (ote instanceof ChestBlockEntity) {
-+                  Inventory top    = type == ChestType.RIGHT ? this : (Inventory)ote;
-+                  Inventory bottom = type == ChestType.RIGHT ? (Inventory)ote : this;
-+                  return new net.minecraftforge.items.wrapper.CombinedInvWrapper(
-+                     new net.minecraftforge.items.wrapper.InvWrapper(top),
-+                     new net.minecraftforge.items.wrapper.InvWrapper(bottom));
-+               }
-+            }
-+         }
-+      }
-+      return new net.minecraftforge.items.wrapper.InvWrapper(this);
++      Inventory inv = ChestBlock.getInventory((ChestBlock) state.getBlock(), state, getWorld(), getPos(), true);
++      return new net.minecraftforge.items.wrapper.InvWrapper(inv == null ? this : inv);
 +   }
 +
 +   @Override
