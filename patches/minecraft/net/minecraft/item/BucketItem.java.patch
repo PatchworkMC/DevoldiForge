@@ -35,7 +35,7 @@
                       playerIn.incrementStat(Stats.USED.getOrCreateStat(this));
 -                     playerIn.playSound(fluid.matches(FluidTags.LAVA) ? SoundEvents.ITEM_BUCKET_FILL_LAVA : SoundEvents.ITEM_BUCKET_FILL, 1.0F, 1.0F);
 +
-+                     SoundEvent soundevent = this.fluid.getAttributes().getEmptySound();
++                     SoundEvent soundevent = this.fluid.getAttributes().getFillSound();
 +                     if (soundevent == null) soundevent = fluid.matches(FluidTags.LAVA) ? SoundEvents.ITEM_BUCKET_FILL_LAVA : SoundEvents.ITEM_BUCKET_FILL;
 +                     playerIn.playSound(soundevent, 1.0F, 1.0F);
                       ItemStack itemstack1 = this.getFilledStack(itemstack, playerIn, fluid.getBucketItem());
