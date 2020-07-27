@@ -1,0 +1,13 @@
+--- a/net/minecraft/block/RailBlock.java
++++ b/net/minecraft/block/RailBlock.java
+@@ -49,6 +49,10 @@
+             return state.with(SHAPE, RailShape.SOUTH_EAST);
+          case NORTH_EAST:
+             return state.with(SHAPE, RailShape.SOUTH_WEST);
++             //Forge fix: MC-196102
++         case NORTH_SOUTH:
++         case EAST_WEST:
++            return state;
+          }
+       case COUNTERCLOCKWISE_90:
+          switch((RailShape)state.get(SHAPE)) {
