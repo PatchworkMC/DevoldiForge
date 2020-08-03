@@ -1,0 +1,11 @@
+--- a/net/minecraft/entity/passive/CatEntity.java
++++ b/net/minecraft/entity/passive/CatEntity.java
+@@ -402,7 +402,7 @@
+             }
+          } else if (this.isBreedingItem(itemstack)) {
+             this.eat(player, itemstack);
+-            if (this.random.nextInt(3) == 0) {
++            if (this.random.nextInt(3) == 0  && !net.minecraftforge.event.ForgeEventFactory.onAnimalTame(this, player)) {
+                this.setOwner(player);
+                this.sitGoal.setEnabledWithOwner(true);
+                this.world.sendEntityStatus(this, (byte)7);
