@@ -55,6 +55,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.DefaultedList;
@@ -240,11 +241,20 @@ public class ForgeEventFactory
         return maxCanSpawnEvent.getResult() == Result.ALLOW ? maxCanSpawnEvent.getMaxPackSize() : entity.getLimitPerChunk();
     }
 
+    /**
+     * Removed in 1.16. Use {@link ForgeEventFactory#getPlayerDisplayName(PlayerEntity, ITextComponent)}
+     */
+    @Deprecated
     public static String getPlayerDisplayName(PlayerEntity player, String username)
+    {
+        return getPlayerDisplayName(player, new LiteralText(username)).getString();
+    }
+    
+    public static Text getPlayerDisplayName(PlayerEntity player, Text username)
     {
         PlayerEvent.NameFormat event = new PlayerEvent.NameFormat(player, username);
         MinecraftForge.EVENT_BUS.post(event);
-        return event.getDisplayname();
+        return event.getDisplaynameComponent();
     }
 
     public static float fireBlockHarvesting(DefaultedList<ItemStack> drops, World world, BlockPos pos, BlockState state, int fortune, float dropChance, boolean silkTouch, PlayerEntity player)

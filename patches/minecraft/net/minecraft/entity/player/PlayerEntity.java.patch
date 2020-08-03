@@ -446,19 +446,20 @@
        this.experienceLevel += levels;
        if (this.experienceLevel < 0) {
           this.experienceLevel = 0;
-@@ -1791,7 +1916,10 @@
+@@ -1791,7 +1916,11 @@
     }
  
     public Text getDisplayName() {
 -      Text itextcomponent = Team.modifyText(this.getScoreboardTeam(), this.getName());
++      if (this.displayname == null) this.displayname = net.minecraftforge.event.ForgeEventFactory.getPlayerDisplayName(this, this.getName());
 +      Text itextcomponent = new LiteralText("");
 +      prefixes.forEach(e -> itextcomponent.append(e));
-+      itextcomponent.append(Team.modifyText(this.getScoreboardTeam(), this.getName()));
++      itextcomponent.append(Team.modifyText(this.getScoreboardTeam(), this.displayname));
 +      suffixes.forEach(e -> itextcomponent.append(e));
        return this.addTellClickEvent(itextcomponent);
     }
  
-@@ -2031,4 +2159,45 @@
+@@ -2031,4 +2160,53 @@
           return this.text;
        }
     }
@@ -479,7 +480,15 @@
 +   public Collection<Text> getSuffixes() {
 +       return this.suffixes;
 +   }
-+
++   
++   private Text displayname = null;
++   /**
++    * Force the displayed name to refresh, by firing {@link net.minecraftforge.event.entity.player.PlayerEvent.NameFormat}, using the real player name as event parameter.
++    */
++   public void refreshDisplayName() {
++      this.displayname = net.minecraftforge.event.ForgeEventFactory.getPlayerDisplayName(this, this.getName());
++   }
++   
 +   private final net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler>
 +         playerMainHandler = net.minecraftforge.common.util.LazyOptional.of(
 +               () -> new net.minecraftforge.items.wrapper.PlayerMainInvWrapper(inventory));
