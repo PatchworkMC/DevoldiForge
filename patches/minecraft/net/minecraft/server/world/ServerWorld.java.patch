@@ -143,17 +143,18 @@
           i += this.random.nextInt(8) - this.random.nextInt(8);
           j += this.random.nextInt(8) - this.random.nextInt(8);
           ++k;
-@@ -585,8 +594,9 @@
+@@ -585,9 +594,10 @@
              ++entityIn.age;
              Profiler iprofiler = this.getProfiler();
              iprofiler.push(() -> {
 -               return Registry.ENTITY_TYPE.getId(entityIn.getType()).toString();
 +               return entityIn.getType().getRegistryName() == null ? entityIn.getType().toString() : entityIn.getType().getRegistryName().toString();
              });
-+            if (entityIn.canUpdate())
              iprofiler.visit("tickNonPassenger");
++            if (entityIn.canUpdate())
              entityIn.tick();
              iprofiler.pop();
+          }
 @@ -653,6 +663,11 @@
     }
  
